@@ -6,14 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "check": "npm run lint && npm run type-check",
+    "prepare": "cd .. && husky install sims/.husky"
   },
   "dependencies": {
+    "apexcharts": "^7.1.0",
+    "convex": "^1.45.0",
+    "flatpickr": "^4.6.13",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-apexcharts": "^2.1.1",
+    "react-dom": "19.2.8",
+    "react-loading-indicators": "^1.0.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
