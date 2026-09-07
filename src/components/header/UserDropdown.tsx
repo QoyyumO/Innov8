@@ -1,22 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import { useAuth } from "@/hooks/useAuth";
 
-type UserDropdownProps = {
-  name?: string;
-  email?: string;
-  onSignOut?: () => void;
-};
-
-export default function UserDropdown({
-  name = "Dr. Ibrahim",
-  email = "ibrahim@fmc.abuja.ng",
-  onSignOut,
-}: UserDropdownProps) {
+export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const userInitial = (name[0] || "U").toUpperCase();
+  const router = useRouter();
+  const { logout, user } = useAuth();
+
+  const displayName = user
+    ? `${user.profile.firstName} ${user.profile.lastName}`.trim() || user.email
+    : "User";
+  const userInitial = user
+    ? (user.profile.firstName?.[0] || user.email[0] || "U").toUpperCase()
+    : "U";
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
     e.stopPropagation();
@@ -27,9 +27,10 @@ export default function UserDropdown({
     setIsOpen(false);
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     closeDropdown();
-    onSignOut?.();
+    await logout();
+    router.push("/login");
   };
 
   return (
@@ -42,7 +43,9 @@ export default function UserDropdown({
           <span className="text-sm font-medium text-white">{userInitial}</span>
         </div>
 
-        <span className="text-theme-sm mr-1 block font-medium">{name}</span>
+        <span className="text-theme-sm mr-1 block font-medium">
+          {displayName}
+        </span>
 
         <svg
           className={`stroke-gray-500 transition-transform duration-200 dark:stroke-gray-400 ${
@@ -71,11 +74,17 @@ export default function UserDropdown({
       >
         <div>
           <span className="text-theme-sm block font-medium text-gray-700 dark:text-gray-400">
-            {name}
+            {displayName}
           </span>
           <span className="text-theme-xs mt-0.5 block text-gray-500 dark:text-gray-400">
-            {email}
+            {user?.email || "user@example.com"}
           </span>
+          {user?.hospital && (
+            <span className="text-theme-xs mt-0.5 block text-gray-500 dark:text-gray-400">
+              {user.hospital}
+              {user.department ? ` · ${user.department}` : ""}
+            </span>
+          )}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3">

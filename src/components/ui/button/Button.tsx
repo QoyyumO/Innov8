@@ -39,9 +39,9 @@ const Button: React.FC<ButtonProps> = ({
     'text-only':
       'bg-transparent text-gray-400 hover:bg-brand-50 hover:text-brand-500 hover:scale-[1.02] focus:bg-brand-100 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:text-brand-300 disabled:hover:scale-100 ring-0 border-0 shadow-none transition-all duration-150', // text-only style
     danger:
-      'bg-red-500 text-white shadow-theme-xs hover:bg-red-600 hover:shadow-md hover:scale-[1.02] focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:bg-red-300 disabled:hover:scale-100 disabled:hover:shadow-theme-xs',
+      'bg-error-500 text-white shadow-theme-xs hover:bg-error-600 hover:shadow-md hover:scale-[1.02] focus:ring-2 focus:ring-error-500 focus:ring-offset-2 disabled:bg-error-300 disabled:hover:scale-100 disabled:hover:shadow-theme-xs',
     warning:
-      'bg-yellow-500 text-white shadow-theme-xs hover:bg-yellow-600 hover:shadow-md hover:scale-[1.02] focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:bg-yellow-300 disabled:hover:scale-100 disabled:hover:shadow-theme-xs',
+      'bg-orange-500 text-gray-900 shadow-theme-xs hover:bg-orange-600 hover:text-white hover:shadow-md hover:scale-[1.02] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:bg-orange-300 disabled:hover:scale-100 disabled:hover:shadow-theme-xs',
   };
 
   return (

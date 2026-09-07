@@ -19,7 +19,7 @@ const ChevronRight = () => (
   >
     <path
       d="M8 6l4 4-4 4"
-      stroke="#D1D5DB"
+      stroke="#DEE2E6"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"

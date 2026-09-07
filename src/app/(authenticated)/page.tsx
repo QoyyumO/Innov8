@@ -1,4 +1,3 @@
-import AppShell from "@/layout/AppShell";
 import MetricCard from "@/components/common/MetricCard";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import Alert from "@/components/ui/alert/Alert";
@@ -8,7 +7,7 @@ import { AlertIcon, CheckCircleIcon, LockIcon, UserIcon } from "@/icons";
 
 export default function Home() {
   return (
-    <AppShell>
+    <>
       <PageBreadCrumb pageTitle="Dashboard" />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -58,6 +57,6 @@ export default function Home() {
           icon={<AlertIcon />}
         />
       </div>
-    </AppShell>
+    </>
   );
 }

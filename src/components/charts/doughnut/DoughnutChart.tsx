@@ -17,7 +17,7 @@ interface DoughnutChartProps {
 export default function DoughnutChart({
   labels,
   series,
-  colors = ['#4F8CFF', '#FFC542', '#FF6B6B'],
+  colors = ['#005F73', '#E9C46A', '#E63946'],
   height = 200,
 }: DoughnutChartProps) {
   const options: ApexOptions = {
