@@ -5,7 +5,9 @@ import { hashPassword, verifyPassword } from "./lib/password";
 import {
   createSession,
   deleteAllUserSessions,
+  deleteOtherUserSessions,
   deleteSessionByToken,
+  requireSessionUser,
   validateSessionToken,
 } from "./lib/session";
 import { UserRole } from "./lib/roles";
@@ -201,6 +203,78 @@ export const logout = mutation({
   },
   handler: async (ctx, args) => {
     await deleteSessionByToken(ctx.db, args.token);
+    return { success: true };
+  },
+});
+
+const MIN_PASSWORD_LENGTH = 6;
+
+function normalizeName(value: string, field: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error(`${field} is required`);
+  }
+  if (trimmed.length > 80) {
+    throw new Error(`${field} is too long`);
+  }
+  return trimmed;
+}
+
+export const updateProfile = mutation({
+  args: {
+    token: v.string(),
+    profile: v.object({
+      firstName: v.string(),
+      lastName: v.string(),
+      middleName: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireSessionUser(ctx.db, args.token);
+    const middleName = args.profile.middleName?.trim();
+
+    const profile = {
+      firstName: normalizeName(args.profile.firstName, "First name"),
+      lastName: normalizeName(args.profile.lastName, "Last name"),
+      ...(middleName ? { middleName: normalizeName(middleName, "Middle name") } : {}),
+    };
+
+    await ctx.db.patch(user._id, { profile });
+    return { success: true, profile };
+  },
+});
+
+export const changePassword = mutation({
+  args: {
+    token: v.string(),
+    currentPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireSessionUser(ctx.db, args.token);
+
+    if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
+      throw new Error(
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+      );
+    }
+
+    if (args.currentPassword === args.newPassword) {
+      throw new Error("New password must be different from current password");
+    }
+
+    const isValidPassword = await verifyPassword(
+      args.currentPassword,
+      user.hashedPassword,
+    );
+    if (!isValidPassword) {
+      throw new Error("Current password is incorrect");
+    }
+
+    await ctx.db.patch(user._id, {
+      hashedPassword: await hashPassword(args.newPassword),
+    });
+    await deleteOtherUserSessions(ctx.db, user._id, args.token);
     return { success: true };
   },
 });

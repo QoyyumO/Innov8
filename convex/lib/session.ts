@@ -43,6 +43,20 @@ export async function validateSessionToken(
   return session.userId;
 }
 
+export async function requireSessionUser(db: DatabaseReader, token: string) {
+  const userId = await validateSessionToken(db, token);
+  if (!userId) {
+    throw new Error("Your session has expired. Please sign in again.");
+  }
+
+  const user = await db.get(userId);
+  if (!user) {
+    throw new Error("Your session has expired. Please sign in again.");
+  }
+
+  return user;
+}
+
 export async function deleteSessionByToken(
   db: DatabaseWriter,
   token: string,
@@ -68,5 +82,22 @@ export async function deleteAllUserSessions(
 
   for (const session of sessions) {
     await db.delete(session._id);
+  }
+}
+
+export async function deleteOtherUserSessions(
+  db: DatabaseWriter,
+  userId: Id<"users">,
+  keepToken: string,
+): Promise<void> {
+  const sessions = await db
+    .query("sessions")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const session of sessions) {
+    if (session.token !== keepToken) {
+      await db.delete(session._id);
+    }
   }
 }

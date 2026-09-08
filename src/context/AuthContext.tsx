@@ -40,6 +40,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
+  sessionToken: string | null;
   login: (
     email: string,
     password: string,
@@ -161,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isLoading,
         user,
+        sessionToken: storedToken,
         login,
         logout,
         hasRole,
