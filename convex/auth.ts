@@ -42,16 +42,57 @@ const DEMO_USERS: Array<{
     department: "Security",
     profile: { firstName: "Amina", lastName: "Okeke" },
   },
+  {
+    email: "fatima@fmc.abuja.ng",
+    roles: ["nurse"],
+    hospital: "FMC Abuja",
+    department: "Emergency",
+    profile: { firstName: "Fatima", lastName: "Bello" },
+  },
+  {
+    email: "chinedu@fmc.lagos.ng",
+    roles: ["pharmacist"],
+    hospital: "FMC Lagos",
+    department: "Pharmacy",
+    profile: { firstName: "Chinedu", lastName: "Okafor" },
+  },
+  {
+    email: "aisha@fmc.lagos.ng",
+    roles: ["laboratory"],
+    hospital: "FMC Lagos",
+    department: "Pathology",
+    profile: { firstName: "Aisha", lastName: "Sule" },
+  },
+  {
+    email: "admin@fmc.abuja.ng",
+    roles: ["hospital_admin"],
+    hospital: "FMC Abuja",
+    department: "Administration",
+    profile: { firstName: "Halima", lastName: "Danjuma" },
+  },
+  {
+    email: "chioma@patient.innov8.ng",
+    roles: ["patient"],
+    hospital: "FMC Lagos",
+    department: "Cardiology",
+    profile: { firstName: "Chioma", lastName: "Okonkwo" },
+  },
 ];
 
 async function ensureDemoUsers(ctx: MutationCtx) {
-  const existing = await ctx.db.query("users").first();
-  if (existing) {
-    return;
-  }
+  let hashedPassword: string | null = null;
 
-  const hashedPassword = await hashPassword(DEMO_PASSWORD);
   for (const user of DEMO_USERS) {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", user.email))
+      .first();
+
+    if (existing) {
+      continue;
+    }
+
+    hashedPassword ??= await hashPassword(DEMO_PASSWORD);
     await ctx.db.insert("users", {
       email: user.email,
       hashedPassword,
