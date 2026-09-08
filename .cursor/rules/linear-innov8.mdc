@@ -1,0 +1,16 @@
+---
+description: Use Linear Innov8 only — never Skilladder
+alwaysApply: true
+---
+
+# Linear workspace
+
+This repo’s Linear server is **linear-innov8** (`project-0-innov8-linear-innov8`).
+
+- Workspace: Innov8 — https://linear.app/innov8-health
+- Team: Innov8
+- Project for current work: Track C Demo Path
+- Schema owner: Adebare (`adesokanadebare@gmail.com`) — INN-18, INN-20…INN-30
+- Synthetic data owner: Henry (`henryokwudili0@gmail.com`) — INN-19, INN-31…INN-33
+
+Do not read or write `user-linear-skilladder` or `user-linear-other` (Skilladder) from this workspace.

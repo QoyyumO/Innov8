@@ -76,6 +76,24 @@ Consent, step-up verification, record writing, deep audit investigation, and a p
 - Label performance as a target, then measure: 95% of normal access decisions inside 1 second in the decision engine.
 - Use free/open-source tools that run on a normal laptop.
 
+## Current status and next work
+
+Foundational UI is in place: session login, account settings, and **dummy** role dashboards. Convex only has `users` and `sessions`.
+
+Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only — do not import school entities.
+
+**Current focus only — schema then §14 synthetic seed.** Do not recreate the canceled demo-path issues (INN-5–INN-17) until this is done.
+
+- **Adebare** — Convex schema parent [INN-18](https://linear.app/innov8-health/issue/INN-18): INN-20…INN-30 (one table / validator set each). Assignee `adesokanadebare@gmail.com`.
+- **Henry** — three datasets from the work document §14, parent [INN-19](https://linear.app/innov8-health/issue/INN-19):
+  1. [INN-31](https://linear.app/innov8-health/issue/INN-31) 10,000 patients including PAT-002391
+  2. [INN-32](https://linear.app/innov8-health/issue/INN-32) 500 healthcare workers
+  3. [INN-33](https://linear.app/innov8-health/issue/INN-33) 100,000 access events (~95% normal / 5% anomalies)
+
+  Assignee `henryokwudili0@gmail.com`. Seed waits on Adebare’s tables.
+
+Use Linear **Innov8** only. Never Skilladder.
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.

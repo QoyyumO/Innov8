@@ -1,0 +1,36 @@
+---
+description: Next Innov8 MVP tasks, DDD map, and Linear Innov8 backlog
+alwaysApply: true
+---
+
+# Next work after foundational UI
+
+Foundational UI is done (auth, account settings, dummy role dashboards). Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
+
+Read `Innov8_DDD.md` and `AGENTS.md` before adding domain tables or pages.
+
+## Current focus only
+
+Do **not** recreate search / request / risk / view / block / break-glass / audit / dashboard issues until schema + seed are done. INN-5–INN-17 stay **Canceled**.
+
+Work **schema first** (Adebare), then the three §14 synthetic datasets (Henry). Seed waits on tables.
+
+### Adebare — schema ([INN-18](https://linear.app/innov8-health/issue/INN-18))
+
+INN-20 validators · INN-21 facilities · INN-22 patients · INN-23 recordIndexes · INN-24 clinicalSummaries · INN-25 accessRequests · INN-26 accessDecisions · INN-27 emergencyAccess · INN-28 securityAlerts · INN-29 auditEvents · INN-30 users + worker baselines.
+
+Assignee: `adesokanadebare@gmail.com`.
+
+### Henry — synthetic data, work document §14 ([INN-19](https://linear.app/innov8-health/issue/INN-19))
+
+1. [INN-31](https://linear.app/innov8-health/issue/INN-31) — 10,000 patients including **PAT-002391**
+2. [INN-32](https://linear.app/innov8-health/issue/INN-32) — 500 healthcare workers
+3. [INN-33](https://linear.app/innov8-health/issue/INN-33) — 100,000 access events (~95% normal / 5% anomalies)
+
+Assignee: `henryokwudili0@gmail.com`.
+
+## Linear
+
+Use only the **Innov8** Linear workspace (`linear-innov8` / `project-0-innov8-linear-innov8`, https://linear.app/innov8-health). Never Skilladder (`user-linear-skilladder` or `user-linear-other`).
+
+Project: [Track C Demo Path](https://linear.app/innov8-health/project/track-c-demo-path-69ccf5388c9e)
