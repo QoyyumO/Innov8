@@ -10,7 +10,7 @@ export default function ResetPasswordPage() {
     <AuthPageLayout
       title="Reset password"
       description="Enter the token from your reset instructions and choose a new password."
-      devNote="Demo: copy the token from Convex function logs after requesting a reset."
+      devNote="Paste the token. Do not put it in the page URL."
     >
       <Suspense
         fallback={

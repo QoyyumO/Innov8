@@ -8,7 +8,7 @@ export default function ForgotPasswordPage() {
     <AuthPageLayout
       title="Forgot Password"
       description="Enter your email to request a reset. If the account exists, instructions are sent out of band."
-      devNote="Demo: copy the token from Convex function logs, then open Reset password."
+      devNote="Demo: issue a token with npx convex run internal.auth.issuePasswordResetToken, then open Reset password."
     >
       <ForgotPasswordForm />
     </AuthPageLayout>

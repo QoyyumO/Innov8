@@ -1,25 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
+import { MIN_PASSWORD_LENGTH } from "../../../../../convex/lib/authConstants";
 import { api } from "@/lib/convex";
+import { isValidEmail } from "@/lib/email";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
 
-const MIN_PASSWORD_LENGTH = 6;
-
 export function ResetPasswordForm() {
   const resetPassword = useMutation(api.auth.resetPassword);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [email, setEmail] = useState(() => searchParams.get("email") ?? "");
-  const [resetToken, setResetToken] = useState(
-    () => searchParams.get("token") ?? "",
-  );
+  const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,13 +31,20 @@ export function ResetPasswordForm() {
     confirmPassword?: string;
   }>({});
 
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current !== null) {
+        clearTimeout(redirectTimer.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setApiError(null);
     setApiMessage(null);
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const errors: {
       email?: string;
       resetToken?: string;
@@ -48,7 +54,7 @@ export function ResetPasswordForm() {
 
     if (!email.trim()) {
       errors.email = "Email is required";
-    } else if (!emailRegex.test(email.trim())) {
+    } else if (!isValidEmail(email)) {
       errors.email = "Please enter a valid email address";
     }
 
@@ -81,7 +87,7 @@ export function ResetPasswordForm() {
         newPassword,
       });
       setApiMessage("Password updated. You can sign in with your new password.");
-      window.setTimeout(() => {
+      redirectTimer.current = setTimeout(() => {
         router.push("/login");
       }, 1500);
     } catch (error) {

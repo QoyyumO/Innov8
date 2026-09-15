@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { isValidEmail } from "@/lib/email";
+import { MIN_PASSWORD_LENGTH } from "../../../../../convex/lib/authConstants";
 import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -33,18 +35,16 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
 
   const validate = (): boolean => {
     const errors: { email?: string; password?: string } = {};
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
     if (!email.trim()) {
       errors.email = "Email is required";
-    } else if (!emailRegex.test(email.trim())) {
+    } else if (!isValidEmail(email)) {
       errors.email = "Please enter a valid email address";
     }
 
     if (!password) {
       errors.password = "Password is required";
-    } else if (password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+    } else if (password.length < MIN_PASSWORD_LENGTH) {
+      errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
     }
 
     setValidationErrors(errors);
