@@ -10,13 +10,13 @@ Demo step 2: a signed-in clinician (Dr. Ibrahim) identifies a patient across fac
 
 ## Scope
 
-- [ ] `convex/lib/services/patientDiscoveryService.ts` — lookup by `publicId` / bounded `searchName`; load `recordIndexes` existence only
-- [ ] `convex/patients.ts` — public `searchPatients` and `getPatientDiscovery`; audit `PatientSearched` on successful lookup
-- [ ] Omit allergies, medications, diagnoses, medicalSummary (and other clinical fields) from returns
-- [ ] `/patients` search UI (hint `PAT-002391`) — name, publicId, home facility
-- [ ] `/patients/[publicId]` discovery — “Records exist at …” + record-type badges + Request access CTA (form is INN-37)
-- [ ] `_components/PatientSearchForm.tsx` and `RecordExistenceList.tsx`
-- [ ] `/patients` stops 404ing (sidebar already links there)
+- [x] `convex/lib/services/patientDiscoveryService.ts` — lookup by `publicId` / bounded `searchName`; load `recordIndexes` existence only
+- [x] `convex/patients.ts` — public `searchPatients` and `getPatientDiscovery`; audit `PatientSearched` on successful lookup
+- [x] Omit allergies, medications, diagnoses, medicalSummary (and other clinical fields) from returns
+- [x] `/patients` search UI (hint `PAT-002391`) — name, publicId, home facility
+- [x] `/patients/[publicId]` discovery — “Records exist at …” + record-type badges + Request access CTA (form is INN-37)
+- [x] `_components/PatientSearchForm.tsx` and `RecordExistenceList.tsx`
+- [x] `/patients` stops 404ing (sidebar already links there)
 
 ---
 
