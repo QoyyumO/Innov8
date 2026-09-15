@@ -6,6 +6,7 @@ import {
   facilityStatus,
   gender,
   personName,
+  recordType,
 } from "./lib/domain";
 import { userRole } from "./lib/roles";
 
@@ -53,4 +54,14 @@ export default defineSchema({
     .index("by_publicId", ["publicId"])
     .index("by_homeFacilityId", ["homeFacilityId"])
     .index("by_searchName", ["searchName"]),
+
+  recordIndexes: defineTable({
+    patientId: v.id("patients"),
+    facilityId: v.id("facilities"),
+    recordTypes: v.array(recordType),
+    updatedAt: v.number(),
+  })
+    .index("by_patientId", ["patientId"])
+    .index("by_facilityId", ["facilityId"])
+    .index("by_patientId_facilityId", ["patientId", "facilityId"]),
 });
