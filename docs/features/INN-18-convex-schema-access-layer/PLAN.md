@@ -10,17 +10,17 @@ Owner: Adebare. Parent for the schema split (INN-20…INN-30). Keep existing `us
 
 ## Scope
 
-- [ ] INN-20 Shared validators in `convex/lib/domain.ts`
-- [ ] INN-21 `facilities`
-- [ ] INN-22 `patients`
-- [ ] INN-23 `recordIndexes`
-- [ ] INN-24 `clinicalSummaries`
-- [ ] INN-25 `accessRequests`
-- [ ] INN-26 `accessDecisions`
-- [ ] INN-27 `emergencyAccess`
-- [ ] INN-28 `securityAlerts`
-- [ ] INN-29 `auditEvents`
-- [ ] INN-30 Optional worker fields on `users` (no second identity table)
+- [x] INN-20 Shared validators in `convex/lib/domain.ts`
+- [x] INN-21 `facilities`
+- [x] INN-22 `patients`
+- [x] INN-23 `recordIndexes`
+- [x] INN-24 `clinicalSummaries`
+- [x] INN-25 `accessRequests`
+- [x] INN-26 `accessDecisions`
+- [x] INN-27 `emergencyAccess`
+- [x] INN-28 `securityAlerts`
+- [x] INN-29 `auditEvents`
+- [x] INN-30 Optional worker fields on `users` (no second identity table)
 
 Style: `defineTable` + `v.*`, camelCase, `v.id("table")`, closed enums, nested name objects, unix-ms timestamps, indexes `by_<field>` (no `_creationTime`). New `users` fields must be `v.optional(...)`.
 
@@ -81,4 +81,6 @@ Keep workers on `users` (no `workers` table). Optional `facilityId`, `workerId`,
 ## Open questions
 
 - [x] Workers table vs users — **users**, optional fields (INN-30)
-- [x] Unique constraints — Convex indexes are not unique; uniqueness is enforced later in seed/mutations
+- [x] Unique constraints — Convex indexes are not unique; seed/mutations call `convex/lib/invariants.ts` (`requireUnusedFacilityCode`, `requireUnusedPatientPublicId`, `requireUnusedWorkerId`, `requireUnusedDecisionRequestId`)
+- [x] Empty reasons / justification / risk 0–100 — same helpers (`assertDecisionReasons`, `assertNonEmptyString`, `assertRiskScore`)
+- [x] gender / bloodGroup — closed enums plus `unknown` for §14 rows without a coded value

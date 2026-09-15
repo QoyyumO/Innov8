@@ -1,11 +1,11 @@
-import { v } from "convex/values";
+import { Infer, v } from "convex/values";
 
 export const accountStatus = v.union(
   v.literal("active"),
   v.literal("suspended"),
 );
 
-export type AccountStatus = "active" | "suspended";
+export type AccountStatus = Infer<typeof accountStatus>;
 
 export const personName = v.object({
   firstName: v.string(),
@@ -13,11 +13,7 @@ export const personName = v.object({
   middleName: v.optional(v.string()),
 });
 
-export type PersonName = {
-  firstName: string;
-  lastName: string;
-  middleName?: string;
-};
+export type PersonName = Infer<typeof personName>;
 
 export const purpose = v.union(
   v.literal("treatment"),
@@ -27,12 +23,7 @@ export const purpose = v.union(
   v.literal("administrative"),
 );
 
-export type Purpose =
-  | "treatment"
-  | "emergency"
-  | "referral"
-  | "follow-up"
-  | "administrative";
+export type Purpose = Infer<typeof purpose>;
 
 export const recordType = v.union(
   v.literal("medical_summary"),
@@ -41,11 +32,7 @@ export const recordType = v.union(
   v.literal("diagnoses"),
 );
 
-export type RecordType =
-  | "medical_summary"
-  | "allergies"
-  | "medications"
-  | "diagnoses";
+export type RecordType = Infer<typeof recordType>;
 
 export const decisionOutcome = v.union(
   v.literal("ALLOW"),
@@ -53,7 +40,7 @@ export const decisionOutcome = v.union(
   v.literal("BLOCK"),
 );
 
-export type DecisionOutcome = "ALLOW" | "VERIFY" | "BLOCK";
+export type DecisionOutcome = Infer<typeof decisionOutcome>;
 
 export const alertSeverity = v.union(
   v.literal("high"),
@@ -61,22 +48,23 @@ export const alertSeverity = v.union(
   v.literal("low"),
 );
 
-export type AlertSeverity = "high" | "medium" | "low";
+export type AlertSeverity = Infer<typeof alertSeverity>;
 
 export const facilityStatus = v.union(
   v.literal("active"),
   v.literal("pilot"),
 );
 
-export type FacilityStatus = "active" | "pilot";
+export type FacilityStatus = Infer<typeof facilityStatus>;
 
 export const gender = v.union(
   v.literal("female"),
   v.literal("male"),
   v.literal("other"),
+  v.literal("unknown"),
 );
 
-export type Gender = "female" | "male" | "other";
+export type Gender = Infer<typeof gender>;
 
 export const bloodGroup = v.union(
   v.literal("A+"),
@@ -87,17 +75,10 @@ export const bloodGroup = v.union(
   v.literal("AB-"),
   v.literal("O+"),
   v.literal("O-"),
+  v.literal("unknown"),
 );
 
-export type BloodGroup =
-  | "A+"
-  | "A-"
-  | "B+"
-  | "B-"
-  | "AB+"
-  | "AB-"
-  | "O+"
-  | "O-";
+export type BloodGroup = Infer<typeof bloodGroup>;
 
 export const alertStatus = v.union(
   v.literal("open"),
@@ -105,7 +86,7 @@ export const alertStatus = v.union(
   v.literal("closed"),
 );
 
-export type AlertStatus = "open" | "acknowledged" | "closed";
+export type AlertStatus = Infer<typeof alertStatus>;
 
 export const auditAction = v.union(
   v.literal("UserLoggedIn"),
@@ -120,14 +101,17 @@ export const auditAction = v.union(
   v.literal("SecurityAlertRaised"),
 );
 
-export type AuditAction =
-  | "UserLoggedIn"
-  | "PatientSearched"
-  | "AccessRequested"
-  | "AccessAllowed"
-  | "AccessChallenged"
-  | "AccessBlocked"
-  | "RecordViewed"
-  | "EmergencyGranted"
-  | "EmergencyExpired"
-  | "SecurityAlertRaised";
+export type AuditAction = Infer<typeof auditAction>;
+
+export const auditDetails = v.record(
+  v.string(),
+  v.union(
+    v.string(),
+    v.number(),
+    v.boolean(),
+    v.null(),
+    v.array(v.string()),
+  ),
+);
+
+export type AuditDetails = Infer<typeof auditDetails>;

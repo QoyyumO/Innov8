@@ -5,6 +5,7 @@ import {
   alertSeverity,
   alertStatus,
   auditAction,
+  auditDetails,
   bloodGroup,
   decisionOutcome,
   facilityStatus,
@@ -165,7 +166,7 @@ export default defineSchema({
     action: auditAction,
     entity: v.string(),
     entityId: v.optional(v.string()),
-    details: v.record(v.string(), v.any()),
+    details: auditDetails,
     createdAt: v.number(),
   })
     .index("by_actorId", ["actorId"])
