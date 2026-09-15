@@ -10,16 +10,17 @@ import { useAuth as useAuthContext } from "../context/AuthContext";
  * Queries — skip until there is a session:
  *
  *   const { sessionToken } = useAuth();
- *   const results = useQuery(
- *     api.patients.search,
- *     sessionToken ? { token: sessionToken, publicId } : "skip",
+ *   const user = useQuery(
+ *     api.auth.getCurrentUser,
+ *     sessionToken ? { token: sessionToken } : "skip",
  *   );
  *
- * Mutations — pass the same token:
+ * Mutations — pass the same token. Patient search writes an audit row, so it
+ * is a mutation (Convex queries cannot insert):
  *
- *   const requestAccess = useMutation(api.accessRequests.create);
+ *   const searchPatients = useMutation(api.patients.searchPatients);
  *   if (sessionToken) {
- *     await requestAccess({ token: sessionToken, ...fields });
+ *     await searchPatients({ token: sessionToken, query });
  *   }
  *
  * The token lives under `innov8_session_token` and is managed by
