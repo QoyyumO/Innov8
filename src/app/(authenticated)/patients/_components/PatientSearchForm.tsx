@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,20 +9,14 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
-import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/synthetic";
+import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
+import { NAME_PREFIX_MIN_LENGTH } from "../../../../../convex/lib/searchLimits";
+import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
+import { toUserFacingError } from "@/lib/userFacingError";
 
-export type PatientSearchHit = {
-  publicId: string;
-  profile: {
-    firstName: string;
-    lastName: string;
-    middleName?: string;
-  };
-  homeFacility: {
-    code: string;
-    name: string;
-  };
-};
+export type PatientSearchHit = FunctionReturnType<
+  typeof api.patients.searchPatients
+>[number];
 
 export function formatPatientName(profile: PatientSearchHit["profile"]): string {
   const parts = [profile.firstName, profile.middleName, profile.lastName].filter(
@@ -29,6 +24,8 @@ export function formatPatientName(profile: PatientSearchHit["profile"]): string 
   );
   return parts.join(" ");
 }
+
+const PUBLIC_ID_PATTERN = /^pat-\d+$/i;
 
 type PatientSearchFormProps = {
   onResults: (results: PatientSearchHit[]) => void;
@@ -46,13 +43,21 @@ export function PatientSearchForm({ onResults }: PatientSearchFormProps) {
     setErrorMessage(null);
 
     if (!sessionToken) {
-      setErrorMessage("Your session has expired. Please sign in again.");
+      setErrorMessage(SESSION_EXPIRED_MESSAGE);
       return;
     }
 
     const trimmedQuery = query.trim();
     if (trimmedQuery === "") {
       setErrorMessage("Enter a patient ID or name to search.");
+      return;
+    }
+
+    const isPublicId = PUBLIC_ID_PATTERN.test(trimmedQuery);
+    if (!isPublicId && trimmedQuery.length < NAME_PREFIX_MIN_LENGTH) {
+      setErrorMessage(
+        `Enter a patient ID or at least ${NAME_PREFIX_MIN_LENGTH} letters of the name.`,
+      );
       return;
     }
 
@@ -65,11 +70,9 @@ export function PatientSearchForm({ onResults }: PatientSearchFormProps) {
       onResults(results);
     } catch (error) {
       console.error("Error searching patients:", error);
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Patient search failed. Try again.";
-      setErrorMessage(message);
+      setErrorMessage(
+        toUserFacingError(error, "Patient search failed. Try again."),
+      );
       onResults([]);
     } finally {
       setIsLoading(false);

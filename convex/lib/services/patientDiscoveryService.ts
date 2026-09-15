@@ -1,9 +1,13 @@
 import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
 import { RecordType } from "../domain";
+import {
+  NAME_PREFIX_MIN_LENGTH,
+  NAME_SEARCH_LIMIT,
+  RECORD_INDEX_LIMIT,
+} from "../searchLimits";
 
-export const NAME_SEARCH_LIMIT = 20;
-export const RECORD_INDEX_LIMIT = 20;
+export { NAME_PREFIX_MIN_LENGTH, NAME_SEARCH_LIMIT, RECORD_INDEX_LIMIT };
 
 export type FacilityRef = {
   code: string;
@@ -110,31 +114,17 @@ async function findPatientsBySearchNameEq(
     .take(NAME_SEARCH_LIMIT);
 }
 
-async function findPatientsByBtreePrefix(
+async function findPatientsBySearchNamePrefix(
   db: DatabaseReader,
-  indexName: "by_searchName" | "by_searchLastName",
-  field: "searchName" | "searchLastName",
   prefix: string,
 ): Promise<Doc<"patients">[]> {
   const exclusiveEnd = btreePrefixExclusiveEnd(prefix);
   return await db
     .query("patients")
-    .withIndex(indexName, (query) =>
-      query.gte(field, prefix).lt(field, exclusiveEnd),
+    .withIndex("by_searchName", (query) =>
+      query.gte("searchName", prefix).lt("searchName", exclusiveEnd),
     )
     .take(NAME_SEARCH_LIMIT);
-}
-
-function mergePatientsById(
-  groups: Doc<"patients">[][],
-): Doc<"patients">[] {
-  const byId = new Map<Id<"patients">, Doc<"patients">>();
-  for (const group of groups) {
-    for (const patient of group) {
-      byId.set(patient._id, patient);
-    }
-  }
-  return [...byId.values()].slice(0, NAME_SEARCH_LIMIT);
 }
 
 export async function loadRecordExistence(
@@ -184,25 +174,18 @@ export async function findPatientsByQuery(
   }
 
   const searchPrefix = normalizeQuery(trimmed);
+  if (searchPrefix.length < NAME_PREFIX_MIN_LENGTH) {
+    return [];
+  }
 
   const exactNameMatches = await findPatientsBySearchNameEq(db, searchPrefix);
   if (exactNameMatches.length > 0) {
     return await toSearchHits(db, exactNameMatches);
   }
 
-  const [givenNamePrefixMatches, lastNamePrefixMatches] = await Promise.all([
-    findPatientsByBtreePrefix(db, "by_searchName", "searchName", searchPrefix),
-    findPatientsByBtreePrefix(
-      db,
-      "by_searchLastName",
-      "searchLastName",
-      searchPrefix,
-    ),
-  ]);
-
   return await toSearchHits(
     db,
-    mergePatientsById([givenNamePrefixMatches, lastNamePrefixMatches]),
+    await findPatientsBySearchNamePrefix(db, searchPrefix),
   );
 }
 

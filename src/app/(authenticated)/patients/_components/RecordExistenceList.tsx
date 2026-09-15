@@ -31,7 +31,7 @@ export function RecordExistenceList({
     <ul className="space-y-4">
       {facilities.map((facility) => (
         <li
-          key={facility.code}
+          key={`${facility.code}-${facility.recordTypes.join("-")}`}
           className="rounded-xl border border-gray-100 p-4 dark:border-gray-800"
         >
           <p className="font-medium text-gray-800 dark:text-white/90">

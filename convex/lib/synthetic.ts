@@ -47,10 +47,6 @@ export function normalizeSearchName(
   return parts.join(" ").toLowerCase();
 }
 
-export function normalizeSearchLastName(lastName: string): string {
-  return lastName.trim().toLowerCase();
-}
-
 export function unixDateOfBirth(rand: () => number): number {
   const year = randInt(rand, 1945, 2023);
   const month = randInt(rand, 0, 11);
@@ -237,7 +233,7 @@ export const FACILITIES = [
   { code: "FMC-ABK", name: "FMC Abeokuta", city: "Abeokuta", status: "active" as const },
 ];
 
-export const DEMO_PATIENT_PUBLIC_ID = "PAT-002391";
+export { DEMO_PATIENT_PUBLIC_ID } from "./demoIds";
 export const DEMO_PATIENT_INDEX = 2391;
 export const DEMO_PATIENT_DOB_MS = Date.UTC(1988, 3, 12);
 

@@ -1,5 +1,9 @@
 import { DatabaseReader, DatabaseWriter } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
+import {
+  ACCOUNT_SUSPENDED_MESSAGE,
+  SESSION_EXPIRED_MESSAGE,
+} from "./authConstants";
 
 const SESSION_DURATION_MS = 30 * 60 * 1000;
 
@@ -51,9 +55,6 @@ export async function validateSessionToken(
   return session?.userId ?? null;
 }
 
-const SESSION_EXPIRED_MESSAGE =
-  "Your session has expired. Please sign in again.";
-
 /**
  * Single entry point for session auth in domain functions (INN-35).
  *
@@ -82,7 +83,7 @@ export async function requireSession(
   }
 
   if (user.accountStatus !== "active") {
-    throw new Error("Your account is suspended. Contact your administrator.");
+    throw new Error(ACCOUNT_SUSPENDED_MESSAGE);
   }
 
   return { user, session };
@@ -104,12 +105,12 @@ export function publicUser(user: Doc<"users">) {
 export async function requireSessionUser(db: DatabaseReader, token: string) {
   const userId = await validateSessionToken(db, token);
   if (!userId) {
-    throw new Error("Your session has expired. Please sign in again.");
+    throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
   const user = await db.get(userId);
   if (!user || user.accountStatus !== "active") {
-    throw new Error("Your session has expired. Please sign in again.");
+    throw new Error(SESSION_EXPIRED_MESSAGE);
   }
 
   return user;

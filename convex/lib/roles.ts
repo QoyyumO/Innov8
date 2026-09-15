@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { PERMISSION_DENIED_MESSAGE } from "./authConstants";
 
 export const userRole = v.union(
   v.literal("doctor"),
@@ -42,6 +43,6 @@ export function requireRole(
 ): void {
   const isAllowed = allowedRoles.some((role) => user.roles.includes(role));
   if (!isAllowed) {
-    throw new Error("You do not have permission to perform this action");
+    throw new Error(PERMISSION_DENIED_MESSAGE);
   }
 }

@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserIcon } from "@/icons";
-import { DEMO_PATIENT_PUBLIC_ID } from "../../../../convex/lib/synthetic";
+import { DEMO_PATIENT_PUBLIC_ID } from "../../../../convex/lib/demoIds";
 import {
   formatPatientName,
   PatientSearchForm,
@@ -91,7 +91,7 @@ export default function PatientSearchPage() {
                     >
                       <TableCell className="px-4 py-4">
                         <Link
-                          href={`/patients/${hit.publicId}`}
+                          href={`/patients/${encodeURIComponent(hit.publicId)}`}
                           className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
                         >
                           {formatPatientName(hit.profile)}

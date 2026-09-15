@@ -29,7 +29,6 @@ import {
   SEED_EVENT_BASE_MS,
   WORKER_ROLE_POOL,
   mulberry32,
-  normalizeSearchLastName,
   normalizeSearchName,
   pad,
   pick,
@@ -311,7 +310,6 @@ export const seedPatientsBatch = internalMutation({
         ? DEMO_PATIENT_DOB_MS
         : unixDateOfBirth(rand);
       const searchName = normalizeSearchName(firstName, lastName);
-      const searchLastName = normalizeSearchLastName(lastName);
       const updatedAt = SEED_EVENT_BASE_MS - patientIndex * 86_400_000;
 
       const existing = await ctx.db
@@ -329,22 +327,16 @@ export const seedPatientsBatch = internalMutation({
             gender,
             bloodGroup,
             searchName,
-            searchLastName,
           });
 
-      if (existing && (isDemoPatient || existing.searchLastName === undefined)) {
+      if (existing && isDemoPatient) {
         await ctx.db.patch(existing._id, {
-          ...(isDemoPatient
-            ? {
-                homeFacilityId: lagos._id,
-                profile: { firstName: "Chioma", lastName: "Okonkwo" },
-                dateOfBirth: DEMO_PATIENT_DOB_MS,
-                gender: "female" as const,
-                bloodGroup: "O+" as const,
-                searchName: "chioma okonkwo",
-                searchLastName: "okonkwo",
-              }
-            : { searchLastName }),
+          homeFacilityId: lagos._id,
+          profile: { firstName: "Chioma", lastName: "Okonkwo" },
+          dateOfBirth: DEMO_PATIENT_DOB_MS,
+          gender: "female",
+          bloodGroup: "O+",
+          searchName: "chioma okonkwo",
         });
       }
 
