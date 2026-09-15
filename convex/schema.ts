@@ -24,7 +24,21 @@ export default defineSchema({
     department: v.optional(v.string()),
     accountStatus,
     profile: personName,
-  }).index("by_email", ["email"]),
+    // Worker identity stays on users (no second table). All new fields are
+    // optional so ibrahim@fmc.abuja.ng and other demo logins keep working.
+    facilityId: v.optional(v.id("facilities")),
+    workerId: v.optional(v.string()),
+    normalAccessHours: v.optional(
+      v.object({
+        start: v.string(),
+        end: v.string(),
+      }),
+    ),
+    normalPatientVolume: v.optional(v.number()),
+  })
+    .index("by_email", ["email"])
+    .index("by_workerId", ["workerId"])
+    .index("by_facilityId", ["facilityId"]),
 
   sessions: defineTable({
     userId: v.id("users"),
@@ -37,7 +51,8 @@ export default defineSchema({
     .index("by_expiresAt", ["expiresAt"]),
 
   // Participating hospitals. Users still store `hospital` as a display string
-  // so existing demo logins keep working. Optional `facilityId` lands in INN-30.
+  // so existing demo logins keep working. Seed/login can later set optional
+  // `users.facilityId` without rewriting those rows first.
   facilities: defineTable({
     code: v.string(),
     name: v.string(),
