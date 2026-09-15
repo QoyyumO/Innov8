@@ -4,6 +4,7 @@ import {
   accountStatus,
   alertSeverity,
   alertStatus,
+  auditAction,
   bloodGroup,
   decisionOutcome,
   facilityStatus,
@@ -141,5 +142,18 @@ export default defineSchema({
   })
     .index("by_status", ["status"])
     .index("by_severity", ["severity"])
+    .index("by_createdAt", ["createdAt"]),
+
+  auditEvents: defineTable({
+    actorId: v.optional(v.id("users")),
+    sessionId: v.optional(v.id("sessions")),
+    action: auditAction,
+    entity: v.string(),
+    entityId: v.optional(v.string()),
+    details: v.record(v.string(), v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_actorId", ["actorId"])
+    .index("by_action", ["action"])
     .index("by_createdAt", ["createdAt"]),
 });

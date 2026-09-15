@@ -106,3 +106,28 @@ export const alertStatus = v.union(
 );
 
 export type AlertStatus = "open" | "acknowledged" | "closed";
+
+export const auditAction = v.union(
+  v.literal("UserLoggedIn"),
+  v.literal("PatientSearched"),
+  v.literal("AccessRequested"),
+  v.literal("AccessAllowed"),
+  v.literal("AccessChallenged"),
+  v.literal("AccessBlocked"),
+  v.literal("RecordViewed"),
+  v.literal("EmergencyGranted"),
+  v.literal("EmergencyExpired"),
+  v.literal("SecurityAlertRaised"),
+);
+
+export type AuditAction =
+  | "UserLoggedIn"
+  | "PatientSearched"
+  | "AccessRequested"
+  | "AccessAllowed"
+  | "AccessChallenged"
+  | "AccessBlocked"
+  | "RecordViewed"
+  | "EmergencyGranted"
+  | "EmergencyExpired"
+  | "SecurityAlertRaised";
