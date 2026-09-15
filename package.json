@@ -9,6 +9,7 @@
     "lint": "eslint",
     "type-check": "tsc --noEmit",
     "check": "npm run lint && npm run type-check",
+    "test": "vitest run",
     "prepare": "cd .. && husky install sims/.husky"
   },
   "dependencies": {
@@ -23,14 +24,17 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "convex-test": "^0.0.58",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

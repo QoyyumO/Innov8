@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as lib_authConstants from "../lib/authConstants.js";
 import type * as lib_demoUsers from "../lib/demoUsers.js";
 import type * as lib_domain from "../lib/domain.js";
 import type * as lib_invariants from "../lib/invariants.js";
@@ -26,6 +27,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  "lib/authConstants": typeof lib_authConstants;
   "lib/demoUsers": typeof lib_demoUsers;
   "lib/domain": typeof lib_domain;
   "lib/invariants": typeof lib_invariants;

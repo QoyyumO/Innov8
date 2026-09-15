@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
+import { isValidEmail } from "@/lib/email";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
@@ -18,34 +20,33 @@ export function ForgotPasswordForm() {
     {},
   );
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
     setApiError(null);
     setApiMessage(null);
     setValidationErrors({});
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!email.trim()) {
       setValidationErrors({ email: "Email is required" });
       setIsLoading(false);
       return;
     }
-    if (!emailRegex.test(email.trim())) {
+    if (!isValidEmail(email)) {
       setValidationErrors({ email: "Please enter a valid email address" });
       setIsLoading(false);
       return;
     }
 
     try {
-      const res = await requestReset({ email: email.toLowerCase().trim() });
+      const result = await requestReset({ email: email.toLowerCase().trim() });
       setApiMessage(
-        res?.message ?? "If the account exists, reset instructions were sent.",
+        result?.message ?? "If the account exists, reset instructions were sent.",
       );
-    } catch (err) {
+    } catch (error) {
       setApiError(
-        err instanceof Error
-          ? err.message
+        error instanceof Error
+          ? error.message
           : "An unexpected error occurred. Please try again.",
       );
     } finally {
@@ -70,8 +71,8 @@ export function ForgotPasswordForm() {
             placeholder="Enter your email"
             type="email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
+            onChange={(event) => {
+              setEmail(event.target.value);
               if (validationErrors.email) {
                 setValidationErrors({});
               }
@@ -90,6 +91,16 @@ export function ForgotPasswordForm() {
         <Button type="submit" className="w-full" disabled={isLoading} size="full">
           {isLoading ? "Sending..." : "Send Reset Link"}
         </Button>
+
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Already have a token?{" "}
+          <Link
+            href="/reset-password"
+            className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+          >
+            Reset password
+          </Link>
+        </p>
       </div>
     </form>
   );

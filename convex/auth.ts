@@ -1,12 +1,20 @@
-import { mutation, query, MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { hashPassword, verifyPassword } from "./lib/password";
+import {
+  MIN_PASSWORD_LENGTH,
+  RESET_GENERIC_MESSAGE,
+  RESET_INVALID_TOKEN_MESSAGE,
+  RESET_REQUEST_COOLDOWN_MS,
+  RESET_TOKEN_TTL_MS,
+} from "./lib/authConstants";
+import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
 import {
   createSession,
   deleteAllUserSessions,
   deleteOtherUserSessions,
   deleteSessionByToken,
+  generateSessionToken,
   requireSessionUser,
   validateSessionToken,
 } from "./lib/session";
@@ -109,7 +117,7 @@ export const getCurrentUser = query({
     }
 
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || user.accountStatus !== "active") {
       return null;
     }
 
@@ -117,10 +125,56 @@ export const getCurrentUser = query({
   },
 });
 
+async function deleteUserResetTokens(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<void> {
+  const tokens = await ctx.db
+    .query("passwordResetTokens")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const tokenRow of tokens) {
+    await ctx.db.delete(tokenRow._id);
+  }
+}
+
+async function hasRecentResetToken(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<boolean> {
+  const tokens = await ctx.db
+    .query("passwordResetTokens")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  const cooldownCutoff = Date.now() - RESET_REQUEST_COOLDOWN_MS;
+  return tokens.some((tokenRow) => tokenRow._creationTime > cooldownCutoff);
+}
+
+async function createPasswordResetToken(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<string> {
+  await deleteUserResetTokens(ctx, userId);
+
+  const resetToken = generateSessionToken();
+  await ctx.db.insert("passwordResetTokens", {
+    userId,
+    tokenHash: await sha256Hex(resetToken),
+    expiresAt: Date.now() + RESET_TOKEN_TTL_MS,
+  });
+  return resetToken;
+}
+
 export const requestPasswordReset = mutation({
   args: {
     email: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+    message: v.string(),
+  }),
   handler: async (ctx, args) => {
     const emailLower = args.email.toLowerCase().trim();
     const user = await ctx.db
@@ -128,18 +182,44 @@ export const requestPasswordReset = mutation({
       .withIndex("by_email", (q) => q.eq("email", emailLower))
       .first();
 
-    if (!user) {
-      return {
-        success: true,
-        message: "If the account exists, reset instructions were sent.",
-      };
+    if (
+      user &&
+      user.accountStatus === "active" &&
+      !(await hasRecentResetToken(ctx, user._id))
+    ) {
+      await createPasswordResetToken(ctx, user._id);
     }
 
     return {
-      success: true,
-      message: "If the account exists, reset instructions were sent.",
-      resetToken: "dev-reset-token",
+      success: true as const,
+      message: RESET_GENERIC_MESSAGE,
     };
+  },
+});
+
+export const issuePasswordResetToken = internalMutation({
+  args: {
+    email: v.string(),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      resetToken: v.string(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const emailLower = args.email.toLowerCase().trim();
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .first();
+
+    if (!user || user.accountStatus !== "active") {
+      return null;
+    }
+
+    const resetToken = await createPasswordResetToken(ctx, user._id);
+    return { resetToken };
   },
 });
 
@@ -149,26 +229,42 @@ export const resetPassword = mutation({
     resetToken: v.string(),
     newPassword: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+  }),
   handler: async (ctx, args) => {
-    if (args.resetToken !== "dev-reset-token") {
-      throw new Error("Invalid or expired reset token");
-    }
-
-    const emailLower = args.email.toLowerCase().trim();
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", emailLower))
+    const tokenHash = await sha256Hex(args.resetToken);
+    const tokenRow = await ctx.db
+      .query("passwordResetTokens")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash))
       .first();
 
-    if (!user) {
-      throw new Error("User not found");
+    if (
+      !tokenRow ||
+      tokenRow.usedAt !== undefined ||
+      tokenRow.expiresAt < Date.now()
+    ) {
+      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
+    }
+
+    const user = await ctx.db.get(tokenRow.userId);
+    const emailLower = args.email.toLowerCase().trim();
+    if (!user || user.email !== emailLower || user.accountStatus !== "active") {
+      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
+    }
+
+    if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
+      throw new Error(
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+      );
     }
 
     await ctx.db.patch(user._id, {
       hashedPassword: await hashPassword(args.newPassword),
     });
+    await ctx.db.patch(tokenRow._id, { usedAt: Date.now() });
     await deleteAllUserSessions(ctx.db, user._id);
-    return { success: true };
+    return { success: true as const };
   },
 });
 
@@ -181,8 +277,6 @@ export const logout = mutation({
     return { success: true };
   },
 });
-
-const MIN_PASSWORD_LENGTH = 6;
 
 function normalizeName(value: string, field: string): string {
   const trimmed = value.trim();
