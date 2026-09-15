@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { User } from "@/context/AuthContext";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
@@ -20,25 +21,49 @@ export function ProfileUpdateForm({
   onCancel,
 }: ProfileUpdateFormProps) {
   const { user, sessionToken } = useAuth();
+
+  if (!user || !sessionToken) {
+    return (
+      <EmptyState
+        title="Authentication required"
+        description="Please log in to update your profile."
+        status="error"
+      />
+    );
+  }
+
+  return (
+    <ProfileUpdateFields
+      user={user}
+      sessionToken={sessionToken}
+      onSuccess={onSuccess}
+      onCancel={onCancel}
+    />
+  );
+}
+
+function ProfileUpdateFields({
+  user,
+  sessionToken,
+  onSuccess,
+  onCancel,
+}: {
+  user: User;
+  sessionToken: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}) {
   const updateProfileMutation = useMutation(api.auth.updateProfile);
 
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(user.profile.firstName ?? "");
+  const [middleName, setMiddleName] = useState(user.profile.middleName ?? "");
+  const [lastName, setLastName] = useState(user.profile.lastName ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
     firstName?: string;
     lastName?: string;
   }>({});
-
-  useEffect(() => {
-    if (user) {
-      setFirstName(user.profile.firstName || "");
-      setMiddleName(user.profile.middleName || "");
-      setLastName(user.profile.lastName || "");
-    }
-  }, [user]);
 
   const validate = (): boolean => {
     const errors: { firstName?: string; lastName?: string } = {};
@@ -108,16 +133,6 @@ export function ProfileUpdateForm({
       setIsLoading(false);
     }
   };
-
-  if (!user || !sessionToken) {
-    return (
-      <EmptyState
-        title="Authentication required"
-        description="Please log in to update your profile."
-        status="error"
-      />
-    );
-  }
 
   return (
     <div className="w-full">
