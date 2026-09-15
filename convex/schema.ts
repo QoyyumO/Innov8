@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { accountStatus, personName } from "./lib/domain";
+import { accountStatus, facilityStatus, personName } from "./lib/domain";
 import { userRole } from "./lib/roles";
 
 export default defineSchema({
@@ -23,4 +23,15 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_userId", ["userId"])
     .index("by_expiresAt", ["expiresAt"]),
+
+  // Participating hospitals. Users still store `hospital` as a display string
+  // so existing demo logins keep working. Optional `facilityId` lands in INN-30.
+  facilities: defineTable({
+    code: v.string(),
+    name: v.string(),
+    city: v.string(),
+    status: facilityStatus,
+  })
+    .index("by_code", ["code"])
+    .index("by_name", ["name"]),
 });

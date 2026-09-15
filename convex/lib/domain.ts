@@ -62,3 +62,10 @@ export const alertSeverity = v.union(
 );
 
 export type AlertSeverity = "high" | "medium" | "low";
+
+export const facilityStatus = v.union(
+  v.literal("active"),
+  v.literal("pilot"),
+);
+
+export type FacilityStatus = "active" | "pilot";
