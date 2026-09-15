@@ -1,0 +1,23 @@
+---
+description: Prefer ?? over || for null/undefined fallbacks
+alwaysApply: true
+---
+
+# Nullish coalescing
+
+Use **`??`** (nullish coalescing) instead of **`||`** when providing a fallback for `null` or `undefined`.
+
+- `??` only falls back when the left side is `null` or `undefined`.
+- `||` also treats `0`, `''`, and `false` as falsy and replaces them, which is often unintended.
+
+```typescript
+// ❌ BAD – replaces 0, '', false
+const count = value || 10;
+const name = user.name || "Anonymous";
+
+// ✅ GOOD – only replaces null/undefined
+const count = value ?? 10;
+const name = user.name ?? "Anonymous";
+```
+
+Use `||` only when you intentionally want to treat all falsy values the same (e.g. empty string → default).

@@ -1,0 +1,35 @@
+---
+description: Convex function patterns (this repo has no Next.js API routes or Directus)
+globs: "convex/**/*.ts"
+alwaysApply: false
+---
+
+# Convex functions
+
+There is no `src/app/api/` and no Directus. All backend lives in `convex/`.
+
+- Import `query` / `mutation` / `action` / `internal*` from `"./_generated/server"`. Import `api` / `internal` from `"./_generated/api"`. Never `import { query } from "convex/server"`.
+- Object form only, with `args` validators. Add `returns` on new functions.
+- Default to `internalQuery` / `internalMutation` / `internalAction`. Promote to public only when a client hook needs it (`useQuery` / `useMutation`).
+- Identity: session token on the client, validated like `getCurrentUser` in `convex/auth.ts`. Do not trust a client-supplied `userId` for authorization.
+- Never return `hashedPassword`. Use a `publicUser`-style projection.
+
+```typescript
+// ✅ GOOD
+export const getCurrentUser = query({
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (!args.token) {
+      return null;
+    }
+    const userId = await validateSessionToken(ctx.db, args.token);
+    if (!userId) {
+      return null;
+    }
+    const user = await ctx.db.get(userId);
+    return user ? publicUser(user) : null;
+  },
+});
+```
+
+Read `convex/_generated/ai/guidelines.md` before writing Convex code.

@@ -1,0 +1,46 @@
+---
+description: Efficient Convex queries — indexes, pagination, no unbounded collect
+globs: "convex/**/*.ts"
+alwaysApply: false
+---
+
+# Efficient Convex queries
+
+Push filtering into indexes. Never load a whole table into JS to group, count, or find "latest".
+
+## Why
+
+- `accessEvents`-scale seed is 100k rows. Unbounded `.collect()` will fail deploy or blow read limits.
+- `.filter()` is a full table scan, not a WHERE clause.
+
+## Anti-patterns
+
+| Anti-pattern | Problem |
+| --- | --- |
+| `ctx.db.query("auditEvents").collect()` | Unbounded fetch |
+| `.filter((row) => row.actorId === id)` instead of `withIndex` | Table scan |
+| Collect all decisions, then `filter(d => d.outcome === "BLOCK").length` | Count in JS |
+| Fetch full documents when only `_id` is needed | Over-read |
+
+```typescript
+// ❌ BAD
+const events = await ctx.db.query("auditEvents").collect();
+const mine = events.filter((event) => event.actorId === actorId);
+
+// ✅ GOOD
+const events = await ctx.db
+  .query("auditEvents")
+  .withIndex("by_actorId", (q) => q.eq("actorId", actorId))
+  .order("desc")
+  .take(50);
+
+// ✅ GOOD — paginate lists that can grow
+.paginate(args.paginationOpts);
+```
+
+## Rules of thumb
+
+- Add a schema `.index("by_<field>", ["field"])` for every read path; query it with `.withIndex(...)`.
+- Existence: `.first()` or `.unique()`, not collect-and-check-length.
+- Counts/aggregates: query a narrow index + `.take()`, or maintain a counter — do not collect 100k rows.
+- Seed/import of large tables must be **batched** (see INN-33).

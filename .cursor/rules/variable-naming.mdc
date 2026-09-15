@@ -1,0 +1,25 @@
+---
+description: Use clear, concise variable names; avoid single-character names
+alwaysApply: true
+---
+
+# Variable naming
+
+Use **clear, concise names** for variables. **Do not use single-character names** in any case.
+
+- Improves readability and makes intent obvious.
+- No exceptions: use descriptive names for loop indices, callbacks, destructuring, and everywhere else.
+
+```typescript
+// ❌ BAD
+const d = await getData();
+items.map(x => x.id);
+for (let i = 0; i < arr.length; i++) { ... }
+
+// ✅ GOOD
+const data = await getData();
+items.map((item) => item.id);
+for (let index = 0; index < arr.length; index++) { ... }
+```
+
+Keep names short but meaningful (e.g. `user`, `count`, `isLoading`).

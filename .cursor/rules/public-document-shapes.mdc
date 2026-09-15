@@ -1,0 +1,40 @@
+---
+description: Public Convex return shapes — camelCase, no secrets, domain names
+globs: "convex/**/*.ts","src/**/*.ts","src/**/*.tsx"
+alwaysApply: false
+---
+
+# Public document shapes
+
+- Types for the UI belong next to the client (`AuthContext` `User`) or as Convex `returns` validators — not inline `any`.
+- camelCase, matching `schema.ts` (`firstName`, `homeFacilityId`).
+- Do not prefix types with `Convex` / `Directus` / `Prisma`. Use domain names: `User`, `Patient`, `AccessDecision`.
+- Never send `hashedPassword`, session `token` hashes you do not need, or full clinical rows on search.
+
+```typescript
+// ❌ BAD
+return user; // includes hashedPassword
+
+// ✅ GOOD — convex/auth.ts publicUser
+function publicUser(user: {
+  _id: Id<"users">;
+  email: string;
+  roles: UserRole[];
+  hospital: string;
+  department?: string;
+  accountStatus: "active" | "suspended";
+  profile: { firstName: string; lastName: string; middleName?: string };
+}) {
+  return {
+    _id: user._id,
+    email: user.email,
+    roles: user.roles,
+    hospital: user.hospital,
+    department: user.department,
+    accountStatus: user.accountStatus,
+    profile: user.profile,
+  };
+}
+```
+
+Search/discovery returns identity + record **existence**, not `clinicalSummaries`.

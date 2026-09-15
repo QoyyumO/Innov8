@@ -1,0 +1,30 @@
+---
+description: Client Convex hooks and shared TS types
+globs: "src/**/*.ts","src/**/*.tsx"
+alwaysApply: false
+---
+
+# Convex client and types
+
+## Client (`src/`)
+
+- Import `api` from `@/lib/convex`. Import `useQuery` / `useMutation` from `convex/react`.
+- Do not `fetch("/api/...")` for domain data. Do not add a parallel REST layer.
+- Skip queries when there is no session: `useQuery(api.auth.getCurrentUser, token ? { token } : "skip")`.
+- Auth helpers stay in `src/context/AuthContext.tsx` and `src/hooks/useAuth.ts`. Role checks in `src/services/permissions.ts`.
+
+```typescript
+// ✅ GOOD
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/lib/convex";
+
+const user = useQuery(api.auth.getCurrentUser, token ? { token } : "skip");
+const login = useMutation(api.auth.login);
+```
+
+## Types
+
+- Convex document types come from generated `Id<"table">` (`@/lib/convex` re-exports `Id`).
+- Shared UI unions (e.g. `UserRole`) live next to the consumer (`AuthContext`) or in `convex/lib/` validators (`userRole` in `convex/lib/roles.ts`).
+- Do not invent Zod/Directus schemas. Validators belong in Convex (`v.union(v.literal(...))`).
+- camelCase fields, matching `schema.ts` (`firstName`, not `first_name`).

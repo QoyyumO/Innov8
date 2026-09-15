@@ -1,0 +1,48 @@
+---
+description: Validate Convex function args and returns with v.* (not Zod)
+globs: "convex/**/*.ts"
+alwaysApply: false
+---
+
+# Convex validators
+
+Parse inputs with Convex `v` validators, not Zod or `as` casts. Match `convex/schema.ts` and `convex/lib/roles.ts`.
+
+## Why
+
+- `args` validators run on every call
+- Closed enums use `v.union(v.literal(...))` like `accountStatus`
+- `v.id("table")` for relations, never a bare string id
+
+```typescript
+// ❌ BAD
+export const search = query({
+  args: { publicId: v.any() },
+  handler: async (ctx, args) => {
+    const publicId = args.publicId as string;
+    // ...
+  },
+});
+
+// ✅ GOOD
+import { userRole } from "./lib/roles";
+
+export const search = query({
+  args: {
+    token: v.string(),
+    publicId: v.string(),
+  },
+  returns: v.union(
+    v.null(),
+    v.object({
+      publicId: v.string(),
+      homeFacilityId: v.id("facilities"),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    // ...
+  },
+});
+```
+
+Reuse shared validators (purpose, record type, decision outcome) from `convex/lib/` once INN-20 lands. Do not duplicate literals inline.

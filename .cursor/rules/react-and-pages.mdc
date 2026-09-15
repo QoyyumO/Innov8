@@ -1,0 +1,17 @@
+---
+description: React components and App Router page conventions
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# React and pages
+
+- **Components**: Functional components only. Use `"use client"` at the top when the file uses hooks, browser APIs, or client-only libraries.
+- **Imports**: Use `@/` (e.g. `@/components/...`, `@/hooks/useAuth`, `@/context/AuthContext`).
+- **State**: Session user via `useAuth()` / `AuthContext`. Theme and sidebar via `ThemeContext` and `SidebarContext`. No Zustand in this repo. Convex live data via `useQuery` / `useMutation` from `convex/react`.
+- **Route-specific UI**: Colocate in `_components/` next to the route (e.g. `app/(authenticated)/_components/DoctorDashboard.tsx`, `login/_components/LoginForm.tsx`).
+- **Component placement**: Never put React components inside `src/utils/`. Shared app-wide UI lives in `src/components/` (design-system kit). Route-group shared UI in that group's `_components/` (e.g. `app/(authenticated)/_components/`).
+- **Styling**: Tailwind v4 tokens from `src/app/globals.css` (brand teal `#005F73`, Outfit). Prefer Tailwind classes; avoid inline styles unless necessary. Reuse `Button`, `Alert`, `MetricCard`, `AppShell`.
+- **JSX quotes**: Double quotes for JSX attributes.
+
+When adding a page, mirror the same route group (authenticated dashboards vs login).

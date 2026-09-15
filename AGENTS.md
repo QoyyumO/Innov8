@@ -69,6 +69,7 @@ Consent, step-up verification, record writing, deep audit investigation, and a p
 
 ## Implementation rules
 
+- Cursor project rules live in `.cursor/rules/`. Task skills: `start-task`, `review-branch-vs-main`, `create-pull-requests`, `frontend-design` under `.cursor/skills/`.
 - Prefer a working demonstration over architectural completeness.
 - Keep major pieces separable: authentication, access control, consent, risk engine, record exchange, audit.
 - Decisions must be explainable: show why risk is high, not only a score.

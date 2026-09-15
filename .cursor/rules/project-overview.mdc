@@ -1,0 +1,26 @@
+---
+description: Innov8 Health project overview, structure, and run commands
+alwaysApply: true
+---
+
+# Innov8 Health overview
+
+- **Product**: NITDA/ICSC Track C — secure patient-record **access layer**, not an EMR. Synthetic data only.
+- **Stack**: Next.js 16 (App Router), React 19, TypeScript, Tailwind v4, Convex. Session auth in `convex/auth.ts` (cookie/token `innov8_session_token`).
+- **Paths**: UI under `src/`. Path alias `@/` → `src/` (e.g. `@/hooks/useAuth`, `@/lib/convex`). Backend under `convex/`.
+- **Run**: `npm run dev` (Next) and `npx convex dev` (backend). Env: `.env.local` with `NEXT_PUBLIC_CONVEX_URL`. Lint/types: `npm run check`.
+
+## Key folders
+
+- `src/app/` — `(authenticated)`, `(not-authenticated)`.
+- `src/components/`, `src/layout/`, `src/context/`, `src/hooks/`, `src/services/`, `src/icons/`.
+- `convex/` — schema, auth, domain functions. Read `convex/_generated/ai/guidelines.md` before editing Convex code.
+
+## Conventions
+
+- Double quotes in TS/TSX (match `convex/auth.ts` and most `src/` files). 2-space indent.
+- Linear **Innov8** only (`INN-XX`). Never Skilladder. See `linear-innov8.mdc`.
+- Prefer existing patterns in the same area (auth, dashboards, account settings).
+- Do not invent SIMS/school entities. Domain map: `Innov8_DDD.md`.
+
+For Convex functions see `convex-functions`; for client hooks see `convex-client`; for React/pages see `react-and-pages`.

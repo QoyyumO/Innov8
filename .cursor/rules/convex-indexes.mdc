@@ -1,0 +1,36 @@
+---
+description: Use Convex indexes instead of filter() or a second database
+globs: "convex/**/*.ts"
+alwaysApply: false
+---
+
+# Indexes, not scans or extra DBs
+
+This repo uses Convex, not Prisma. Do not add Postgres, Prisma, raw SQL, or Directus.
+
+## Why
+
+- `withIndex` is type-safe and uses the schema index
+- `.filter()` scans documents and will not scale to the §14 seed
+- A second database duplicates the backend Convex already is
+
+```typescript
+// ❌ BAD
+const user = (await ctx.db.query("users").collect()).find(
+  (row) => row.email === email,
+);
+
+// ❌ BAD
+await ctx.db
+  .query("users")
+  .filter((q) => q.eq(q.field("email"), email))
+  .first();
+
+// ✅ GOOD — schema.ts already has by_email
+const user = await ctx.db
+  .query("users")
+  .withIndex("by_email", (q) => q.eq("email", email))
+  .unique();
+```
+
+Add the index on the table in `convex/schema.ts` first (never include `_creationTime` in a custom index). If a read cannot be expressed with an index, change the schema — do not reach for SQL.
