@@ -98,3 +98,11 @@ export type BloodGroup =
   | "AB-"
   | "O+"
   | "O-";
+
+export const alertStatus = v.union(
+  v.literal("open"),
+  v.literal("acknowledged"),
+  v.literal("closed"),
+);
+
+export type AlertStatus = "open" | "acknowledged" | "closed";

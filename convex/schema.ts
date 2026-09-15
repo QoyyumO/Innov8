@@ -2,6 +2,8 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
   accountStatus,
+  alertSeverity,
+  alertStatus,
   bloodGroup,
   decisionOutcome,
   facilityStatus,
@@ -127,4 +129,17 @@ export default defineSchema({
     .index("by_actorId", ["actorId"])
     .index("by_patientId", ["patientId"])
     .index("by_expiresAt", ["expiresAt"]),
+
+  securityAlerts: defineTable({
+    decisionId: v.optional(v.id("accessDecisions")),
+    emergencyAccessId: v.optional(v.id("emergencyAccess")),
+    severity: alertSeverity,
+    status: alertStatus,
+    title: v.string(),
+    message: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_severity", ["severity"])
+    .index("by_createdAt", ["createdAt"]),
 });
