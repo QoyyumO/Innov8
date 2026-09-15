@@ -34,30 +34,59 @@ function isPublicIdQuery(query: string): boolean {
   return PUBLIC_ID_PATTERN.test(query.trim());
 }
 
+/**
+ * Exclusive upper bound for a Convex B-tree prefix range: [prefix, end).
+ * Successor of the last code unit, so the engine walks only matching keys.
+ */
+export function btreePrefixExclusiveEnd(prefix: string): string {
+  for (let index = prefix.length - 1; index >= 0; index -= 1) {
+    const codePoint = prefix.charCodeAt(index);
+    if (codePoint < 0xffff) {
+      return `${prefix.slice(0, index)}${String.fromCharCode(codePoint + 1)}`;
+    }
+  }
+  return `${prefix}\uffff`;
+}
+
 async function loadFacility(
   db: DatabaseReader,
   facilityId: Id<"facilities">,
+  facilityCache: Map<Id<"facilities">, FacilityRef | null>,
 ): Promise<FacilityRef | null> {
-  const facility = await db.get(facilityId);
-  if (!facility) {
-    return null;
+  const cached = facilityCache.get(facilityId);
+  if (cached !== undefined) {
+    return cached;
   }
-  return { code: facility.code, name: facility.name };
+  const facility = await db.get(facilityId);
+  const resolved = facility
+    ? { code: facility.code, name: facility.name }
+    : null;
+  facilityCache.set(facilityId, resolved);
+  return resolved;
 }
 
-async function toSearchHit(
+async function toSearchHits(
   db: DatabaseReader,
-  patient: Doc<"patients">,
-): Promise<PatientSearchHit | null> {
-  const homeFacility = await loadFacility(db, patient.homeFacilityId);
-  if (!homeFacility) {
-    return null;
+  patients: Doc<"patients">[],
+): Promise<PatientSearchHit[]> {
+  const facilityCache = new Map<Id<"facilities">, FacilityRef | null>();
+  const hits: PatientSearchHit[] = [];
+  for (const patient of patients) {
+    const homeFacility = await loadFacility(
+      db,
+      patient.homeFacilityId,
+      facilityCache,
+    );
+    if (!homeFacility) {
+      continue;
+    }
+    hits.push({
+      publicId: patient.publicId,
+      profile: patient.profile,
+      homeFacility,
+    });
   }
-  return {
-    publicId: patient.publicId,
-    profile: patient.profile,
-    homeFacility,
-  };
+  return hits;
 }
 
 async function findPatientByPublicId(
@@ -71,6 +100,43 @@ async function findPatientByPublicId(
     .unique();
 }
 
+async function findPatientsBySearchNameEq(
+  db: DatabaseReader,
+  searchName: string,
+): Promise<Doc<"patients">[]> {
+  return await db
+    .query("patients")
+    .withIndex("by_searchName", (query) => query.eq("searchName", searchName))
+    .take(NAME_SEARCH_LIMIT);
+}
+
+async function findPatientsByBtreePrefix(
+  db: DatabaseReader,
+  indexName: "by_searchName" | "by_searchLastName",
+  field: "searchName" | "searchLastName",
+  prefix: string,
+): Promise<Doc<"patients">[]> {
+  const exclusiveEnd = btreePrefixExclusiveEnd(prefix);
+  return await db
+    .query("patients")
+    .withIndex(indexName, (query) =>
+      query.gte(field, prefix).lt(field, exclusiveEnd),
+    )
+    .take(NAME_SEARCH_LIMIT);
+}
+
+function mergePatientsById(
+  groups: Doc<"patients">[][],
+): Doc<"patients">[] {
+  const byId = new Map<Id<"patients">, Doc<"patients">>();
+  for (const group of groups) {
+    for (const patient of group) {
+      byId.set(patient._id, patient);
+    }
+  }
+  return [...byId.values()].slice(0, NAME_SEARCH_LIMIT);
+}
+
 export async function loadRecordExistence(
   db: DatabaseReader,
   patientId: Id<"patients">,
@@ -80,9 +146,14 @@ export async function loadRecordExistence(
     .withIndex("by_patientId", (query) => query.eq("patientId", patientId))
     .take(RECORD_INDEX_LIMIT);
 
+  const facilityCache = new Map<Id<"facilities">, FacilityRef | null>();
   const recordsByFacility: FacilityExistence[] = [];
   for (const recordIndex of indexes) {
-    const facility = await loadFacility(db, recordIndex.facilityId);
+    const facility = await loadFacility(
+      db,
+      recordIndex.facilityId,
+      facilityCache,
+    );
     if (!facility) {
       continue;
     }
@@ -109,28 +180,30 @@ export async function findPatientsByQuery(
     if (!patient) {
       return [];
     }
-    const hit = await toSearchHit(db, patient);
-    return hit ? [hit] : [];
+    return await toSearchHits(db, [patient]);
   }
 
   const searchPrefix = normalizeQuery(trimmed);
-  const matches = await db
-    .query("patients")
-    .withIndex("by_searchName", (query) =>
-      query
-        .gte("searchName", searchPrefix)
-        .lt("searchName", `${searchPrefix}\uffff`),
-    )
-    .take(NAME_SEARCH_LIMIT);
 
-  const hits: PatientSearchHit[] = [];
-  for (const patient of matches) {
-    const hit = await toSearchHit(db, patient);
-    if (hit) {
-      hits.push(hit);
-    }
+  const exactNameMatches = await findPatientsBySearchNameEq(db, searchPrefix);
+  if (exactNameMatches.length > 0) {
+    return await toSearchHits(db, exactNameMatches);
   }
-  return hits;
+
+  const [givenNamePrefixMatches, lastNamePrefixMatches] = await Promise.all([
+    findPatientsByBtreePrefix(db, "by_searchName", "searchName", searchPrefix),
+    findPatientsByBtreePrefix(
+      db,
+      "by_searchLastName",
+      "searchLastName",
+      searchPrefix,
+    ),
+  ]);
+
+  return await toSearchHits(
+    db,
+    mergePatientsById([givenNamePrefixMatches, lastNamePrefixMatches]),
+  );
 }
 
 export async function getPatientDiscoveryByPublicId(
@@ -142,7 +215,7 @@ export async function getPatientDiscoveryByPublicId(
     return null;
   }
 
-  const hit = await toSearchHit(db, patient);
+  const [hit] = await toSearchHits(db, [patient]);
   if (!hit) {
     return null;
   }

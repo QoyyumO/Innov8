@@ -80,10 +80,13 @@ export default defineSchema({
     gender,
     bloodGroup,
     searchName: v.string(),
+    // Lowercase family name for B-tree prefix search (optional until seed backfill).
+    searchLastName: v.optional(v.string()),
   })
     .index("by_publicId", ["publicId"])
     .index("by_homeFacilityId", ["homeFacilityId"])
-    .index("by_searchName", ["searchName"]),
+    .index("by_searchName", ["searchName"])
+    .index("by_searchLastName", ["searchLastName"]),
 
   recordIndexes: defineTable({
     patientId: v.id("patients"),

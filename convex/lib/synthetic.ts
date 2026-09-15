@@ -47,6 +47,10 @@ export function normalizeSearchName(
   return parts.join(" ").toLowerCase();
 }
 
+export function normalizeSearchLastName(lastName: string): string {
+  return lastName.trim().toLowerCase();
+}
+
 export function unixDateOfBirth(rand: () => number): number {
   const year = randInt(rand, 1945, 2023);
   const month = randInt(rand, 0, 11);

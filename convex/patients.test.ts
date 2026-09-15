@@ -41,6 +41,7 @@ async function seedDemoPatient(testBackend: ReturnType<typeof createTest>) {
       gender: "female",
       bloodGroup: "O+",
       searchName: "chioma okonkwo",
+      searchLastName: "okonkwo",
     });
     await ctx.db.insert("recordIndexes", {
       patientId,
@@ -115,6 +116,34 @@ describe("patient discovery", () => {
     expect(searchAudits).toHaveLength(1);
     expect(searchAudits[0]?.entity).toBe("patients");
     expect(searchAudits[0]?.entityId).toBe("PAT-002391");
+  });
+
+  test("last-name prefix uses the searchLastName B-tree", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginIbrahim(testBackend);
+
+    const results = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "okon",
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.publicId).toBe("PAT-002391");
+  });
+
+  test("full searchName is an exact B-tree equality lookup", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginIbrahim(testBackend);
+
+    const results = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "Chioma Okonkwo",
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.profile.lastName).toBe("Okonkwo");
   });
 
   test("discovery returns record existence at Lagos, not summary text", async () => {
