@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { accountStatus, personName } from "./lib/domain";
 import { userRole } from "./lib/roles";
 
 export default defineSchema({
@@ -9,12 +10,8 @@ export default defineSchema({
     roles: v.array(userRole),
     hospital: v.string(),
     department: v.optional(v.string()),
-    accountStatus: v.union(v.literal("active"), v.literal("suspended")),
-    profile: v.object({
-      firstName: v.string(),
-      lastName: v.string(),
-      middleName: v.optional(v.string()),
-    }),
+    accountStatus,
+    profile: personName,
   }).index("by_email", ["email"]),
 
   sessions: defineTable({
