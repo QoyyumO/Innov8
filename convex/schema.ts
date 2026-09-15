@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import {
   accountStatus,
   bloodGroup,
+  decisionOutcome,
   facilityStatus,
   gender,
   personName,
@@ -94,4 +95,23 @@ export default defineSchema({
     .index("by_patientId", ["patientId"])
     .index("by_requestedAt", ["requestedAt"])
     .index("by_actorId_requestedAt", ["actorId", "requestedAt"]),
+
+  accessDecisions: defineTable({
+    requestId: v.id("accessRequests"),
+    outcome: decisionOutcome,
+    riskScore: v.number(),
+    reasons: v.array(v.string()),
+    decidedAt: v.number(),
+    factors: v.optional(
+      v.object({
+        role: userRole,
+        purpose,
+        sameHospital: v.boolean(),
+        recordCount: v.number(),
+      }),
+    ),
+  })
+    .index("by_requestId", ["requestId"])
+    .index("by_outcome", ["outcome"])
+    .index("by_decidedAt", ["decidedAt"]),
 });
