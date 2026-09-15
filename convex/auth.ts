@@ -10,74 +10,8 @@ import {
   requireSessionUser,
   validateSessionToken,
 } from "./lib/session";
+import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
 import { UserRole } from "./lib/roles";
-
-const DEMO_PASSWORD = "password123";
-
-const DEMO_USERS: Array<{
-  email: string;
-  roles: UserRole[];
-  hospital: string;
-  department?: string;
-  profile: { firstName: string; lastName: string };
-}> = [
-  {
-    email: "ibrahim@fmc.abuja.ng",
-    roles: ["doctor"],
-    hospital: "FMC Abuja",
-    department: "Cardiology",
-    profile: { firstName: "Ibrahim", lastName: "Abdullahi" },
-  },
-  {
-    email: "yusuf@fmc.abeokuta.ng",
-    roles: ["doctor"],
-    hospital: "FMC Abeokuta",
-    department: "General Medicine",
-    profile: { firstName: "Yusuf", lastName: "Adewale" },
-  },
-  {
-    email: "security@innov8.ng",
-    roles: ["security_officer"],
-    hospital: "Innov8 Exchange",
-    department: "Security",
-    profile: { firstName: "Amina", lastName: "Okeke" },
-  },
-  {
-    email: "fatima@fmc.abuja.ng",
-    roles: ["nurse"],
-    hospital: "FMC Abuja",
-    department: "Emergency",
-    profile: { firstName: "Fatima", lastName: "Bello" },
-  },
-  {
-    email: "chinedu@fmc.lagos.ng",
-    roles: ["pharmacist"],
-    hospital: "FMC Lagos",
-    department: "Pharmacy",
-    profile: { firstName: "Chinedu", lastName: "Okafor" },
-  },
-  {
-    email: "aisha@fmc.lagos.ng",
-    roles: ["laboratory"],
-    hospital: "FMC Lagos",
-    department: "Pathology",
-    profile: { firstName: "Aisha", lastName: "Sule" },
-  },
-  {
-    email: "admin@fmc.abuja.ng",
-    roles: ["hospital_admin"],
-    hospital: "FMC Abuja",
-    department: "Administration",
-    profile: { firstName: "Halima", lastName: "Danjuma" },
-  },
-  {
-    email: "chioma@patient.innov8.ng",
-    roles: ["patient"],
-    hospital: "FMC Lagos",
-    department: "Cardiology",
-    profile: { firstName: "Chioma", lastName: "Okonkwo" },
-  },
-];
 
 async function ensureDemoUsers(ctx: MutationCtx) {
   let hashedPassword: string | null = null;
