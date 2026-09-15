@@ -1,7 +1,7 @@
 import { DatabaseReader, DatabaseWriter } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 
-const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 30 * 60 * 1000;
 
 export function generateSessionToken(): string {
   const randomBytes = crypto.getRandomValues(new Uint8Array(32));
@@ -50,7 +50,7 @@ export async function requireSessionUser(db: DatabaseReader, token: string) {
   }
 
   const user = await db.get(userId);
-  if (!user) {
+  if (!user || user.accountStatus !== "active") {
     throw new Error("Your session has expired. Please sign in again.");
   }
 

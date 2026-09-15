@@ -51,6 +51,15 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_expiresAt", ["expiresAt"]),
 
+  passwordResetTokens: defineTable({
+    userId: v.id("users"),
+    tokenHash: v.string(),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId", ["userId"]),
+
   // Participating hospitals. Users still store `hospital` as a display string
   // so existing demo logins keep working. Seed/login can later set optional
   // `users.facilityId` without rewriting those rows first.

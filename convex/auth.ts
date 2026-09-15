@@ -1,12 +1,13 @@
 import { mutation, query, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { hashPassword, verifyPassword } from "./lib/password";
+import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
 import {
   createSession,
   deleteAllUserSessions,
   deleteOtherUserSessions,
   deleteSessionByToken,
+  generateSessionToken,
   requireSessionUser,
   validateSessionToken,
 } from "./lib/session";
@@ -109,7 +110,7 @@ export const getCurrentUser = query({
     }
 
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || user.accountStatus !== "active") {
       return null;
     }
 
@@ -117,10 +118,34 @@ export const getCurrentUser = query({
   },
 });
 
+const MIN_PASSWORD_LENGTH = 6;
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
+const RESET_GENERIC_MESSAGE =
+  "If the account exists, reset instructions were sent.";
+const RESET_INVALID_TOKEN_MESSAGE = "Invalid or expired reset token";
+
+async function deleteUserResetTokens(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<void> {
+  const tokens = await ctx.db
+    .query("passwordResetTokens")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const tokenRow of tokens) {
+    await ctx.db.delete(tokenRow._id);
+  }
+}
+
 export const requestPasswordReset = mutation({
   args: {
     email: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+    message: v.string(),
+  }),
   handler: async (ctx, args) => {
     const emailLower = args.email.toLowerCase().trim();
     const user = await ctx.db
@@ -128,17 +153,26 @@ export const requestPasswordReset = mutation({
       .withIndex("by_email", (q) => q.eq("email", emailLower))
       .first();
 
-    if (!user) {
-      return {
-        success: true,
-        message: "If the account exists, reset instructions were sent.",
-      };
+    if (user && user.accountStatus === "active") {
+      await deleteUserResetTokens(ctx, user._id);
+
+      const resetToken = generateSessionToken();
+      const now = Date.now();
+      await ctx.db.insert("passwordResetTokens", {
+        userId: user._id,
+        tokenHash: await sha256Hex(resetToken),
+        expiresAt: now + RESET_TOKEN_TTL_MS,
+      });
+
+      // Demo out-of-band delivery until email exists. Do not return the token.
+      console.log(
+        `Password reset token for ${emailLower}: ${resetToken} (expires in 15 minutes)`,
+      );
     }
 
     return {
-      success: true,
-      message: "If the account exists, reset instructions were sent.",
-      resetToken: "dev-reset-token",
+      success: true as const,
+      message: RESET_GENERIC_MESSAGE,
     };
   },
 });
@@ -149,26 +183,42 @@ export const resetPassword = mutation({
     resetToken: v.string(),
     newPassword: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+  }),
   handler: async (ctx, args) => {
-    if (args.resetToken !== "dev-reset-token") {
-      throw new Error("Invalid or expired reset token");
+    if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
+      throw new Error(
+        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+      );
     }
 
-    const emailLower = args.email.toLowerCase().trim();
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", emailLower))
+    const tokenHash = await sha256Hex(args.resetToken);
+    const tokenRow = await ctx.db
+      .query("passwordResetTokens")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash))
       .first();
 
-    if (!user) {
-      throw new Error("User not found");
+    if (
+      !tokenRow ||
+      tokenRow.usedAt !== undefined ||
+      tokenRow.expiresAt < Date.now()
+    ) {
+      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
+    }
+
+    const user = await ctx.db.get(tokenRow.userId);
+    const emailLower = args.email.toLowerCase().trim();
+    if (!user || user.email !== emailLower || user.accountStatus !== "active") {
+      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
     }
 
     await ctx.db.patch(user._id, {
       hashedPassword: await hashPassword(args.newPassword),
     });
+    await ctx.db.patch(tokenRow._id, { usedAt: Date.now() });
     await deleteAllUserSessions(ctx.db, user._id);
-    return { success: true };
+    return { success: true as const };
   },
 });
 
@@ -181,8 +231,6 @@ export const logout = mutation({
     return { success: true };
   },
 });
-
-const MIN_PASSWORD_LENGTH = 6;
 
 function normalizeName(value: string, field: string): string {
   const trimmed = value.trim();

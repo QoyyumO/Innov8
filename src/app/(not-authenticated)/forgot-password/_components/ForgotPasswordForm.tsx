@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
 import Input from "@/components/form/input/InputField";
@@ -90,6 +91,16 @@ export function ForgotPasswordForm() {
         <Button type="submit" className="w-full" disabled={isLoading} size="full">
           {isLoading ? "Sending..." : "Send Reset Link"}
         </Button>
+
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Already have a token?{" "}
+          <Link
+            href="/reset-password"
+            className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+          >
+            Reset password
+          </Link>
+        </p>
       </div>
     </form>
   );
