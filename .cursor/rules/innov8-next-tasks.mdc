@@ -3,31 +3,29 @@ description: Next Innov8 MVP tasks, DDD map, and Linear Innov8 backlog
 alwaysApply: true
 ---
 
-# Next work after foundational UI
+# Next work after schema + seed
 
-Foundational UI is done (auth, account settings, dummy role dashboards). Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
+Foundational UI is done (auth, account settings, dummy role dashboards). **INN-18 schema** and **INN-19 §14 seed** are in the repo. Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
 
-Read `Innov8_DDD.md` and `AGENTS.md` before adding domain tables or pages.
+Read `Innov8_DDD.md`, `AGENTS.md`, and `docs/README.md` before adding domain pages.
 
-## Current focus only
+## Current focus
 
-Do **not** recreate search / request / risk / view / block / break-glass / audit / dashboard issues until schema + seed are done. INN-5–INN-17 stay **Canceled**.
+Wire the Track C demo on **seeded** tables. Do **not** revive canceled issues INN-5–INN-17; open new Innov8 tickets.
 
-Work **schema first** (Adebare), then the three §14 synthetic datasets (Henry). Seed waits on tables.
+Search PAT-002391 → purpose request → risk ALLOW (~8) / harvest BLOCK (~94) → authorised summary → break-glass → audit / security dashboard.
 
-### Adebare — schema ([INN-18](https://linear.app/innov8-health/issue/INN-18))
+### Done — Adebare schema ([INN-18](https://linear.app/innov8-health/issue/INN-18))
 
-INN-20 validators · INN-21 facilities · INN-22 patients · INN-23 recordIndexes · INN-24 clinicalSummaries · INN-25 accessRequests · INN-26 accessDecisions · INN-27 emergencyAccess · INN-28 securityAlerts · INN-29 auditEvents · INN-30 users + worker baselines.
+INN-20…INN-30 on `main`. Plan: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`.
 
-Assignee: `adesokanadebare@gmail.com`.
-
-### Henry — synthetic data, work document §14 ([INN-19](https://linear.app/innov8-health/issue/INN-19))
+### Done — Henry seed ([INN-19](https://linear.app/innov8-health/issue/INN-19))
 
 1. [INN-31](https://linear.app/innov8-health/issue/INN-31) — 10,000 patients including **PAT-002391**
 2. [INN-32](https://linear.app/innov8-health/issue/INN-32) — 500 healthcare workers
 3. [INN-33](https://linear.app/innov8-health/issue/INN-33) — 100,000 access events (~95% normal / 5% anomalies)
 
-Assignee: `henryokwudili0@gmail.com`.
+Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. How to seed: root `README.md`.
 
 ## Linear
 

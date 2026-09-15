@@ -4,7 +4,7 @@
 
 ## Context
 
-Owner: Adebare. Parent for the schema split (INN-20…INN-30). Keep existing `users` and `sessions`. Add one table (or validator set) per child. Follow `Innov8_DDD.md`. Do not seed — that is Henry / INN-19 after tables exist. Synthetic data only. Not an EMR. Facilities stay separate.
+Owner: Adebare. Parent for the schema split (INN-20…INN-30). Keep existing `users` and `sessions`. Add one table (or validator set) per child. Follow `Innov8_DDD.md`. Do not seed in this ticket — that is Henry / INN-19. Seed is implemented separately (`docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`).
 
 ---
 

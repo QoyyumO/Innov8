@@ -12,14 +12,14 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - Role dashboards with **dummy** cards (not live domain data)
 - Healthcare palette and AppShell
 
-## Current focus (schema then seed)
+## Done (schema + §14 seed)
 
-Do not reopen canceled demo issues (search → dashboards) until this is done.
+1. **Adebare** — Convex schema [INN-18](https://linear.app/innov8-health/issue/INN-18) (INN-20…INN-30) on `main`. Plan: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`.
+2. **Henry** — synthetic seed [INN-19](https://linear.app/innov8-health/issue/INN-19) (INN-31 patients, INN-32 workers, INN-33 access events). Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. Runbook: root `README.md` and `convex/README-seeding.md`.
 
-1. **Adebare** — Convex schema [INN-18](https://linear.app/innov8-health/issue/INN-18) and children INN-20…INN-30
-2. **Henry** — work document §14 datasets [INN-19](https://linear.app/innov8-health/issue/INN-19): 10k patients (INN-31), 500 workers (INN-32), 100k access events (INN-33)
+## Next (live demo path)
 
-Later (after schema + seed): discovery, purpose request, risk, authorised view, harvest block, break-glass, audit UI, live dashboards.
+Do not keep dummy dashboards as the only UI. Wire search → purpose request → risk ALLOW/BLOCK → authorised view → harvest block → break-glass → audit using the seeded tables. INN-5–INN-17 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 

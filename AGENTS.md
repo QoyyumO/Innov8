@@ -79,19 +79,13 @@ Consent, step-up verification, record writing, deep audit investigation, and a p
 
 ## Current status and next work
 
-Foundational UI is in place: session login, account settings, and **dummy** role dashboards. Convex only has `users` and `sessions`.
+Foundational UI is in place: session login, account settings, and **dummy** role dashboards.
+
+**Schema (INN-18)** and **§14 seed (INN-19)** are implemented. Tables live in `convex/schema.ts`. Seed lives in `convex/seed.ts`. Plans: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`, `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. How to run and seed: root `README.md`.
 
 Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only — do not import school entities.
 
-**Current focus only — schema then §14 synthetic seed.** Do not recreate the canceled demo-path issues (INN-5–INN-17) until this is done.
-
-- **Adebare** — Convex schema parent [INN-18](https://linear.app/innov8-health/issue/INN-18): INN-20…INN-30 (one table / validator set each). Assignee `adesokanadebare@gmail.com`.
-- **Henry** — three datasets from the work document §14, parent [INN-19](https://linear.app/innov8-health/issue/INN-19):
-  1. [INN-31](https://linear.app/innov8-health/issue/INN-31) 10,000 patients including PAT-002391
-  2. [INN-32](https://linear.app/innov8-health/issue/INN-32) 500 healthcare workers
-  3. [INN-33](https://linear.app/innov8-health/issue/INN-33) 100,000 access events (~95% normal / 5% anomalies)
-
-  Assignee `henryokwudili0@gmail.com`. Seed waits on Adebare’s tables.
+**Next:** live demo path on seeded data (search PAT-002391, purpose request, ALLOW/BLOCK, authorised view, harvest alert, break-glass, audit). Do **not** revive canceled tickets INN-5–INN-17; file new Innov8 issues.
 
 Use Linear **Innov8** only. Never Skilladder.
 
