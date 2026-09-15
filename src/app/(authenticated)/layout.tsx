@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import AppShell from "@/layout/AppShell";
 import Loading from "@/components/loading/Loading";
+
+function subscribeToClient() {
+  return () => {};
+}
 
 export default function AuthenticatedLayout({
   children,
@@ -14,11 +18,11 @@ export default function AuthenticatedLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(
+    subscribeToClient,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     if (isLoading || !isMounted) {

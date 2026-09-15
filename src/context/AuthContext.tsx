@@ -6,7 +6,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/lib/convex";
@@ -52,16 +52,41 @@ interface AuthContextType {
 }
 
 const SESSION_KEY = "innov8_session_token";
+const SESSION_CHANGE_EVENT = "innov8-session-change";
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [storedToken, setStoredToken] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+function getSessionSnapshot() {
+  return window.localStorage.getItem(SESSION_KEY);
+}
 
-  useEffect(() => {
-    setStoredToken(localStorage.getItem(SESSION_KEY));
-    setIsInitialized(true);
-  }, []);
+function getServerSessionSnapshot() {
+  return null;
+}
+
+function subscribeToSession(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(SESSION_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(SESSION_CHANGE_EVENT, onStoreChange);
+  };
+}
+
+function persistSessionToken(token: string | null) {
+  if (token === null) {
+    window.localStorage.removeItem(SESSION_KEY);
+  } else {
+    window.localStorage.setItem(SESSION_KEY, token);
+  }
+  window.dispatchEvent(new Event(SESSION_CHANGE_EVENT));
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const storedToken = useSyncExternalStore(
+    subscribeToSession,
+    getSessionSnapshot,
+    getServerSessionSnapshot,
+  );
 
   const currentUser = useQuery(
     api.auth.getCurrentUser,
@@ -85,8 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (shouldClearToken) {
-      localStorage.removeItem(SESSION_KEY);
-      setStoredToken(null);
+      persistSessionToken(null);
     }
   }, [shouldClearToken]);
 
@@ -95,8 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const result = await loginMutation({ email, password });
         if (result.success && result.token) {
-          localStorage.setItem(SESSION_KEY, result.token);
-          setStoredToken(result.token);
+          persistSessionToken(result.token);
           return {
             success: true,
             user: {
@@ -131,8 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error("Error invalidating session on server:", error);
         }
       }
-      localStorage.removeItem(SESSION_KEY);
-      setStoredToken(null);
+      persistSessionToken(null);
     } catch (error) {
       console.error("Error during logout:", error);
     }
@@ -153,8 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user],
   );
 
-  const isLoading =
-    !isInitialized || (storedToken !== null && currentUser === undefined);
+  const isLoading = storedToken !== null && currentUser === undefined;
 
   return (
     <AuthContext.Provider
