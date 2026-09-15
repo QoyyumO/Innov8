@@ -6,6 +6,7 @@ import {
   facilityStatus,
   gender,
   personName,
+  purpose,
   recordType,
 } from "./lib/domain";
 import { userRole } from "./lib/roles";
@@ -75,4 +76,22 @@ export default defineSchema({
     conditions: v.array(v.string()),
     updatedAt: v.number(),
   }).index("by_patientId_facilityId", ["patientId", "facilityId"]),
+
+  accessRequests: defineTable({
+    actorId: v.id("users"),
+    sessionId: v.optional(v.id("sessions")),
+    patientId: v.id("patients"),
+    sourceFacilityId: v.id("facilities"),
+    targetFacilityId: v.id("facilities"),
+    purpose,
+    recordTypes: v.array(recordType),
+    recordCount: v.optional(v.number()),
+    device: v.optional(v.string()),
+    location: v.optional(v.string()),
+    requestedAt: v.number(),
+  })
+    .index("by_actorId", ["actorId"])
+    .index("by_patientId", ["patientId"])
+    .index("by_requestedAt", ["requestedAt"])
+    .index("by_actorId_requestedAt", ["actorId", "requestedAt"]),
 });
