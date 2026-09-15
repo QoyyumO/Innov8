@@ -114,4 +114,17 @@ export default defineSchema({
     .index("by_requestId", ["requestId"])
     .index("by_outcome", ["outcome"])
     .index("by_decidedAt", ["decidedAt"]),
+
+  emergencyAccess: defineTable({
+    requestId: v.id("accessRequests"),
+    actorId: v.id("users"),
+    patientId: v.id("patients"),
+    justification: v.string(),
+    grantedAt: v.number(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_actorId", ["actorId"])
+    .index("by_patientId", ["patientId"])
+    .index("by_expiresAt", ["expiresAt"]),
 });
