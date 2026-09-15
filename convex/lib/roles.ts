@@ -20,3 +20,28 @@ export type UserRole =
   | "system_admin"
   | "security_officer"
   | "patient";
+
+export const CLINICIAN_ROLES: readonly UserRole[] = [
+  "doctor",
+  "nurse",
+  "pharmacist",
+  "laboratory",
+];
+
+export const SECURITY_ROLES: readonly UserRole[] = ["security_officer"];
+
+export const ADMIN_ROLES: readonly UserRole[] = ["hospital_admin", "system_admin"];
+
+/**
+ * Throws unless the user holds at least one of `allowedRoles`.
+ * Call after `requireSession`, e.g. `requireRole(user, CLINICIAN_ROLES)`.
+ */
+export function requireRole(
+  user: { roles: readonly UserRole[] },
+  allowedRoles: readonly UserRole[],
+): void {
+  const isAllowed = allowedRoles.some((role) => user.roles.includes(role));
+  if (!isAllowed) {
+    throw new Error("You do not have permission to perform this action");
+  }
+}
