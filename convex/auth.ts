@@ -15,11 +15,12 @@ import {
   deleteOtherUserSessions,
   deleteSessionByToken,
   generateSessionToken,
+  publicUser,
   requireSessionUser,
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
-import { UserRole } from "./lib/roles";
+import { appendAuditEvent } from "./lib/services/auditLogService";
 
 async function ensureDemoUsers(ctx: MutationCtx) {
   let hashedPassword: string | null = null;
@@ -45,26 +46,6 @@ async function ensureDemoUsers(ctx: MutationCtx) {
       profile: user.profile,
     });
   }
-}
-
-function publicUser(user: {
-  _id: Id<"users">;
-  email: string;
-  roles: UserRole[];
-  hospital: string;
-  department?: string;
-  accountStatus: "active" | "suspended";
-  profile: { firstName: string; lastName: string; middleName?: string };
-}) {
-  return {
-    _id: user._id,
-    email: user.email,
-    roles: user.roles,
-    hospital: user.hospital,
-    department: user.department,
-    accountStatus: user.accountStatus,
-    profile: user.profile,
-  };
 }
 
 export const login = mutation({
@@ -93,7 +74,16 @@ export const login = mutation({
       throw new Error("Invalid email or password");
     }
 
-    const token = await createSession(ctx.db, user._id);
+    const { token, sessionId } = await createSession(ctx.db, user._id);
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      sessionId,
+      action: "UserLoggedIn",
+      entity: "sessions",
+      entityId: sessionId,
+      details: { email: user.email },
+    });
+
     return {
       success: true,
       token,
