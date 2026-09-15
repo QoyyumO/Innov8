@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Innov8 Health
 
-## Getting Started
+NITDA / ICSC Track C: a **secure patient-record access layer**, not a hospital EMR. Synthetic data only.
 
-First, run the development server:
+Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind v4, [Convex](https://convex.dev). UI lives in `src/`. Backend lives in `convex/`.
+
+## Prerequisites
+
+- Node.js 20+ and npm
+- A [Convex](https://dashboard.convex.dev) account (free)
+
+## Setup
+
+```bash
+git clone <this-repo>
+cd innov8
+npm install
+npx convex dev
+```
+
+The first `npx convex dev` logs you in, creates (or links) a **dev** deployment, and writes `.env.local` with `NEXT_PUBLIC_CONVEX_URL` (and `CONVEX_DEPLOYMENT`). Leave that process running.
+
+In a **second** terminal:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The login page is `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You always need **both** processes: Next.js for the UI, Convex for the database and functions.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Demo logins
 
-## Learn More
+Password for all demo accounts: `password123`
 
-To learn more about Next.js, take a look at the following resources:
+| Email | Role |
+| --- | --- |
+| `ibrahim@fmc.abuja.ng` | Doctor (FMC Abuja, Cardiology) — Track C walkthrough |
+| `fatima@fmc.abuja.ng` | Nurse |
+| `chinedu@fmc.lagos.ng` | Pharmacist |
+| `aisha@fmc.lagos.ng` | Laboratory |
+| `admin@fmc.abuja.ng` | Hospital admin |
+| `security@innov8.ng` | Security officer |
+| `chioma@patient.innov8.ng` | Patient (not a healthcare worker) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Demo users are created on first login (`ensureDemoUsers` in `convex/auth.ts`). Seed (below) attaches `facilityId`, `workerId`, and hour/volume baselines without changing the password.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Seed synthetic data
 
-## Deploy on Vercel
+Seed is **internal** Convex mutations (`convex/seed.ts`). Run them from the CLI or dashboard, not from the browser. Functions are idempotent: re-running skips rows that already exist.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Keep `npx convex dev` running so functions are pushed, then in another terminal:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Smoke (demo path only)
+
+Enough for PAT-002391 and Ibrahim ALLOW / BLOCK. Patient index 2391 must exist, so `total` must be at least `2391`.
+
+```bash
+npx convex run internal.seed.seedFacilities
+npx convex run internal.seed.seedHealthcareWorkers '{"count": 500}'
+npx convex run internal.seed.seedPatientsBatch '{"cursor": 0, "batchSize": 250, "total": 2391}'
+```
+
+Wait until dashboard logs show patient batches finished (`done: true`), then:
+
+```bash
+npx convex run internal.seed.seedAccessEventsBatch '{"cursor": 0, "batchSize": 20, "total": 20, "patientCount": 2391, "workerCount": 500}'
+npx convex run internal.seed.verifyDemoSeed
+```
+
+`verifyDemoSeed` should show 3 facilities, Ibrahim `WRK-00001`, PAT-002391 at FMC-LOS, allow risk `8`, block risk `94`. Then sign in as Ibrahim.
+
+### Full §14 volumes
+
+Do this on a **dev** (or preview) deployment the team agrees on. 100k access events is a large write — do not run `--prod` unless that is explicit.
+
+```bash
+npx convex run internal.seed.seedFacilities
+npx convex run internal.seed.seedHealthcareWorkers '{"count": 500}'
+npx convex run internal.seed.seedPatientsBatch '{"cursor": 0, "batchSize": 250, "total": 10000}'
+```
+
+Wait for ~40 patient batches to finish, then:
+
+```bash
+npx convex run internal.seed.seedAccessEventsBatch '{"cursor": 0, "batchSize": 200, "total": 100000, "patientCount": 10000, "workerCount": 500}'
+```
+
+Watch the Convex dashboard until scheduled event batches complete (~500 batches at size 200). Equivalent CLI names: `seed:seedFacilities`, etc.
+
+More detail (indexes, demo rows, files): [`convex/README-seeding.md`](convex/README-seeding.md).
+
+## Checks
+
+```bash
+npm run check   # eslint + tsc --noEmit
+```
+
+## Repo map
+
+- `src/app/` — `(authenticated)` and `(not-authenticated)` routes
+- `convex/schema.ts` — access-layer tables
+- `convex/auth.ts` — session login (`innov8_session_token`)
+- `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)
+
+Linear workspace: [Innov8](https://linear.app/innov8-health) (`INN-XX` only).
