@@ -64,4 +64,15 @@ export default defineSchema({
     .index("by_patientId", ["patientId"])
     .index("by_facilityId", ["facilityId"])
     .index("by_patientId_facilityId", ["patientId", "facilityId"]),
+
+  clinicalSummaries: defineTable({
+    patientId: v.id("patients"),
+    facilityId: v.id("facilities"),
+    medicalSummary: v.string(),
+    allergies: v.array(v.string()),
+    medications: v.array(v.string()),
+    diagnoses: v.array(v.string()),
+    conditions: v.array(v.string()),
+    updatedAt: v.number(),
+  }).index("by_patientId_facilityId", ["patientId", "facilityId"]),
 });
