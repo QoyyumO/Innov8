@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/table";
 import { UserIcon } from "@/icons";
 import { DEMO_PATIENT_PUBLIC_ID } from "../../../../convex/lib/demoIds";
+import { formatPatientName } from "./_components/formatPatientName";
 import {
-  formatPatientName,
   PatientSearchForm,
   PatientSearchHit,
 } from "./_components/PatientSearchForm";
@@ -52,7 +52,7 @@ export default function PatientSearchPage() {
         {hasSearched && results !== null && results.length === 0 && (
           <EmptyState
             title="No matching patient"
-            description="Check the public ID or try the family name as stored on the record. Contents are never listed here."
+            description="Check the public ID, or type at least 3 letters of the given name. Contents are never listed here."
             icon={<UserIcon className="h-12 w-12 text-brand-500" />}
           />
         )}

@@ -11,7 +11,7 @@ import Button from "@/components/ui/button/Button";
 import EmptyState from "@/components/empty-state/EmptyState";
 import Loading from "@/components/loading/Loading";
 import { UserIcon } from "@/icons";
-import { formatPatientName } from "../_components/PatientSearchForm";
+import { formatPatientName } from "../_components/formatPatientName";
 import { RecordExistenceList } from "../_components/RecordExistenceList";
 
 export default function PatientDiscoveryPage() {

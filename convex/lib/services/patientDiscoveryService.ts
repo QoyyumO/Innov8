@@ -5,6 +5,7 @@ import {
   NAME_PREFIX_MIN_LENGTH,
   NAME_SEARCH_LIMIT,
   RECORD_INDEX_LIMIT,
+  isPatientPublicIdQuery,
 } from "../searchLimits";
 
 export { NAME_PREFIX_MIN_LENGTH, NAME_SEARCH_LIMIT, RECORD_INDEX_LIMIT };
@@ -28,14 +29,8 @@ export type PatientDiscovery = PatientSearchHit & {
   recordsByFacility: FacilityExistence[];
 };
 
-const PUBLIC_ID_PATTERN = /^pat-\d+$/i;
-
 function normalizeQuery(query: string): string {
   return query.trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-function isPublicIdQuery(query: string): boolean {
-  return PUBLIC_ID_PATTERN.test(query.trim());
 }
 
 /**
@@ -165,7 +160,7 @@ export async function findPatientsByQuery(
     return [];
   }
 
-  if (isPublicIdQuery(trimmed)) {
+  if (isPatientPublicIdQuery(trimmed)) {
     const patient = await findPatientByPublicId(db, trimmed);
     if (!patient) {
       return [];

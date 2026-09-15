@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { personName, recordType } from "./lib/domain";
 import { requireSession } from "./lib/session";
 import { CLINICIAN_ROLES, requireRole } from "./lib/roles";
+import { isAuthErrorMessage } from "./lib/authConstants";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   findPatientsByQuery,
@@ -86,8 +87,12 @@ export const getPatientDiscovery = query({
 
     try {
       await requireClinicianSession(ctx, args.token);
-    } catch {
-      return null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (isAuthErrorMessage(message)) {
+        return null;
+      }
+      throw error;
     }
 
     return await getPatientDiscoveryByPublicId(ctx.db, args.publicId);

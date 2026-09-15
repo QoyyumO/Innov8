@@ -10,22 +10,16 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
 import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
-import { NAME_PREFIX_MIN_LENGTH } from "../../../../../convex/lib/searchLimits";
+import {
+  NAME_PREFIX_MIN_LENGTH,
+  isPatientPublicIdQuery,
+} from "../../../../../convex/lib/searchLimits";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import { toUserFacingError } from "@/lib/userFacingError";
 
 export type PatientSearchHit = FunctionReturnType<
   typeof api.patients.searchPatients
 >[number];
-
-export function formatPatientName(profile: PatientSearchHit["profile"]): string {
-  const parts = [profile.firstName, profile.middleName, profile.lastName].filter(
-    (part) => part !== undefined && part.length > 0,
-  );
-  return parts.join(" ");
-}
-
-const PUBLIC_ID_PATTERN = /^pat-\d+$/i;
 
 type PatientSearchFormProps = {
   onResults: (results: PatientSearchHit[]) => void;
@@ -53,7 +47,7 @@ export function PatientSearchForm({ onResults }: PatientSearchFormProps) {
       return;
     }
 
-    const isPublicId = PUBLIC_ID_PATTERN.test(trimmedQuery);
+    const isPublicId = isPatientPublicIdQuery(trimmedQuery);
     if (!isPublicId && trimmedQuery.length < NAME_PREFIX_MIN_LENGTH) {
       setErrorMessage(
         `Enter a patient ID or at least ${NAME_PREFIX_MIN_LENGTH} letters of the name.`,
