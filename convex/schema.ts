@@ -1,6 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { accountStatus, facilityStatus, personName } from "./lib/domain";
+import {
+  accountStatus,
+  bloodGroup,
+  facilityStatus,
+  gender,
+  personName,
+} from "./lib/domain";
 import { userRole } from "./lib/roles";
 
 export default defineSchema({
@@ -34,4 +40,17 @@ export default defineSchema({
   })
     .index("by_code", ["code"])
     .index("by_name", ["name"]),
+
+  patients: defineTable({
+    publicId: v.string(),
+    homeFacilityId: v.id("facilities"),
+    profile: personName,
+    dateOfBirth: v.number(),
+    gender,
+    bloodGroup,
+    searchName: v.string(),
+  })
+    .index("by_publicId", ["publicId"])
+    .index("by_homeFacilityId", ["homeFacilityId"])
+    .index("by_searchName", ["searchName"]),
 });

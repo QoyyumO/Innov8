@@ -69,3 +69,32 @@ export const facilityStatus = v.union(
 );
 
 export type FacilityStatus = "active" | "pilot";
+
+export const gender = v.union(
+  v.literal("female"),
+  v.literal("male"),
+  v.literal("other"),
+);
+
+export type Gender = "female" | "male" | "other";
+
+export const bloodGroup = v.union(
+  v.literal("A+"),
+  v.literal("A-"),
+  v.literal("B+"),
+  v.literal("B-"),
+  v.literal("AB+"),
+  v.literal("AB-"),
+  v.literal("O+"),
+  v.literal("O-"),
+);
+
+export type BloodGroup =
+  | "A+"
+  | "A-"
+  | "B+"
+  | "B-"
+  | "AB+"
+  | "AB-"
+  | "O+"
+  | "O-";
