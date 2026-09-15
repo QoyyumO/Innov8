@@ -1,4 +1,5 @@
 import { UserRole } from "@/context/AuthContext";
+import { CLINICIAN_ROLES } from "../../convex/lib/roles";
 
 export function isDoctor(roles: UserRole[]) {
   return roles.includes("doctor");
@@ -26,4 +27,8 @@ export function isAdmin(roles: UserRole[]) {
 
 export function isPatient(roles: UserRole[]) {
   return roles.includes("patient");
+}
+
+export function isClinician(roles: UserRole[]) {
+  return CLINICIAN_ROLES.some((role) => roles.includes(role));
 }

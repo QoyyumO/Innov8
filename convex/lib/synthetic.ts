@@ -233,7 +233,7 @@ export const FACILITIES = [
   { code: "FMC-ABK", name: "FMC Abeokuta", city: "Abeokuta", status: "active" as const },
 ];
 
-export const DEMO_PATIENT_PUBLIC_ID = "PAT-002391";
+export { DEMO_PATIENT_PUBLIC_ID } from "./demoIds";
 export const DEMO_PATIENT_INDEX = 2391;
 export const DEMO_PATIENT_DOB_MS = Date.UTC(1988, 3, 12);
 

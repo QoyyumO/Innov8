@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '../context/SidebarContext';
+import { useAuth } from '@/hooks/useAuth';
+import { isClinician } from '@/services/permissions';
 import {
   ChevronDownIcon,
   GridIcon,
@@ -25,19 +27,23 @@ type NavItem = {
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const { user } = useAuth();
 
-  const navItems: NavItem[] = useMemo(
-    () => [
+  const navItems: NavItem[] = useMemo(() => {
+    const clinicianSearch: NavItem[] =
+      user && isClinician(user.roles)
+        ? [{ icon: <UserIcon />, name: 'Patient search', path: '/patients' }]
+        : [];
+    return [
       { icon: <GridIcon />, name: 'Dashboard', path: '/' },
-      { icon: <UserIcon />, name: 'Patient search', path: '/patients' },
+      ...clinicianSearch,
       { icon: <FileIcon />, name: 'Access requests', path: '/requests' },
       { icon: <AlertIcon />, name: 'Emergency', path: '/emergency' },
       { icon: <DocsIcon />, name: 'Audit trail', path: '/audit' },
       { icon: <LockIcon />, name: 'Security', path: '/security' },
       { icon: <GroupIcon />, name: 'Facilities', path: '/facilities' },
-    ],
-    [],
-  );
+    ];
+  }, [user]);
 
   const renderMenuItems = (
     navItems: NavItem[],
