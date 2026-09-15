@@ -1,4 +1,4 @@
-import { internalMutation, MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
@@ -652,5 +652,125 @@ export const seedAccessEventsBatch = internalMutation({
       });
     }
     return { cursor: end, done, skipped };
+  },
+});
+
+export const verifyDemoSeed = internalQuery({
+  args: {},
+  returns: v.object({
+    facilities: v.number(),
+    ibrahimWorkerId: v.union(v.string(), v.null()),
+    demoPatient: v.union(
+      v.null(),
+      v.object({
+        publicId: v.string(),
+        firstName: v.string(),
+        lastName: v.string(),
+        homeFacilityCode: v.union(v.string(), v.null()),
+        recordTypes: v.array(v.string()),
+        hasClinicalSummary: v.boolean(),
+      }),
+    ),
+    allowRiskScore: v.union(v.number(), v.null()),
+    blockRiskScore: v.union(v.number(), v.null()),
+    blockAlertSeverity: v.union(v.string(), v.null()),
+  }),
+  handler: async (ctx) => {
+    const facilities = await ctx.db.query("facilities").collect();
+    const ibrahim = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", IBRAHIM_EMAIL))
+      .first();
+    const demoPatient = await ctx.db
+      .query("patients")
+      .withIndex("by_publicId", (q) => q.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
+      .first();
+
+    let homeFacilityCode: string | null = null;
+    let recordTypes: string[] = [];
+    let hasClinicalSummary = false;
+    if (demoPatient) {
+      const homeFacility = await ctx.db.get(demoPatient.homeFacilityId);
+      homeFacilityCode = homeFacility?.code ?? null;
+      const recordIndex = await ctx.db
+        .query("recordIndexes")
+        .withIndex("by_patientId_facilityId", (q) =>
+          q
+            .eq("patientId", demoPatient._id)
+            .eq("facilityId", demoPatient.homeFacilityId),
+        )
+        .first();
+      recordTypes = recordIndex?.recordTypes ?? [];
+      const summary = await ctx.db
+        .query("clinicalSummaries")
+        .withIndex("by_patientId_facilityId", (q) =>
+          q
+            .eq("patientId", demoPatient._id)
+            .eq("facilityId", demoPatient.homeFacilityId),
+        )
+        .first();
+      hasClinicalSummary = summary !== null;
+    }
+
+    let allowRiskScore: number | null = null;
+    let blockRiskScore: number | null = null;
+    let blockAlertSeverity: string | null = null;
+    if (ibrahim) {
+      const allowRequest = await ctx.db
+        .query("accessRequests")
+        .withIndex("by_actorId_requestedAt", (q) =>
+          q.eq("actorId", ibrahim._id).eq("requestedAt", DEMO_ALLOW_REQUESTED_AT),
+        )
+        .first();
+      if (allowRequest) {
+        const allowDecision = await ctx.db
+          .query("accessDecisions")
+          .withIndex("by_requestId", (q) => q.eq("requestId", allowRequest._id))
+          .first();
+        allowRiskScore = allowDecision?.riskScore ?? null;
+      }
+      const blockRequest = await ctx.db
+        .query("accessRequests")
+        .withIndex("by_actorId_requestedAt", (q) =>
+          q.eq("actorId", ibrahim._id).eq("requestedAt", DEMO_BLOCK_REQUESTED_AT),
+        )
+        .first();
+      if (blockRequest) {
+        const blockDecision = await ctx.db
+          .query("accessDecisions")
+          .withIndex("by_requestId", (q) => q.eq("requestId", blockRequest._id))
+          .first();
+        blockRiskScore = blockDecision?.riskScore ?? null;
+        if (blockDecision) {
+          const recentAlerts = await ctx.db
+            .query("securityAlerts")
+            .withIndex("by_createdAt")
+            .order("desc")
+            .take(25);
+          const matchingAlert = recentAlerts.find(
+            (alert) => alert.decisionId === blockDecision._id,
+          );
+          blockAlertSeverity = matchingAlert?.severity ?? null;
+        }
+      }
+    }
+
+    return {
+      facilities: facilities.length,
+      ibrahimWorkerId: ibrahim?.workerId ?? null,
+      demoPatient: demoPatient
+        ? {
+            publicId: demoPatient.publicId,
+            firstName: demoPatient.profile.firstName,
+            lastName: demoPatient.profile.lastName,
+            homeFacilityCode,
+            recordTypes,
+            hasClinicalSummary,
+          }
+        : null,
+      allowRiskScore,
+      blockRiskScore,
+      blockAlertSeverity,
+    };
   },
 });
