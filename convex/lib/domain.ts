@@ -95,6 +95,7 @@ export const auditAction = v.union(
   v.literal("AccessAllowed"),
   v.literal("AccessChallenged"),
   v.literal("AccessBlocked"),
+  v.literal("AccessExpired"),
   v.literal("RecordViewed"),
   v.literal("EmergencyGranted"),
   v.literal("EmergencyExpired"),

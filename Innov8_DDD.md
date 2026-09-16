@@ -29,6 +29,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants; `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
 - **INN-42** — AuditEvent read model (`convex/audit.ts`): role-scoped, paginated, newest-first by `createdAt`; still append-only (no update/delete path).
 - **INN-43** — Dashboard read models (`convex/dashboards.ts`): bounded summaries over AccessRequest, Decision, EmergencyAccess, SecurityAlert, and AuditEvent, plus the Facility list.
+- **INN-51** — Decision validity: an ALLOW authorises record release for 24 hours from `decidedAt`; later attempts are refused and recorded as `AccessExpired`.
 
 ## Next (live demo path)
 
@@ -81,7 +82,7 @@ The MVP demo path is live end to end. Next: should-have VERIFY step-up (INN-44),
 
 ## Domain events (audit)
 
-`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`
+`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`
 
 ## Invariants
 
