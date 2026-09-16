@@ -11,6 +11,7 @@ import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { toUserFacingError } from "@/lib/userFacingError";
+import { StepUpVerification } from "./StepUpVerification";
 import type { DecisionOutcome, RecordType } from "../../../../../convex/lib/domain";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import {
@@ -30,6 +31,8 @@ type AuthorisedSummaryProps = {
   hasEmergencyGrant: boolean;
   /** ALLOW only: when the decision stops releasing records (INN-51). */
   allowedUntil?: number;
+  /** VERIFY only, own single-patient request: step-up attempts left (INN-44). */
+  stepUpAttemptsLeft?: number;
 };
 
 function RequestAgainLink({ publicId }: { publicId: string }) {
@@ -97,6 +100,7 @@ export function AuthorisedSummary({
   canUseBreakGlass,
   hasEmergencyGrant,
   allowedUntil,
+  stepUpAttemptsLeft,
 }: AuthorisedSummaryProps) {
   const { sessionToken } = useAuth();
   const now = useNow();
@@ -136,6 +140,23 @@ export function AuthorisedSummary({
           message={`Access to ${publicId} ended ${formatRequestTime(allowedUntil)}. Request access again to open the records.`}
         />
         <RequestAgainLink publicId={publicId} />
+      </div>
+    );
+  }
+
+  if (result === undefined && outcome === "VERIFY" && stepUpAttemptsLeft !== undefined) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          This request was challenged. Re-enter your password to release the requested
+          sections; nothing is shown until you do.
+        </p>
+        <StepUpVerification
+          requestId={requestId}
+          publicId={publicId}
+          attemptsLeft={stepUpAttemptsLeft}
+        />
+        {canUseBreakGlass && <BreakGlassLink requestId={requestId} publicId={publicId} />}
       </div>
     );
   }

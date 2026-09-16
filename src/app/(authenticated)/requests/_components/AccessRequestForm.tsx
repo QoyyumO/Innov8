@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
@@ -23,6 +24,7 @@ import {
   RECORD_TYPE_LABELS,
 } from "../../_components/accessLabels";
 import { DecisionResult } from "./DecisionResult";
+import { StepUpVerification } from "./StepUpVerification";
 
 type CreateAccessRequestResult = FunctionReturnType<
   typeof api.accessRequests.createAccessRequest
@@ -41,6 +43,7 @@ type AccessRequestFormProps = {
 };
 
 export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormProps) {
+  const router = useRouter();
   const { sessionToken } = useAuth();
   const createAccessRequest = useMutation(api.accessRequests.createAccessRequest);
   const [publicId, setPublicId] = useState(initialPublicId);
@@ -181,6 +184,17 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
             riskScore={result.riskScore}
             reasons={result.reasons}
             factors={result.factors}
+            action={
+              result.outcome === "VERIFY" && result.recordCount === 1 ? (
+                <StepUpVerification
+                  key={result.requestId}
+                  requestId={result.requestId}
+                  publicId={result.publicId}
+                  autoOpen
+                  onVerified={() => router.push(`/requests/${result.requestId}`)}
+                />
+              ) : undefined
+            }
           />
           <Link
             href={`/requests/${result.requestId}`}

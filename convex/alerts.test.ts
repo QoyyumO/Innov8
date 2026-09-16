@@ -446,6 +446,48 @@ describe("acknowledgeAlert and closeAlert", () => {
     expect(alerts[0]).toMatchObject({ _id: alertId, status: "closed", severity: "high" });
   });
 
+  test("each status change is audited with the officer as actor (INN-50)", async () => {
+    const testBackend = createTest();
+    const { securityToken, alertId } = await openHarvestAlert(testBackend);
+    const officer = await testBackend.query(api.auth.getCurrentUser, { token: securityToken });
+
+    await testBackend.mutation(api.alerts.acknowledgeAlert, { token: securityToken, alertId });
+    await testBackend.mutation(api.alerts.closeAlert, { token: securityToken, alertId });
+
+    const events = await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(100)).filter(
+        (event) => event.entity === "securityAlerts" && event.action !== "SecurityAlertRaised",
+      ),
+    );
+    expect(events.map((event) => event.action)).toEqual([
+      "SecurityAlertAcknowledged",
+      "SecurityAlertClosed",
+    ]);
+    for (const event of events) {
+      expect(event.actorId).toBe(officer!._id);
+      expect(event.sessionId).toBeDefined();
+      expect(event.entityId).toBe(alertId);
+    }
+    expect(events[0]?.details).toEqual({
+      fromStatus: "open",
+      toStatus: "acknowledged",
+      severity: "high",
+    });
+    expect(events[1]?.details).toEqual({
+      fromStatus: "acknowledged",
+      toStatus: "closed",
+      severity: "high",
+    });
+
+    const trail = await testBackend.query(api.audit.listAuditEvents, {
+      token: securityToken,
+      action: "SecurityAlertClosed",
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(trail.page).toHaveLength(1);
+    expect(trail.page[0]?.actor?.email).toBe(SECURITY_EMAIL);
+  });
+
   test("open alerts can be closed directly", async () => {
     const testBackend = createTest();
     const { securityToken, alertId } = await openHarvestAlert(testBackend);
@@ -454,6 +496,13 @@ describe("acknowledgeAlert and closeAlert", () => {
       alertId,
     });
     expect(closed.status).toBe("closed");
+    const closedEvents = await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(100)).filter(
+        (event) => event.action === "SecurityAlertClosed",
+      ),
+    );
+    expect(closedEvents).toHaveLength(1);
+    expect(closedEvents[0]?.details).toMatchObject({ fromStatus: "open", toStatus: "closed" });
   });
 
   test("invalid transitions are rejected", async () => {
@@ -471,6 +520,14 @@ describe("acknowledgeAlert and closeAlert", () => {
     await expect(
       testBackend.mutation(api.alerts.acknowledgeAlert, { token: securityToken, alertId }),
     ).rejects.toThrow("Alert is already closed");
+
+    const transitionEvents = await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(100)).filter(
+        (event) =>
+          event.action === "SecurityAlertAcknowledged" || event.action === "SecurityAlertClosed",
+      ),
+    );
+    expect(transitionEvents).toHaveLength(2);
   });
 
   test("clinicians cannot change alert status", async () => {
@@ -491,6 +548,11 @@ describe("acknowledgeAlert and closeAlert", () => {
     ).rejects.toThrow(/session has expired/);
     const [alert] = await storedAlerts(testBackend);
     expect(alert.status).toBe("open");
+    const actions = await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(100)).map((event) => event.action),
+    );
+    expect(actions).not.toContain("SecurityAlertAcknowledged");
+    expect(actions).not.toContain("SecurityAlertClosed");
   });
 
   test("unknown and malformed ids are rejected", async () => {

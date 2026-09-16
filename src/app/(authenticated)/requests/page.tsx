@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { FileIcon } from "@/icons";
 import { HarvestSimulation } from "./_components/HarvestSimulation";
+import { StepUpVerification } from "./_components/StepUpVerification";
 import {
   OUTCOME_BADGE_COLORS,
   OUTCOME_LABELS,
@@ -177,6 +178,17 @@ export default function AccessRequestsPage() {
                           </Badge>
                         )}
                       </div>
+                      {request.recordCount === 1 &&
+                        request.decision?.stepUpAttemptsLeft !== undefined && (
+                          <div className="mt-2">
+                            <StepUpVerification
+                              requestId={request.requestId}
+                              publicId={request.publicId}
+                              attemptsLeft={request.decision.stepUpAttemptsLeft}
+                              size="sm"
+                            />
+                          </div>
+                        )}
                     </TableCell>
                     <TableCell className="px-4 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
                       {request.decision ? `${request.decision.riskScore}/100` : "—"}

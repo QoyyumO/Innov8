@@ -34,11 +34,14 @@ import type * as lib_services_emergencyAccessService from "../lib/services/emerg
 import type * as lib_services_patientDiscoveryService from "../lib/services/patientDiscoveryService.js";
 import type * as lib_services_recordExchangeService from "../lib/services/recordExchangeService.js";
 import type * as lib_services_riskScoringService from "../lib/services/riskScoringService.js";
+import type * as lib_services_stepUpService from "../lib/services/stepUpService.js";
 import type * as lib_session from "../lib/session.js";
+import type * as lib_stepUpConstants from "../lib/stepUpConstants.js";
 import type * as lib_synthetic from "../lib/synthetic.js";
 import type * as patients from "../patients.js";
 import type * as records from "../records.js";
 import type * as seed from "../seed.js";
+import type * as stepUp from "../stepUp.js";
 
 import type {
   ApiFromModules,
@@ -73,11 +76,14 @@ declare const fullApi: ApiFromModules<{
   "lib/services/patientDiscoveryService": typeof lib_services_patientDiscoveryService;
   "lib/services/recordExchangeService": typeof lib_services_recordExchangeService;
   "lib/services/riskScoringService": typeof lib_services_riskScoringService;
+  "lib/services/stepUpService": typeof lib_services_stepUpService;
   "lib/session": typeof lib_session;
+  "lib/stepUpConstants": typeof lib_stepUpConstants;
   "lib/synthetic": typeof lib_synthetic;
   patients: typeof patients;
   records: typeof records;
   seed: typeof seed;
+  stepUp: typeof stepUp;
 }>;
 
 /**

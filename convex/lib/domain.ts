@@ -101,6 +101,10 @@ export const auditAction = v.union(
   v.literal("EmergencyExpired"),
   v.literal("EmergencyRevoked"),
   v.literal("SecurityAlertRaised"),
+  v.literal("SecurityAlertAcknowledged"),
+  v.literal("SecurityAlertClosed"),
+  v.literal("StepUpCompleted"),
+  v.literal("StepUpFailed"),
 );
 
 export type AuditAction = Infer<typeof auditAction>;

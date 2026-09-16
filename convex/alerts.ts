@@ -159,11 +159,13 @@ export const acknowledgeAlert = mutation({
   },
   returns: transitionResultValidator,
   handler: async (ctx, args) => {
-    await requireAlertReviewer(ctx, args.token);
+    const reviewer = await requireAlertReviewer(ctx, args.token);
     const alert = await transitionAlert(
       ctx.db,
+      reviewer,
       normalizeAlertId(ctx, args.alertId),
       "acknowledged",
+      Date.now(),
     );
     return { alertId: alert._id, status: alert.status };
   },
@@ -176,11 +178,13 @@ export const closeAlert = mutation({
   },
   returns: transitionResultValidator,
   handler: async (ctx, args) => {
-    await requireAlertReviewer(ctx, args.token);
+    const reviewer = await requireAlertReviewer(ctx, args.token);
     const alert = await transitionAlert(
       ctx.db,
+      reviewer,
       normalizeAlertId(ctx, args.alertId),
       "closed",
+      Date.now(),
     );
     return { alertId: alert._id, status: alert.status };
   },
