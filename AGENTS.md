@@ -98,7 +98,7 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 **Next (demo steps 3–7), in dependency order:**
 
 1. [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — unblocked; read the decision via `accessDecisions.by_requestId`.
-2. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security` — unblocked; `createAccessRequest` with `recordCount: 500` already scores 94 BLOCK.
+2. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security` — unblocked; `createAccessRequest` scores one patient (`recordCount` 1). Harvest volume must be counted on the server, not passed by the client.
 3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
 4. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass (waits on INN-40), [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (waits on INN-39).
 

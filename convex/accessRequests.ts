@@ -6,14 +6,12 @@ import { isAuthErrorMessage } from "./lib/authConstants";
 import { decisionOutcome, purpose, recordType } from "./lib/domain";
 import {
   ADMIN_ROLES,
-  CLINICIAN_ROLES,
   SECURITY_ROLES,
-  requireRole,
+  requireClinicianSession,
   userRole,
 } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
-  normalizeRecordCount,
   normalizeRecordTypes,
   resolveAccessTarget,
 } from "./lib/services/accessControlService";
@@ -75,15 +73,8 @@ const AUDIT_ACTION_BY_OUTCOME = {
 } as const;
 
 const UNKNOWN_FACILITY = { code: "UNKNOWN", name: "Unknown facility" };
-
-async function requireClinician(
-  ctx: Parameters<typeof requireSession>[0],
-  token: string | undefined,
-) {
-  const sessionContext = await requireSession(ctx, token);
-  requireRole(sessionContext.user, CLINICIAN_ROLES);
-  return sessionContext;
-}
+/** One patient per createAccessRequest. Harvest volume is INN-39. */
+const SINGLE_PATIENT_RECORD_COUNT = 1;
 
 function isAuthError(error: unknown): boolean {
   return error instanceof Error && isAuthErrorMessage(error.message);
@@ -154,13 +145,12 @@ export const createAccessRequest = mutation({
     publicId: v.string(),
     purpose,
     recordTypes: v.array(recordType),
-    recordCount: v.optional(v.number()),
   },
   returns: createResultValidator,
   handler: async (ctx, args) => {
-    const { user, session } = await requireClinician(ctx, args.token);
+    const { user, session } = await requireClinicianSession(ctx, args.token);
     const recordTypes = normalizeRecordTypes(args.recordTypes);
-    const recordCount = normalizeRecordCount(args.recordCount);
+    const recordCount = SINGLE_PATIENT_RECORD_COUNT;
     const target = await resolveAccessTarget(
       ctx.db,
       user,
@@ -260,7 +250,7 @@ export const listMyAccessRequests = query({
   handler: async (ctx, args) => {
     let viewerId: Id<"users">;
     try {
-      const { user } = await requireClinician(ctx, args.token);
+      const { user } = await requireClinicianSession(ctx, args.token);
       viewerId = user._id;
     } catch (error) {
       if (isAuthError(error)) {
@@ -281,10 +271,11 @@ export const listMyAccessRequests = query({
       Id<"facilities">,
       { code: string; name: string }
     >();
-    const page = [];
-    for (const request of results.page) {
-      page.push(await toRequestView(ctx, request, viewerId, facilityCache));
-    }
+    const page = await Promise.all(
+      results.page.map((request) =>
+        toRequestView(ctx, request, viewerId, facilityCache),
+      ),
+    );
     return { ...results, page };
   },
 });

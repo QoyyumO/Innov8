@@ -42,11 +42,13 @@ Session (`requireSession`, rejects suspended accounts) and role (`requireRole(us
 
 #### B1. `createAccessRequest` (mutation)
 
-Args: `token?`, `publicId`, `purpose` (shared validator), `recordTypes` (shared validator array), `recordCount?` (default 1, whole number 1–10,000). Record types are de-duplicated and must be non-empty.
+Args: `token?`, `publicId`, `purpose` (shared validator), `recordTypes` (shared validator array). Record types are de-duplicated and must be non-empty.
 
-Steps: insert `accessRequests` (actor, session, patient, facilities, purpose, types, count, `requestedAt`) → `scoreAccessRequest` with the actor's `normalAccessHours` / `normalPatientVolume` → insert `accessDecisions` (score, outcome, reasons, factors) → `appendAuditEvent` ×2.
+This mutation is **one patient**. `recordCount` is always `1` on the server — it is not a client argument. Harvest volume (500 patients / BLOCK 94) is INN-39.
 
-Returns `{ requestId, publicId, targetFacility, purpose, recordTypes, recordCount, outcome, riskScore, reasons, requestedAt }`.
+Steps: insert `accessRequests` (actor, session, patient, facilities, purpose, types, count `1`, `requestedAt`) → `scoreAccessRequest` with the actor's `normalAccessHours` / `normalPatientVolume` → insert `accessDecisions` (score, outcome, reasons, factors) → `appendAuditEvent` ×2.
+
+Returns `{ requestId, publicId, targetFacility, purpose, recordTypes, recordCount, requestedAt, outcome, riskScore, reasons, factors }`.
 
 #### B2. `listMyAccessRequests` (query, paginated)
 
@@ -69,7 +71,7 @@ Built only from existing components: `ComponentCard`, `PageBreadCrumb`, `Button`
 
 ### Part D — Tests (`convex/accessRequests.test.ts`)
 
-Ibrahim → PAT-002391 treatment → ALLOW 8 with reasons; stored request/decision fields and factors; two audit rows; harvest (`recordCount: 500`) → BLOCK 94; facility fallback by hospital name; non-clinician and suspended users rejected; unknown patient, record types not held, empty types, bad counts; duplicate types collapsed; list is own-only, newest first, paginated; `getAccessRequest` visibility (owner, other clinician, security officer, bad id); no clinical leak anywhere.
+Ibrahim → PAT-002391 treatment → ALLOW 8 with reasons; stored request/decision fields and factors; two audit rows; `recordCount` is always 1 (no client harvest knob); facility fallback by hospital name; non-clinician and suspended users rejected; unknown patient, record types not held, empty types; duplicate types collapsed; list is own-only, newest first, paginated; `getAccessRequest` visibility (owner, other clinician, security officer, bad id); no clinical leak anywhere.
 
 ---
 

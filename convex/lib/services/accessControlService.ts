@@ -18,9 +18,9 @@ import { RecordType } from "../domain";
  * Never reads `clinicalSummaries`.
  */
 
-export const MAX_REQUEST_RECORD_COUNT = 10_000;
 const RECORD_INDEX_LOOKUP_LIMIT = 20;
 
+/** Sentence-case labels for server error text. UI title-case is in accessLabels.ts. */
 export const RECORD_TYPE_LABELS: Record<RecordType, string> = {
   medical_summary: "medical summary",
   allergies: "allergies",
@@ -52,20 +52,6 @@ export function normalizeRecordTypes(recordTypes: RecordType[]): RecordType[] {
     throw new Error(NO_RECORD_TYPES_MESSAGE);
   }
   return uniqueTypes;
-}
-
-export function normalizeRecordCount(recordCount: number | undefined): number {
-  const count = recordCount ?? 1;
-  if (
-    !Number.isInteger(count) ||
-    count < 1 ||
-    count > MAX_REQUEST_RECORD_COUNT
-  ) {
-    throw new Error(
-      `recordCount must be a whole number between 1 and ${MAX_REQUEST_RECORD_COUNT}`,
-    );
-  }
-  return count;
 }
 
 async function resolveSourceFacilityId(

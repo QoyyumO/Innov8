@@ -1,8 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { personName, recordType } from "./lib/domain";
-import { requireSession } from "./lib/session";
-import { CLINICIAN_ROLES, requireRole } from "./lib/roles";
+import { requireClinicianSession } from "./lib/roles";
 import { isAuthErrorMessage } from "./lib/authConstants";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
@@ -30,15 +29,6 @@ const patientDiscoveryValidator = patientSearchHitValidator.extend({
     }),
   ),
 });
-
-async function requireClinicianSession(
-  ctx: Parameters<typeof requireSession>[0],
-  token: string | undefined,
-) {
-  const { user, session } = await requireSession(ctx, token);
-  requireRole(user, CLINICIAN_ROLES);
-  return { user, session };
-}
 
 /**
  * Search writes `PatientSearched`, so it is a mutation.

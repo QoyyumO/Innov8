@@ -76,4 +76,4 @@ Demo invariants (8 ALLOW, 94 BLOCK with harvest reasons, independent of time of 
 
 ## Open questions
 
-- [ ] INN-37 decides how `recordCount` and `sameHospital` are derived from the session user and patient record index.
+- [x] INN-37 decides how `recordCount` and `sameHospital` are derived: `sameHospital` from source vs target facility; `recordCount` is always 1 for `createAccessRequest` (one patient). Harvest volume is INN-39.

@@ -101,14 +101,13 @@ function assertNoClinicalLeak(payload: unknown) {
 async function requestTreatment(
   testBackend: TestBackend,
   token: string,
-  overrides: { recordCount?: number; publicId?: string } = {},
+  overrides: { publicId?: string } = {},
 ) {
   return await testBackend.mutation(api.accessRequests.createAccessRequest, {
     token,
     publicId: overrides.publicId ?? "PAT-002391",
     purpose: "treatment",
     recordTypes: [...ALL_RECORD_TYPES],
-    recordCount: overrides.recordCount,
   });
 }
 
@@ -204,20 +203,16 @@ describe("createAccessRequest", () => {
     assertNoClinicalLeak(events);
   });
 
-  test("500-record harvest is BLOCK 94 and audited as AccessBlocked", async () => {
+  test("always scores a single patient; harvest volume is not a client argument", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
 
-    const result = await requestTreatment(testBackend, token, { recordCount: 500 });
+    const result = await requestTreatment(testBackend, token);
 
-    expect(result.outcome).toBe("BLOCK");
-    expect(result.riskScore).toBe(94);
-    expect(result.reasons.some((reason) => reason.startsWith("Harvest pattern"))).toBe(true);
-    const actions = await testBackend.run(async (ctx) =>
-      (await ctx.db.query("auditEvents").take(20)).map((event) => event.action),
-    );
-    expect(actions).toContain("AccessBlocked");
+    expect(result.recordCount).toBe(1);
+    expect(result.outcome).toBe("ALLOW");
+    expect(result.riskScore).toBe(8);
   });
 
   test("falls back to the facility named on the user when facilityId is missing", async () => {
@@ -291,7 +286,7 @@ describe("createAccessRequest", () => {
     expect(requests).toHaveLength(0);
   });
 
-  test("rejects unknown patients, empty types, bad counts, and types not held", async () => {
+  test("rejects unknown patients, empty types, and types not held", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend, { lagosRecordTypes: ["allergies"] });
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
@@ -307,17 +302,6 @@ describe("createAccessRequest", () => {
         recordTypes: [],
       }),
     ).rejects.toThrow("Choose at least one record type");
-    for (const recordCount of [0, 1.5, 10_001]) {
-      await expect(
-        testBackend.mutation(api.accessRequests.createAccessRequest, {
-          token,
-          publicId: "PAT-002391",
-          purpose: "treatment",
-          recordTypes: ["allergies"],
-          recordCount,
-        }),
-      ).rejects.toThrow(/recordCount/);
-    }
     await expect(requestTreatment(testBackend, token)).rejects.toThrow(
       "Records not held at FMC Lagos: medical summary, medications, diagnoses",
     );
@@ -335,7 +319,7 @@ describe("listMyAccessRequests", () => {
     const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
 
     const first = await requestTreatment(testBackend, ibrahimToken);
-    const second = await requestTreatment(testBackend, ibrahimToken, { recordCount: 500 });
+    const second = await requestTreatment(testBackend, ibrahimToken);
     await requestTreatment(testBackend, fatimaToken);
 
     const firstPage = await testBackend.query(api.accessRequests.listMyAccessRequests, {
@@ -345,7 +329,7 @@ describe("listMyAccessRequests", () => {
     expect(firstPage.page).toHaveLength(1);
     expect(firstPage.isDone).toBe(false);
     expect(firstPage.page[0].requestId).toBe(second.requestId);
-    expect(firstPage.page[0].decision?.outcome).toBe("BLOCK");
+    expect(firstPage.page[0].decision?.outcome).toBe("ALLOW");
     expect(firstPage.page[0].isOwnRequest).toBe(true);
 
     const secondPage = await testBackend.query(api.accessRequests.listMyAccessRequests, {
