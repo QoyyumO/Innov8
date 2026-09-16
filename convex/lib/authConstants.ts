@@ -16,6 +16,7 @@ export const AUTH_ERROR_MESSAGES = [
   SESSION_EXPIRED_MESSAGE,
   ACCOUNT_SUSPENDED_MESSAGE,
   PERMISSION_DENIED_MESSAGE,
+  INVALID_CREDENTIALS_MESSAGE,
 ] as const;
 
 export function isAuthErrorMessage(message: string): boolean {

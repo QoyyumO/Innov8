@@ -33,6 +33,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-42](https://linear.app/innov8-health/issue/INN-42) read-only audit trail, `/audit`
 - [INN-43](https://linear.app/innov8-health/issue/INN-43) live role dashboards, `/facilities`
 - [INN-51](https://linear.app/innov8-health/issue/INN-51) ALLOW decisions expire after 24 hours (`AccessExpired`)
+- [INN-54](https://linear.app/innov8-health/issue/INN-54) login errors, 7-day Keep me logged in, seed `recordCount` 1, mobile overlay
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 

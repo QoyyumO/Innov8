@@ -9,11 +9,9 @@ import {
   RESET_REQUEST_COOLDOWN_MS,
   RESET_TOKEN_TTL_MS,
 } from "./lib/authConstants";
-import { userRole } from "./lib/roles";
 import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
+import { publicUserValidator } from "./lib/publicUser";
 import {
-  PERSISTENT_SESSION_DURATION_MS,
-  SESSION_DURATION_MS,
   createSession,
   deleteAllUserSessions,
   deleteOtherUserSessions,
@@ -59,20 +57,9 @@ export const login = mutation({
     keepMeLoggedIn: v.optional(v.boolean()),
   },
   returns: v.union(
-    v.object({
+    publicUserValidator.extend({
       success: v.literal(true),
       token: v.string(),
-      _id: v.id("users"),
-      email: v.string(),
-      roles: v.array(userRole),
-      hospital: v.string(),
-      department: v.optional(v.string()),
-      accountStatus: v.union(v.literal("active"), v.literal("suspended")),
-      profile: v.object({
-        firstName: v.string(),
-        lastName: v.string(),
-        middleName: v.optional(v.string()),
-      }),
     }),
     v.object({
       success: v.literal(false),
@@ -100,10 +87,11 @@ export const login = mutation({
       return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
-    const durationMs = args.keepMeLoggedIn
-      ? PERSISTENT_SESSION_DURATION_MS
-      : SESSION_DURATION_MS;
-    const { token, sessionId } = await createSession(ctx.db, user._id, durationMs);
+    const { token, sessionId } = await createSession(
+      ctx.db,
+      user._id,
+      args.keepMeLoggedIn ? "persistent" : "default",
+    );
     await appendAuditEvent(ctx.db, {
       actorId: user._id,
       sessionId,
@@ -125,6 +113,7 @@ export const getCurrentUser = query({
   args: {
     token: v.optional(v.string()),
   },
+  returns: v.union(publicUserValidator, v.null()),
   handler: async (ctx, args) => {
     if (!args.token) {
       return null;

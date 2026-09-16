@@ -25,9 +25,9 @@ QA leftovers after the demo path: failed login throws (Next.js overlay), session
 
 #### A1. `convex/auth.ts` + `convex/lib/session.ts`
 
-- Shared `INVALID_CREDENTIALS_MESSAGE` in `authConstants.ts`.
-- `createSession(..., durationMs)` — 30 minutes default; persistent session 7 days when `keepMeLoggedIn` is true.
-- `login` args: `keepMeLoggedIn: v.optional(v.boolean())`. Returns union of success (token + public user) or `{ success: false, error }`. Still throw for unexpected failures.
+- Shared `INVALID_CREDENTIALS_MESSAGE` in `authConstants.ts` (also listed in `AUTH_ERROR_MESSAGES`).
+- `createSession(..., ttlKind)` — `"default"` is 30 minutes; `"persistent"` is 7 days when `keepMeLoggedIn` is true.
+- `login` args: `keepMeLoggedIn: v.optional(v.boolean())`. Returns union of success (`publicUserValidator` + token) or `{ success: false, error }`. Still throw for unexpected failures.
 
 #### A2. Client
 
