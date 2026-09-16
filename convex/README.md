@@ -8,6 +8,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | --- | --- | --- |
 | `auth.ts` | `login`, `logout`, `getCurrentUser`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword` | Session token `innov8_session_token`; 30-minute sessions |
 | `patients.ts` | `searchPatients` (mutation, audited), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
+| `accessRequests.ts` | `createAccessRequest` (mutation, audited), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
 
 ## Internal functions
 
@@ -23,6 +24,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `domain.ts` — closed enums (purpose, record type, decision outcome, audit action, …)
 - `invariants.ts` — shared assertions (non-empty strings, risk score range, unique ids)
 - `authConstants.ts`, `searchLimits.ts`, `password.ts`, `demoUsers.ts`, `demoIds.ts`, `synthetic.ts`
+- `services/accessControlService.ts` — resolves patient, source/target facility, and held record types for a request
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
 - `services/riskScoringService.ts` — pure `scoreAccessRequest` (no db access); returns `score`, `outcome`, `reasons`, `factors` for `accessDecisions`
