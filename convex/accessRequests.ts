@@ -10,12 +10,7 @@ import {
   recordType,
   RecordType,
 } from "./lib/domain";
-import {
-  ADMIN_ROLES,
-  SECURITY_ROLES,
-  requireClinicianSession,
-  userRole,
-} from "./lib/roles";
+import { requireClinicianSession, userRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
   normalizeRecordTypes,
@@ -23,6 +18,7 @@ import {
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { allowWindowStart, allowedUntil } from "./lib/accessWindow";
+import { resolveReviewerScope, scopeIncludesRequest } from "./lib/facilityScope";
 import { stepUpAttemptsLeft } from "./lib/services/stepUpService";
 import { raiseBlockAlert } from "./lib/services/alertService";
 import { toGrantView } from "./lib/services/emergencyAccessService";
@@ -275,6 +271,7 @@ async function recordAccessRequest(
 
   if (risk.outcome === "BLOCK") {
     await raiseBlockAlert(ctx.db, {
+      requestId,
       decisionId,
       actor: user,
       sessionId: session._id,
@@ -422,9 +419,7 @@ export const getAccessRequest = query({
 
     const canView =
       request.actorId === viewer._id ||
-      viewer.roles.some(
-        (role) => SECURITY_ROLES.includes(role) || ADMIN_ROLES.includes(role),
-      );
+      scopeIncludesRequest(await resolveReviewerScope(ctx.db, viewer), request);
     if (!canView) {
       return null;
     }

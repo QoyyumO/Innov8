@@ -17,8 +17,11 @@ import {
   transitionAlert,
 } from "./lib/services/alertService";
 import { toGrantView } from "./lib/services/emergencyAccessService";
+import { resolveReviewerScope } from "./lib/facilityScope";
 
 const ALERT_REVIEWER_ROLES = [...SECURITY_ROLES, ...ADMIN_ROLES];
+
+const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
 const alertViewValidator = v.object({
   alertId: v.id("securityAlerts"),
@@ -106,7 +109,10 @@ async function toAlertView(ctx: QueryCtx, alert: Doc<"securityAlerts">) {
   };
 }
 
-/** Security officers and admins only. Newest first, paginated. */
+/**
+ * Security officers and admins only. Newest first, paginated. Hospital admins
+ * see alerts involving their facility (INN-52).
+ */
 export const listSecurityAlerts = query({
   args: {
     token: v.optional(v.string()),
@@ -115,16 +121,42 @@ export const listSecurityAlerts = query({
   },
   returns: paginationResultValidator(alertViewValidator),
   handler: async (ctx, args) => {
+    let reviewer: Doc<"users">;
     try {
-      await requireAlertReviewer(ctx, args.token);
+      reviewer = (await requireAlertReviewer(ctx, args.token)).user;
     } catch (error) {
       if (error instanceof Error && isAuthErrorMessage(error.message)) {
-        return { page: [], isDone: true, continueCursor: "" };
+        return EMPTY_PAGE;
       }
       throw error;
     }
 
     const status = args.status;
+    const scope = await resolveReviewerScope(ctx.db, reviewer);
+    if (scope.kind === "facility") {
+      const facilityId = scope.facilityId;
+      if (!facilityId) {
+        return EMPTY_PAGE;
+      }
+      const links = await (status
+        ? ctx.db
+            .query("alertFacilities")
+            .withIndex("by_facilityId_status_createdAt", (query) =>
+              query.eq("facilityId", facilityId).eq("status", status),
+            )
+        : ctx.db
+            .query("alertFacilities")
+            .withIndex("by_facilityId_createdAt", (query) => query.eq("facilityId", facilityId))
+      )
+        .order("desc")
+        .paginate(args.paginationOpts);
+      const alerts = await Promise.all(links.page.map((link) => ctx.db.get(link.alertId)));
+      const page = await Promise.all(
+        alerts.filter((alert) => alert !== null).map((alert) => toAlertView(ctx, alert)),
+      );
+      return { ...links, page };
+    }
+
     const results = status
       ? await ctx.db
           .query("securityAlerts")

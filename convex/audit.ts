@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage, PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import { AuditAction, auditAction, auditDetails } from "./lib/domain";
-import { isAuditReviewer } from "./lib/roles";
+import { resolveReviewerScope } from "./lib/facilityScope";
 import { requireSession } from "./lib/session";
 
 const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
@@ -101,13 +101,41 @@ function queryEvents(
   return table.withIndex("by_createdAt");
 }
 
+/** INN-52: a hospital admin's trail, via the facility index. */
+function queryFacilityEvents(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities">,
+  actorId: Id<"users"> | undefined,
+  action: AuditAction | undefined,
+) {
+  const table = ctx.db.query("auditEventFacilities");
+  if (actorId && action) {
+    return table.withIndex("by_facilityId_actorId_action_createdAt", (query) =>
+      query.eq("facilityId", facilityId).eq("actorId", actorId).eq("action", action),
+    );
+  }
+  if (actorId) {
+    return table.withIndex("by_facilityId_actorId_createdAt", (query) =>
+      query.eq("facilityId", facilityId).eq("actorId", actorId),
+    );
+  }
+  if (action) {
+    return table.withIndex("by_facilityId_action_createdAt", (query) =>
+      query.eq("facilityId", facilityId).eq("action", action),
+    );
+  }
+  return table.withIndex("by_facilityId_createdAt", (query) =>
+    query.eq("facilityId", facilityId),
+  );
+}
+
 /**
  * Read-only audit trail (INN-42), newest first.
  *
  * Everyone sees their own events, so this query uses `requireSession` without
- * `requireRole`. Reviewers (`isAuditReviewer`) see every event and may filter
- * to one actor; facility-scoped hospital-admin views are INN-52. There is
- * deliberately no function that updates or deletes audit rows.
+ * `requireRole`. Security officers and system admins see every event; hospital
+ * admins see events involving their facility (INN-52). Both may filter to one
+ * actor. There is deliberately no function that updates or deletes audit rows.
  */
 export const listAuditEvents = query({
   args: {
@@ -129,7 +157,8 @@ export const listAuditEvents = query({
       throw error;
     }
 
-    const isReviewer = isAuditReviewer(user);
+    const scope = await resolveReviewerScope(ctx.db, user);
+    const isReviewer = scope.kind !== "none";
     let actorId: Id<"users"> | undefined = isReviewer ? undefined : user._id;
     if (args.actorId !== undefined) {
       const requestedActorId = ctx.db.normalizeId("users", args.actorId);
@@ -142,11 +171,27 @@ export const listAuditEvents = query({
       actorId = requestedActorId;
     }
 
+    const actorCache: ActorCache = new Map();
+    if (scope.kind === "facility") {
+      const facilityId = scope.facilityId;
+      if (!facilityId) {
+        return EMPTY_PAGE;
+      }
+      const links = await queryFacilityEvents(ctx, facilityId, actorId, args.action)
+        .order("desc")
+        .paginate(args.paginationOpts);
+      const events = await Promise.all(links.page.map((link) => ctx.db.get(link.eventId)));
+      const page = await Promise.all(
+        events
+          .filter((event) => event !== null)
+          .map((event) => toEventView(ctx, event, actorCache)),
+      );
+      return { ...links, page };
+    }
+
     const results = await queryEvents(ctx, actorId, args.action)
       .order("desc")
       .paginate(args.paginationOpts);
-
-    const actorCache: ActorCache = new Map();
     const page = await Promise.all(
       results.page.map((event) => toEventView(ctx, event, actorCache)),
     );

@@ -5,12 +5,25 @@ import EmptyState from "@/components/empty-state/EmptyState";
 import { FileIcon } from "@/icons";
 import { DashboardRequestsTable, DashboardRow } from "./DashboardWidgets";
 
-/** Latest risk decisions across the exchange, for security officers and admins. */
-export function RecentDecisionsCard({ rows }: { rows: DashboardRow[] | undefined }) {
+/**
+ * Latest risk decisions, for security officers and admins. `scopeLabel` names
+ * the facility when the viewer is a hospital admin (INN-52).
+ */
+export function RecentDecisionsCard({
+  rows,
+  scopeLabel,
+}: {
+  rows: DashboardRow[] | undefined;
+  scopeLabel?: string;
+}) {
   return (
     <ComponentCard
       title="Latest access decisions"
-      desc="Newest risk decisions across participating facilities. Clinical contents are never shown here."
+      desc={
+        scopeLabel
+          ? `Newest risk decisions on requests to or from ${scopeLabel}. Clinical contents are never shown here.`
+          : "Newest risk decisions across participating facilities. Clinical contents are never shown here."
+      }
     >
       {rows && rows.length > 0 ? (
         <DashboardRequestsTable rows={rows} showRequester />

@@ -34,6 +34,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
 - **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
 - **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan.
+- **INN-52** — Facility scope for hospital admins: AuditEvents and SecurityAlerts are indexed by the facilities they involve (actor's facility, request source/target), so a hospital admin reviews only their facility's activity. Security officers and system admins keep the exchange-wide view.
 
 ## Next (live demo path)
 

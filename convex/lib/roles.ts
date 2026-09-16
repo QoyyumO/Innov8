@@ -35,7 +35,7 @@ export const SECURITY_ROLES: readonly UserRole[] = ["security_officer"];
 
 export const ADMIN_ROLES: readonly UserRole[] = ["hospital_admin", "system_admin"];
 
-/** Security officers and admins — global audit/alert review (facility scope is INN-52). */
+/** Security officers and admins — audit/alert review (hospital admins are facility-scoped, INN-52). */
 export const AUDIT_REVIEWER_ROLES: readonly UserRole[] = [
   ...SECURITY_ROLES,
   ...ADMIN_ROLES,
@@ -43,6 +43,24 @@ export const AUDIT_REVIEWER_ROLES: readonly UserRole[] = [
 
 export function isAuditReviewer(user: { roles: readonly UserRole[] }): boolean {
   return AUDIT_REVIEWER_ROLES.some((role) => user.roles.includes(role));
+}
+
+/** Roles that review the whole exchange. */
+export const GLOBAL_REVIEWER_ROLES: readonly UserRole[] = [...SECURITY_ROLES, "system_admin"];
+
+/**
+ * How much of the exchange a user may review (INN-52):
+ * `global` — security officers and system admins;
+ * `facility` — hospital admins (only activity involving their facility);
+ * `none` — everyone else (their own activity only, where a view allows it).
+ */
+export type ReviewScope = "global" | "facility" | "none";
+
+export function getReviewScope(user: { roles: readonly UserRole[] }): ReviewScope {
+  if (GLOBAL_REVIEWER_ROLES.some((role) => user.roles.includes(role))) {
+    return "global";
+  }
+  return user.roles.includes("hospital_admin") ? "facility" : "none";
 }
 
 /**

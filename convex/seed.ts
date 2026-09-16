@@ -3,6 +3,8 @@ import { internal } from "./_generated/api";
 import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { hashPassword } from "./lib/password";
+import { linkAlertFacilities } from "./lib/facilityScope";
+import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   DEMO_PASSWORD,
   DEMO_USERS,
@@ -476,7 +478,7 @@ async function seedAccessEvent(
         ? "AccessChallenged"
         : "AccessBlocked";
 
-  await ctx.db.insert("auditEvents", {
+  await appendAuditEvent(ctx.db, {
     actorId: args.worker._id,
     action: "AccessRequested",
     entity: "accessRequests",
@@ -488,7 +490,7 @@ async function seedAccessEvent(
     createdAt: args.requestedAt,
   });
 
-  await ctx.db.insert("auditEvents", {
+  await appendAuditEvent(ctx.db, {
     actorId: args.worker._id,
     action: followUpAction,
     entity: "accessDecisions",
@@ -502,15 +504,24 @@ async function seedAccessEvent(
   });
 
   if (args.outcome === "BLOCK") {
-    await ctx.db.insert("securityAlerts", {
+    const alertCreatedAt = args.requestedAt + 1000;
+    const alertId = await ctx.db.insert("securityAlerts", {
       decisionId,
       severity: "high",
       status: "open",
       title: "Blocked high-risk access request",
       message: args.reasons.join(" "),
-      createdAt: args.requestedAt + 1000,
+      createdAt: alertCreatedAt,
     });
-    await ctx.db.insert("auditEvents", {
+    const request = await ctx.db.get(requestId);
+    if (request) {
+      await linkAlertFacilities(
+        ctx.db,
+        { alertId, status: "open", createdAt: alertCreatedAt },
+        request,
+      );
+    }
+    await appendAuditEvent(ctx.db, {
       actorId: args.worker._id,
       action: "SecurityAlertRaised",
       entity: "securityAlerts",

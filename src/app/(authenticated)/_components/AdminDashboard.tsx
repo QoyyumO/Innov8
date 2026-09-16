@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
 import { useStartOfToday } from "@/hooks/useStartOfToday";
+import { hasFacilityReviewScope } from "@/services/permissions";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
@@ -20,6 +21,8 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, sessionToken } = useAuth();
   const since = useStartOfToday();
+  const isFacilityScoped = user !== null && hasFacilityReviewScope(user.roles);
+  const scopeLabel = isFacilityScoped ? (user?.hospital ?? "your facility") : "the exchange";
   const dashboard = useQuery(
     api.dashboards.getSecurityDashboard,
     sessionToken ? { token: sessionToken, since } : "skip",
@@ -59,7 +62,11 @@ export default function AdminDashboard() {
         <Alert
           variant="info"
           title="Exchange overview"
-          message="Facilities keep their own records — Lagos and Abuja do not talk point-to-point. The exchange brokers each request and records it in the audit trail."
+          message={
+            isFacilityScoped
+              ? `Alerts, blocks, audit events, and decisions below cover ${scopeLabel}: your staff, and requests to or from your facility. Facilities keep their own records; the exchange brokers each request and records it in the audit trail.`
+              : "Facilities keep their own records — Lagos and Abuja do not talk point-to-point. The exchange brokers each request and records it in the audit trail."
+          }
         />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -116,7 +123,10 @@ export default function AdminDashboard() {
           <FacilitiesTable facilities={facilities} />
         </ComponentCard>
 
-        <RecentDecisionsCard rows={dashboard?.recentDecisions} />
+        <RecentDecisionsCard
+          rows={dashboard?.recentDecisions}
+          scopeLabel={isFacilityScoped ? scopeLabel : undefined}
+        />
       </div>
     </div>
   );

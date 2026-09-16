@@ -19,6 +19,8 @@ export const OPEN_ALERT_COUNT_LIMIT = 200;
 export const AUDIT_TODAY_COUNT_LIMIT = 200;
 /** Live break-glass grants listed on a dashboard. */
 export const ACTIVE_GRANT_LIMIT = 20;
+/** Live grants scanned (soonest expiry first) when filtering to one facility (INN-52). */
+export const ACTIVE_GRANT_SCAN_LIMIT = 100;
 /** Facilities listed on `/facilities`. */
 export const FACILITY_LIST_LIMIT = 50;
 

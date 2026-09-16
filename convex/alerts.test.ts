@@ -209,6 +209,7 @@ describe("alerts raised by blocked requests", () => {
       const actor = await ctx.db.get(request!.actorId);
       await raiseBlockAlert(ctx.db, {
         decisionId: decision!._id,
+        requestId: allowed.requestId,
         actor: actor!,
         patientPublicId: "PAT-002391",
         recordCount: 1,

@@ -37,12 +37,13 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-44](https://linear.app/innov8-health/issue/INN-44) VERIFY step-up: password re-entry → ALLOW, 3 failures → BLOCK + alert
 - [INN-50](https://linear.app/innov8-health/issue/INN-50) alert acknowledge / close audited
 - [INN-55](https://linear.app/innov8-health/issue/INN-55) demo-scale seed + wipe (not 10k/100k on the free plan)
+- [INN-52](https://linear.app/innov8-health/issue/INN-52) hospital admins see only their facility's activity
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-The MVP demo path is complete. Should-have: INN-45 (consent), INN-46 (patient access history). Follow-ups: INN-52 (facility-scoped admin views), INN-53 (stored counters).
+The MVP demo path is complete. Should-have: INN-45 (consent), INN-46 (patient access history). Follow-ups: INN-53 (stored counters).
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

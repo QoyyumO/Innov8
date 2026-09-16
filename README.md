@@ -70,8 +70,8 @@ Track C demo steps (see `AGENTS.md`):
 | 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed`. Allowed access lasts **24 hours** from the decision; after that the request page shows **Request access again**, and any attempt to open the records is refused and audited as `AccessExpired` |
 | 6. Harvest BLOCK + alert | Done — **Simulate bulk harvest (500 records)** on `/requests` calls `simulateBulkHarvest` (the server fixes the count) → BLOCK 94; every BLOCK raises a high-severity alert (`SecurityAlertRaised` audit); security officers and admins review, acknowledge, and close alerts on `/security`; each acknowledge / close is audited with the officer's name |
 | 7. Break-glass | Done — `/emergency` (or **Use break-glass** on a blocked or challenged request): a clinician gives a written justification and confirms; the server grants 15 minutes of access (the client cannot choose the length), raises a medium alert, and audits `EmergencyGranted`. Records open on the request page while the grant is live; it ends by scheduled expiry (`EmergencyExpired`) or when the holder or a security officer ends it early (`EmergencyRevoked`) |
-| Audit trail | Done — `/audit` lists audit events newest first, 25 at a time, with an action filter. Clinicians and patients see only their own activity; security officers and admins see everyone's and can open one person's trail. Read-only: nothing edits or deletes audit rows |
-| Live dashboards + facilities | Done — every role dashboard reads live, bounded data. Clinicians (doctor, nurse, pharmacist, laboratory) see their requests today by outcome, last decision, latest blocked harvest, active break-glass, and recent requests. Security officers see open alerts by severity, blocks today, active break-glass, audit volume today, the live alert queue, and the latest decisions; admins see the same summary plus facilities. `/facilities` lists the participating hospitals. "Today" means since midnight in Lagos |
+| Audit trail | Done — `/audit` lists audit events newest first, 25 at a time, with an action filter. Clinicians and patients see only their own activity; security officers and system admins see everyone's; hospital admins see their own staff plus every request to or from their facility. Reviewers can open one person's trail. Read-only: nothing edits or deletes audit rows |
+| Live dashboards + facilities | Done — every role dashboard reads live, bounded data. Clinicians (doctor, nurse, pharmacist, laboratory) see their requests today by outcome, last decision, latest blocked harvest, active break-glass, and recent requests. Security officers and system admins see open alerts by severity, blocks today, active break-glass, audit volume today, the live alert queue, and the latest decisions; hospital admins see the same summary for their facility plus the facility list. `/facilities` lists the participating hospitals. "Today" means since midnight in Lagos |
 
 No dashboard uses dummy data. The patient dashboard's access history is still to come (INN-46).
 
@@ -108,6 +108,8 @@ Wait until scheduled patient and event batches finish (`done: true`), then `veri
 
 PAT-002391 is always upserted on the first patient batch; `total` no longer needs to be 2391.
 
+**Existing deployments (seeded before INN-52):** run `npx convex run facilityScopeBackfill:start` once so hospital admins can see older alerts and audit events. It runs in scheduled batches and is safe to re-run.
+
 More detail (indexes, demo rows, files): [`convex/README-seeding.md`](convex/README-seeding.md).
 
 ## Checks
@@ -134,6 +136,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/audit.ts` — read-only, role-scoped audit trail
 - `convex/dashboards.ts` — bounded live dashboard summaries and the facility list
 - `convex/seed.ts` — internal demo-scale seed and wipe mutations
+- `convex/lib/facilityScope.ts` — hospital-admin facility scope (INN-52); `convex/facilityScopeBackfill.ts` — one-time backfill
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
 - `convex/lib/services/` — domain services (`accessControlService`, `alertService`, `auditLogService`, `emergencyAccessService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)

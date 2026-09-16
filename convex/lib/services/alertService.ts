@@ -2,6 +2,12 @@ import { DatabaseWriter } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
 import { AlertStatus } from "../domain";
 import { appendAuditEvent } from "./auditLogService";
+import {
+  linkAlertFacilities,
+  resolveReviewerScope,
+  scopeIncludesAlert,
+  updateAlertFacilitiesStatus,
+} from "../facilityScope";
 import { HARVEST_RECORD_COUNT } from "../riskConstants";
 
 /**
@@ -20,6 +26,8 @@ export const EMERGENCY_ALERT_TITLE = "Break-glass access granted";
 
 export type BlockAlertInput = {
   decisionId: Id<"accessDecisions">;
+  /** The blocked request; its source/target scope the alert (INN-52). */
+  requestId: Id<"accessRequests">;
   actor: Doc<"users">;
   sessionId?: Id<"sessions">;
   patientPublicId: string;
@@ -28,6 +36,18 @@ export type BlockAlertInput = {
   reasons: string[];
   createdAt: number;
 };
+
+async function linkRequestFacilities(
+  db: DatabaseWriter,
+  alertId: Id<"securityAlerts">,
+  requestId: Id<"accessRequests">,
+  createdAt: number,
+): Promise<void> {
+  const request = await db.get(requestId);
+  if (request) {
+    await linkAlertFacilities(db, { alertId, status: "open", createdAt }, request);
+  }
+}
 
 export function isHarvestCount(recordCount: number): boolean {
   return recordCount >= HARVEST_RECORD_COUNT;
@@ -52,6 +72,7 @@ export async function raiseBlockAlert(
     message: `${describeActor(input.actor)} requested ${recordLabel} (${input.patientPublicId}). Risk ${input.riskScore}/100. ${input.reasons.join(". ")}.`,
     createdAt: input.createdAt,
   });
+  await linkRequestFacilities(db, alertId, input.requestId, input.createdAt);
 
   await appendAuditEvent(db, {
     actorId: input.actor._id,
@@ -74,6 +95,7 @@ export async function raiseBlockAlert(
 
 export type EmergencyAlertInput = {
   emergencyAccessId: Id<"emergencyAccess">;
+  requestId: Id<"accessRequests">;
   actor: Doc<"users">;
   sessionId?: Id<"sessions">;
   patientPublicId: string;
@@ -96,6 +118,7 @@ export async function raiseEmergencyAlert(
     message: `${describeActor(input.actor)} used break-glass for ${input.patientPublicId} (${minutes} minutes). Justification: "${input.justification}"`,
     createdAt: input.createdAt,
   });
+  await linkRequestFacilities(db, alertId, input.requestId, input.createdAt);
 
   await appendAuditEvent(db, {
     actorId: input.actor._id,
@@ -133,8 +156,9 @@ export type AlertReviewer = {
 
 /**
  * Moves an alert forward (open → acknowledged → closed, or open → closed)
- * and audits who did it (INN-50). Invalid transitions throw, so nothing is
- * written for them.
+ * and audits who did it (INN-50). Hospital admins may only move alerts that
+ * involve their facility; others look "not found" (INN-52). Invalid
+ * transitions throw, so nothing is written for them.
  */
 export async function transitionAlert(
   db: DatabaseWriter,
@@ -144,13 +168,15 @@ export async function transitionAlert(
   now: number,
 ): Promise<Doc<"securityAlerts">> {
   const alert = await db.get(alertId);
-  if (!alert) {
+  const scope = await resolveReviewerScope(db, user);
+  if (!alert || !(await scopeIncludesAlert(db, scope, alertId))) {
     throw new Error(ALERT_NOT_FOUND_MESSAGE);
   }
   if (!ALLOWED_TRANSITIONS[alert.status].includes(nextStatus)) {
     throw new Error(`Alert is already ${alert.status}`);
   }
   await db.patch(alertId, { status: nextStatus });
+  await updateAlertFacilitiesStatus(db, alertId, nextStatus);
   await appendAuditEvent(db, {
     actorId: user._id,
     sessionId: session._id,

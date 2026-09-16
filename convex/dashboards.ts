@@ -4,6 +4,7 @@ import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage } from "./lib/authConstants";
 import {
   ACTIVE_GRANT_LIMIT,
+  ACTIVE_GRANT_SCAN_LIMIT,
   AUDIT_TODAY_COUNT_LIMIT,
   clampDashboardSince,
   FACILITY_LIST_LIMIT,
@@ -15,6 +16,7 @@ import {
 import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
+import { requestFacilityIds, resolveReviewerScope } from "./lib/facilityScope";
 import { requireSession } from "./lib/session";
 import { isLiveGrant } from "./lib/services/emergencyAccessService";
 
@@ -264,7 +266,147 @@ export const getClinicianDashboard = query({
   },
 });
 
-/** Exchange-wide view for security officers and admins. Facility scope is INN-52. */
+/**
+ * Newest requests to or from one facility, merged from the source and target
+ * indexes (INN-52). Each side is capped, so the merge is bounded.
+ */
+async function listFacilityRequests(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities">,
+  options: { since?: number; limit: number },
+): Promise<{ requests: Doc<"accessRequests">[]; isCapped: boolean }> {
+  const since = options.since ?? 0;
+  const [outgoing, incoming] = await Promise.all([
+    ctx.db
+      .query("accessRequests")
+      .withIndex("by_sourceFacilityId_requestedAt", (query) =>
+        query.eq("sourceFacilityId", facilityId).gte("requestedAt", since),
+      )
+      .order("desc")
+      .take(options.limit + 1),
+    ctx.db
+      .query("accessRequests")
+      .withIndex("by_targetFacilityId_requestedAt", (query) =>
+        query.eq("targetFacilityId", facilityId).gte("requestedAt", since),
+      )
+      .order("desc")
+      .take(options.limit + 1),
+  ]);
+  const byId = new Map<Id<"accessRequests">, Doc<"accessRequests">>();
+  for (const request of [...outgoing, ...incoming]) {
+    byId.set(request._id, request);
+  }
+  const requests = [...byId.values()].sort(
+    (left, right) => right.requestedAt - left.requestedAt,
+  );
+  return {
+    requests,
+    isCapped: outgoing.length > options.limit || incoming.length > options.limit,
+  };
+}
+
+/** Hospital-admin dashboard: the same summary, limited to one facility (INN-52). */
+async function buildFacilitySecurityDashboard(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities"> | null,
+  since: number,
+  now: number,
+) {
+  const noCount = { count: 0, isCapped: false };
+  if (!facilityId) {
+    return {
+      openAlerts: { total: noCount, high: 0, medium: 0, low: 0 },
+      blockedToday: noCount,
+      auditEventsToday: noCount,
+      activeGrants: [],
+      recentDecisions: [],
+    };
+  }
+  const load = createLoader(ctx);
+
+  const [openLinks, auditToday, expiringGrants, todayRequests, newestRequests] =
+    await Promise.all([
+      ctx.db
+        .query("alertFacilities")
+        .withIndex("by_facilityId_status_createdAt", (query) =>
+          query.eq("facilityId", facilityId).eq("status", "open"),
+        )
+        .order("desc")
+        .take(OPEN_ALERT_COUNT_LIMIT + 1),
+      ctx.db
+        .query("auditEventFacilities")
+        .withIndex("by_facilityId_createdAt", (query) =>
+          query.eq("facilityId", facilityId).gte("createdAt", since),
+        )
+        .take(AUDIT_TODAY_COUNT_LIMIT + 1),
+      ctx.db
+        .query("emergencyAccess")
+        .withIndex("by_expiresAt", (query) => query.gt("expiresAt", now))
+        .take(ACTIVE_GRANT_SCAN_LIMIT),
+      listFacilityRequests(ctx, facilityId, { since, limit: TODAY_COUNT_LIMIT }),
+      listFacilityRequests(ctx, facilityId, { limit: 2 * RECENT_REQUEST_LIMIT }),
+    ]);
+
+  const openAlerts = (
+    await Promise.all(
+      openLinks.slice(0, OPEN_ALERT_COUNT_LIMIT).map((link) => ctx.db.get(link.alertId)),
+    )
+  ).filter((alert) => alert !== null);
+  const countSeverity = (severity: Doc<"securityAlerts">["severity"]) =>
+    openAlerts.filter((alert) => alert.severity === severity).length;
+
+  const todayDecisions = await Promise.all(
+    todayRequests.requests.map((request) => findDecision(ctx, request._id)),
+  );
+  const blockedCount = todayDecisions.filter(
+    (decision) => decision?.outcome === "BLOCK",
+  ).length;
+
+  const liveGrants = [];
+  for (const grant of expiringGrants) {
+    if (liveGrants.length >= ACTIVE_GRANT_LIMIT) {
+      break;
+    }
+    const request = isLiveGrant(grant, now) ? await ctx.db.get(grant.requestId) : null;
+    if (request && requestFacilityIds(request).includes(facilityId)) {
+      liveGrants.push(grant);
+    }
+  }
+
+  const newestDecisions = await Promise.all(
+    newestRequests.requests.map((request) => findDecision(ctx, request._id)),
+  );
+  const decidedRequests = newestRequests.requests
+    .map((request, index) => ({ request, decision: newestDecisions[index] }))
+    .filter((entry) => entry.decision !== null)
+    .slice(0, RECENT_REQUEST_LIMIT);
+  const recentDecisions = await Promise.all(
+    decidedRequests.map(({ request, decision }) =>
+      toDashboardRow(ctx, load, request, now, decision),
+    ),
+  );
+
+  return {
+    openAlerts: {
+      total: toBoundedCount(openLinks, OPEN_ALERT_COUNT_LIMIT),
+      high: countSeverity("high"),
+      medium: countSeverity("medium"),
+      low: countSeverity("low"),
+    },
+    blockedToday: {
+      count: Math.min(blockedCount, TODAY_COUNT_LIMIT),
+      isCapped: todayRequests.isCapped || blockedCount > TODAY_COUNT_LIMIT,
+    },
+    auditEventsToday: toBoundedCount(auditToday, AUDIT_TODAY_COUNT_LIMIT),
+    activeGrants: await toGrantRows(load, liveGrants),
+    recentDecisions,
+  };
+}
+
+/**
+ * Exchange-wide view for security officers and system admins. Hospital admins
+ * get the same summary limited to their facility (INN-52).
+ */
 export const getSecurityDashboard = query({
   args: {
     token: v.optional(v.string()),
@@ -273,8 +415,9 @@ export const getSecurityDashboard = query({
   },
   returns: v.union(v.null(), securityDashboardValidator),
   handler: async (ctx, args) => {
+    let user: Doc<"users">;
     try {
-      const { user } = await requireSession(ctx, args.token);
+      user = (await requireSession(ctx, args.token)).user;
       requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
       if (isAuthError(error)) {
@@ -282,9 +425,13 @@ export const getSecurityDashboard = query({
       }
       throw error;
     }
-    const load = createLoader(ctx);
     const now = Date.now();
     const since = clampDashboardSince(args.since, now);
+    const scope = await resolveReviewerScope(ctx.db, user);
+    if (scope.kind === "facility") {
+      return await buildFacilitySecurityDashboard(ctx, scope.facilityId, since, now);
+    }
+    const load = createLoader(ctx);
 
     const [openAlerts, blockedToday, auditToday, expiringGrants, latestDecisions] =
       await Promise.all([

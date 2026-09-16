@@ -23,5 +23,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-44-verify-step-up](features/INN-44-verify-step-up/PLAN.md) | VERIFY step-up: password re-entry, block after 3 failures | In review ([#16](https://github.com/QoyyumO/Innov8/pull/16)) |
 | [INN-50-audit-alert-actions](features/INN-50-audit-alert-actions/PLAN.md) | Audit alert acknowledge / close | In review ([#17](https://github.com/QoyyumO/Innov8/pull/17)) |
 | [INN-55-shrink-seed-for-free-plan](features/INN-55-shrink-seed-for-free-plan/PLAN.md) | Demo-scale seed (24 workers / 200 patients / 200 events) + wipe | In progress |
+| [INN-52-facility-scoped-admin-views](features/INN-52-facility-scoped-admin-views/PLAN.md) | Hospital admins see only their facility's activity | In review ([#19](https://github.com/QoyyumO/Innov8/pull/19)) |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

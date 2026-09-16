@@ -122,7 +122,10 @@ export default defineSchema({
     .index("by_actorId", ["actorId"])
     .index("by_patientId", ["patientId"])
     .index("by_requestedAt", ["requestedAt"])
-    .index("by_actorId_requestedAt", ["actorId", "requestedAt"]),
+    .index("by_actorId_requestedAt", ["actorId", "requestedAt"])
+    // Facility-scoped admin views (INN-52).
+    .index("by_sourceFacilityId_requestedAt", ["sourceFacilityId", "requestedAt"])
+    .index("by_targetFacilityId_requestedAt", ["targetFacilityId", "requestedAt"]),
 
   accessDecisions: defineTable({
     requestId: v.id("accessRequests"),
@@ -188,4 +191,36 @@ export default defineSchema({
     .index("by_action_createdAt", ["action", "createdAt"])
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
+
+  // INN-52: one row per facility an audit event involves (the actor's
+  // facility plus the source/target of the request it is about), so a
+  // hospital admin's trail is a single indexed, paginated stream.
+  auditEventFacilities: defineTable({
+    eventId: v.id("auditEvents"),
+    facilityId: v.id("facilities"),
+    actorId: v.optional(v.id("users")),
+    action: auditAction,
+    createdAt: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_facilityId_createdAt", ["facilityId", "createdAt"])
+    .index("by_facilityId_action_createdAt", ["facilityId", "action", "createdAt"])
+    .index("by_facilityId_actorId_createdAt", ["facilityId", "actorId", "createdAt"])
+    .index("by_facilityId_actorId_action_createdAt", [
+      "facilityId",
+      "actorId",
+      "action",
+      "createdAt",
+    ]),
+
+  // INN-52: one row per facility an alert involves (source/target of its request).
+  alertFacilities: defineTable({
+    alertId: v.id("securityAlerts"),
+    facilityId: v.id("facilities"),
+    status: alertStatus,
+    createdAt: v.number(),
+  })
+    .index("by_alertId", ["alertId"])
+    .index("by_facilityId_createdAt", ["facilityId", "createdAt"])
+    .index("by_facilityId_status_createdAt", ["facilityId", "status", "createdAt"]),
 });

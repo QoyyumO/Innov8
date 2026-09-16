@@ -155,6 +155,7 @@ export async function completeStepUp(
   });
   await raiseBlockAlert(db, {
     decisionId: decision._id,
+    requestId,
     actor: user,
     sessionId: session._id,
     patientPublicId,
