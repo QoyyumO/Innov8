@@ -5,18 +5,22 @@ import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import EmptyState from "@/components/empty-state/EmptyState";
 import Loading from "@/components/loading/Loading";
 import { FileIcon } from "@/icons";
+import { isGrantLive } from "../../_components/emergencyLabels";
 import { DecisionResult } from "../_components/DecisionResult";
 import { AuthorisedSummary } from "../_components/AuthorisedSummary";
+import { EmergencyGrantCard } from "../_components/EmergencyGrantCard";
 
 export default function AccessRequestDetailPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = typeof params.requestId === "string" ? params.requestId : "";
   const { sessionToken } = useAuth();
+  const now = useNow();
   const request = useQuery(
     api.accessRequests.getAccessRequest,
     sessionToken && requestId !== "" ? { token: sessionToken, requestId } : "skip",
@@ -66,12 +70,26 @@ export default function AccessRequestDetailPage() {
                 reasons={request.decision.reasons}
                 factors={request.decision.factors}
               />
+            ) : request.emergency ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Break-glass request for {request.publicId} ({request.purpose}). No risk
+                decision was made; the emergency grant below governs access.
+              </p>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 No decision has been recorded for this request.
               </p>
             )}
           </ComponentCard>
+
+          {request.emergency && (
+            <ComponentCard
+              title="Emergency access"
+              desc="Temporary, justified, and audited."
+            >
+              <EmergencyGrantCard grant={request.emergency} canRevoke />
+            </ComponentCard>
+          )}
 
           {request.isOwnRequest && (
             <ComponentCard
@@ -81,7 +99,15 @@ export default function AccessRequestDetailPage() {
               <AuthorisedSummary
                 key={request.requestId}
                 requestId={request.requestId}
+                publicId={request.publicId}
                 outcome={request.decision?.outcome ?? null}
+                canUseBreakGlass={
+                  request.recordCount === 1 &&
+                  request.decision !== null &&
+                  request.decision.outcome !== "ALLOW" &&
+                  !(request.emergency !== null && isGrantLive(request.emergency, now))
+                }
+                hasEmergencyGrant={request.emergency !== null}
               />
             </ComponentCard>
           )}
