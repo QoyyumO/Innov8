@@ -1,6 +1,11 @@
 import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
-import { ALLOW_EXPIRED_REASON, allowedUntil, isAllowExpired } from "../accessWindow";
+import {
+  ALLOW_EXPIRED_REASON,
+  allowWindowStart,
+  allowedUntil,
+  isAllowExpired,
+} from "../accessWindow";
 import { DecisionOutcome, RecordType } from "../domain";
 import { isLiveGrant, listGrantsForRequest } from "./emergencyAccessService";
 
@@ -68,19 +73,20 @@ export async function resolveViewAuthorisation(
   }
 
   if (decision?.outcome === "ALLOW") {
-    if (isAllowExpired(decision.decidedAt, now)) {
+    const windowStart = allowWindowStart(decision);
+    if (isAllowExpired(windowStart, now)) {
       return {
         isAuthorised: false,
         outcome: decision.outcome,
         riskScore: decision.riskScore,
         reasons: [ALLOW_EXPIRED_REASON],
-        expiredAt: allowedUntil(decision.decidedAt),
+        expiredAt: allowedUntil(windowStart),
       };
     }
     return {
       isAuthorised: true,
       grantedBy: "decision",
-      allowedUntil: allowedUntil(decision.decidedAt),
+      allowedUntil: allowedUntil(windowStart),
     };
   }
 

@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import type {
@@ -29,13 +30,18 @@ export type DecisionResultProps = {
     role: string;
     sameHospital: boolean;
   };
+  /** Step-up (INN-44): when a VERIFY decision was completed or escalated. */
+  verifiedAt?: number;
+  escalatedAt?: number;
+  /** Shown under the headline, e.g. the "Complete verification" button. */
+  action?: ReactNode;
 };
 
 const OUTCOME_MESSAGES: Record<DecisionOutcome, string> = {
   ALLOW:
     "Access is granted for the record types you asked for. Only those sections will be released.",
   VERIFY:
-    "This request needs extra verification before any records are released.",
+    "This request needs step-up verification: re-enter your password to continue. No records are released until then.",
   BLOCK:
     "This request was blocked. No records are released and the attempt is recorded in the audit trail.",
 };
@@ -57,6 +63,9 @@ export function DecisionResult({
   riskScore,
   reasons,
   factors,
+  verifiedAt,
+  escalatedAt,
+  action,
 }: DecisionResultProps) {
   return (
     <div className="space-y-6">
@@ -65,6 +74,18 @@ export function DecisionResult({
         title={`${OUTCOME_LABELS[outcome]} — ${publicId} at ${targetFacilityName}`}
         message={OUTCOME_MESSAGES[outcome]}
       />
+
+      {verifiedAt !== undefined && (
+        <p className="text-sm font-medium text-success-600 dark:text-success-500">
+          Verified by password {formatRequestTime(verifiedAt)} (was VERIFY)
+        </p>
+      )}
+      {escalatedAt !== undefined && (
+        <p className="text-sm font-medium text-error-600 dark:text-error-500">
+          Blocked {formatRequestTime(escalatedAt)} after repeated failed verification (was VERIFY)
+        </p>
+      )}
+      {action}
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,12rem)_1fr]">
         <div className="rounded-2xl border border-gray-200 p-5 dark:border-gray-800">

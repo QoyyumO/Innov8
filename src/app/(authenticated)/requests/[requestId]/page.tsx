@@ -69,6 +69,8 @@ export default function AccessRequestDetailPage() {
                 riskScore={request.decision.riskScore}
                 reasons={request.decision.reasons}
                 factors={request.decision.factors}
+                verifiedAt={request.decision.verifiedAt}
+                escalatedAt={request.decision.escalatedAt}
               />
             ) : request.emergency ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -111,6 +113,9 @@ export default function AccessRequestDetailPage() {
                   request.emergency !== null && isGrantLive(request.emergency, now)
                 }
                 allowedUntil={request.decision?.allowedUntil}
+                stepUpAttemptsLeft={
+                  request.recordCount === 1 ? request.decision?.stepUpAttemptsLeft : undefined
+                }
               />
             </ComponentCard>
           )}

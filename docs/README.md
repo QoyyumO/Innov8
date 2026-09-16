@@ -20,5 +20,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-43-live-dashboards](features/INN-43-live-dashboards/PLAN.md) | Live role dashboards + `/facilities` | In review |
 | [INN-51-expire-allow-decisions](features/INN-51-expire-allow-decisions/PLAN.md) | ALLOW decisions expire after 24 hours (`AccessExpired` audit) | In review |
 | [INN-54-fix-leftover-qa-issues](features/INN-54-fix-leftover-qa-issues/PLAN.md) | Login errors, seed recordCount, mobile overlay | In review ([#18](https://github.com/QoyyumO/Innov8/pull/18)) |
+| [INN-44-verify-step-up](features/INN-44-verify-step-up/PLAN.md) | VERIFY step-up: password re-entry, block after 3 failures | In review ([#16](https://github.com/QoyyumO/Innov8/pull/16)) |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

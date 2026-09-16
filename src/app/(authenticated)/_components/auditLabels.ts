@@ -16,6 +16,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   EmergencyExpired: "Break-glass expired",
   EmergencyRevoked: "Break-glass ended early",
   SecurityAlertRaised: "Security alert raised",
+  StepUpCompleted: "Verification completed",
+  StepUpFailed: "Verification failed",
 };
 
 export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
@@ -31,6 +33,8 @@ export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
   EmergencyExpired: "light",
   EmergencyRevoked: "light",
   SecurityAlertRaised: "error",
+  StepUpCompleted: "success",
+  StepUpFailed: "warning",
 };
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABELS) as AuditAction[];

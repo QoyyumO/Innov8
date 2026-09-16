@@ -138,6 +138,10 @@ export default defineSchema({
         recordCount: v.number(),
       }),
     ),
+    // Step-up (INN-44): set when a VERIFY decision is completed or escalated.
+    verifiedAt: v.optional(v.number()),
+    stepUpFailures: v.optional(v.number()),
+    escalatedAt: v.optional(v.number()),
   })
     .index("by_requestId", ["requestId"])
     .index("by_outcome_decidedAt", ["outcome", "decidedAt"])

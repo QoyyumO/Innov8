@@ -34,12 +34,13 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-43](https://linear.app/innov8-health/issue/INN-43) live role dashboards, `/facilities`
 - [INN-51](https://linear.app/innov8-health/issue/INN-51) ALLOW decisions expire after 24 hours (`AccessExpired`)
 - [INN-54](https://linear.app/innov8-health/issue/INN-54) login errors, 7-day Keep me logged in, seed `recordCount` 1, mobile overlay
+- [INN-44](https://linear.app/innov8-health/issue/INN-44) VERIFY step-up: password re-entry → ALLOW, 3 failures → BLOCK + alert
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-The MVP demo path is complete. Should-have: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient access history). Follow-ups: INN-50 (audit alert actions), INN-52 (facility-scoped admin views), INN-53 (stored counters).
+The MVP demo path is complete. Should-have: INN-45 (consent), INN-46 (patient access history). Follow-ups: INN-50 (audit alert actions), INN-52 (facility-scoped admin views), INN-53 (stored counters).
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

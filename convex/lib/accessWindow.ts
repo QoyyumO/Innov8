@@ -17,3 +17,11 @@ export function allowedUntil(decidedAt: number): number {
 export function isAllowExpired(decidedAt: number, now: number): boolean {
   return now >= allowedUntil(decidedAt);
 }
+
+/**
+ * When an ALLOW decision's window starts: the step-up time for a verified
+ * VERIFY decision (INN-44), otherwise the decision time.
+ */
+export function allowWindowStart(decision: { decidedAt: number; verifiedAt?: number }): number {
+  return decision.verifiedAt ?? decision.decidedAt;
+}

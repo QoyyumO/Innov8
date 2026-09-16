@@ -13,6 +13,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` | Security officers and admins; status transitions only |
 | `audit.ts` | `listAuditEvents` (paginated query) | Own events for everyone; all events (optionally one actor) for security officers and admins; read-only |
 | `dashboards.ts` | `getClinicianDashboard`, `getSecurityDashboard` (queries; `since` = start of the Lagos day), `listFacilities` | Clinicians see their own summary; security officers and admins see the exchange; any signed-in user lists facilities. All bounded |
+| `stepUp.ts` | `completeVerification` (mutation, audited `StepUpCompleted` / `StepUpFailed`) | Requester's own single-patient VERIFY request; password re-entry → ALLOW; 3 failures → BLOCK + alert |
 | `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
 
 ## Internal functions
@@ -40,6 +41,8 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
 - `services/recordExchangeService.ts` — view authorisation (ALLOW, or a live grant when the request has one) and requested-section filtering
+- `services/stepUpService.ts` — VERIFY step-up: password check, failure count, ALLOW or escalation to BLOCK
+- `stepUpConstants.ts` — client-safe step-up limit and messages
 - `services/riskScoringService.ts` — pure `scoreAccessRequest` (no db access); returns `score`, `outcome`, `reasons`, `factors` for `accessDecisions`
 
 ## Writing a new domain function

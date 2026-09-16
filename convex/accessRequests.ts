@@ -22,7 +22,8 @@ import {
   resolveAccessTarget,
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
-import { allowedUntil } from "./lib/accessWindow";
+import { allowWindowStart, allowedUntil } from "./lib/accessWindow";
+import { stepUpAttemptsLeft } from "./lib/services/stepUpService";
 import { raiseBlockAlert } from "./lib/services/alertService";
 import { toGrantView } from "./lib/services/emergencyAccessService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
@@ -48,6 +49,10 @@ const decisionValidator = v.object({
   factors: v.optional(factorsValidator),
   /** ALLOW only: when the decision stops releasing records (INN-51). */
   allowedUntil: v.optional(v.number()),
+  /** Step-up (INN-44): verification time, escalation time, attempts left on VERIFY. */
+  verifiedAt: v.optional(v.number()),
+  escalatedAt: v.optional(v.number()),
+  stepUpAttemptsLeft: v.optional(v.number()),
 });
 
 const emergencyViewValidator = v.object({
@@ -166,7 +171,13 @@ async function toRequestView(
           decidedAt: decision.decidedAt,
           factors: decision.factors,
           allowedUntil:
-            decision.outcome === "ALLOW" ? allowedUntil(decision.decidedAt) : undefined,
+            decision.outcome === "ALLOW"
+              ? allowedUntil(allowWindowStart(decision))
+              : undefined,
+          verifiedAt: decision.verifiedAt,
+          escalatedAt: decision.escalatedAt,
+          stepUpAttemptsLeft:
+            decision.outcome === "VERIFY" ? stepUpAttemptsLeft(decision) : undefined,
         }
       : null,
     emergency: latestGrant ? toGrantView(latestGrant) : null,
