@@ -32,6 +32,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-51** — Decision validity: an ALLOW authorises record release for 24 hours from `decidedAt`; later attempts are refused and recorded as `AccessExpired`.
 - **INN-54** — Login failures return a form error (no overlay); Keep me logged in is a 7-day session; seed non-harvest `recordCount` is 1.
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
+- **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
 
 ## Next (live demo path)
 
@@ -84,7 +85,7 @@ The MVP demo path is live end to end. Next: should-have consent (INN-45), and pa
 
 ## Domain events (audit)
 
-`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`, `StepUpCompleted`, `StepUpFailed`
+`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`, `SecurityAlertAcknowledged`, `SecurityAlertClosed`, `StepUpCompleted`, `StepUpFailed`
 
 ## Invariants
 

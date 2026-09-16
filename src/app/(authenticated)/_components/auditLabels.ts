@@ -16,6 +16,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   EmergencyExpired: "Break-glass expired",
   EmergencyRevoked: "Break-glass ended early",
   SecurityAlertRaised: "Security alert raised",
+  SecurityAlertAcknowledged: "Security alert acknowledged",
+  SecurityAlertClosed: "Security alert closed",
   StepUpCompleted: "Verification completed",
   StepUpFailed: "Verification failed",
 };
@@ -33,6 +35,8 @@ export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
   EmergencyExpired: "light",
   EmergencyRevoked: "light",
   SecurityAlertRaised: "error",
+  SecurityAlertAcknowledged: "info",
+  SecurityAlertClosed: "light",
   StepUpCompleted: "success",
   StepUpFailed: "warning",
 };
