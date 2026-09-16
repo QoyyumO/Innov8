@@ -186,7 +186,9 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
             href={`/requests/${result.requestId}`}
             className="inline-block text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
           >
-            Open saved request
+            {result.outcome === "ALLOW"
+              ? "Open request to view authorised records"
+              : "Open saved request"}
           </Link>
         </div>
       )}

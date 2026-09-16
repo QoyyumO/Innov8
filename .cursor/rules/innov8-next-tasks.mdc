@@ -27,15 +27,16 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-48](https://linear.app/innov8-health/issue/INN-48) clean-checkout `npm ci` + typegen
 - [INN-38](https://linear.app/innov8-health/issue/INN-38) risk scoring service (`scoreAccessRequest`: 8 ALLOW / 94 BLOCK)
 - [INN-37](https://linear.app/innov8-health/issue/INN-37) purpose-based access requests + `/requests` (demo steps 3–4)
+- [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised clinical summary, audited `RecordViewed` (demo step 5)
+- [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK → security alert, `/security` queue (demo step 6)
+- [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass: 15-minute grant, alert, scheduled expiry, early revoke, `/emergency` (demo step 7)
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next (dependency order)
 
-1. [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — unblocked
-2. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security` — unblocked
-3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked
-4. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass (after INN-40), [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (after INN-39)
+1. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked
+2. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked
 
 Should-have: INN-44, INN-45, INN-46.
 
