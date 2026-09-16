@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +21,7 @@ export default function PatientDiscoveryPage() {
     typeof publicIdParam === "string"
       ? decodeURIComponent(publicIdParam)
       : "";
+  const router = useRouter();
   const { sessionToken } = useAuth();
   const discovery = useQuery(
     api.patients.getPatientDiscovery,
@@ -87,10 +88,17 @@ export default function PatientDiscoveryPage() {
 
           <ComponentCard title="Request access">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Purpose, record types, and risk evaluation are the next step. That form
-              ships with the access-request ticket.
+              State a purpose and the record types you need. The request is scored,
+              decided, and audited before anything is released.
             </p>
-            <Button type="button" disabled>
+            <Button
+              type="button"
+              onClick={() =>
+                router.push(
+                  `/requests/new?publicId=${encodeURIComponent(discovery.publicId)}`,
+                )
+              }
+            >
               Request access
             </Button>
           </ComponentCard>

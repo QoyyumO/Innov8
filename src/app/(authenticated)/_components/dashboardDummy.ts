@@ -12,14 +12,6 @@ export type DummyRequest = {
   time: string;
 };
 
-export type DummyAlert = {
-  id: string;
-  title: string;
-  detail: string;
-  severity: "high" | "medium" | "low";
-  time: string;
-};
-
 export const DEMO_PATIENT = {
   id: "PAT-002391",
   name: "Chioma Okonkwo",
@@ -146,30 +138,6 @@ export const laboratoryRequests: DummyRequest[] = [
     decision: "BLOCK",
     risk: 78,
     time: "Today, 09:16",
-  },
-];
-
-export const securityAlerts: DummyAlert[] = [
-  {
-    id: "ALT-01",
-    title: "Mass-record harvest blocked",
-    detail: "Dr. Ibrahim requested 500 patient records. Risk 94/100. BLOCK.",
-    severity: "high",
-    time: "Today, 10:21",
-  },
-  {
-    id: "ALT-02",
-    title: "Break-glass used",
-    detail: "Temporary emergency access granted for PAT-002391. 15 minutes remaining.",
-    severity: "medium",
-    time: "Today, 10:28",
-  },
-  {
-    id: "ALT-03",
-    title: "After-hours access",
-    detail: "Laboratory request from FMC Abeokuta outside usual hours.",
-    severity: "low",
-    time: "Yesterday, 22:14",
   },
 ];
 
