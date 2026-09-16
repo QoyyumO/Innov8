@@ -15,6 +15,7 @@ import type * as auth from "../auth.js";
 import type * as dashboards from "../dashboards.js";
 import type * as emergency from "../emergency.js";
 import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js";
+import type * as lib_accessWindow from "../lib/accessWindow.js";
 import type * as lib_authConstants from "../lib/authConstants.js";
 import type * as lib_dashboardConstants from "../lib/dashboardConstants.js";
 import type * as lib_demoIds from "../lib/demoIds.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   dashboards: typeof dashboards;
   emergency: typeof emergency;
   "lib/accessRequestMessages": typeof lib_accessRequestMessages;
+  "lib/accessWindow": typeof lib_accessWindow;
   "lib/authConstants": typeof lib_authConstants;
   "lib/dashboardConstants": typeof lib_dashboardConstants;
   "lib/demoIds": typeof lib_demoIds;

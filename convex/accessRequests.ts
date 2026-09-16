@@ -22,6 +22,7 @@ import {
   resolveAccessTarget,
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
+import { allowedUntil } from "./lib/accessWindow";
 import { raiseBlockAlert } from "./lib/services/alertService";
 import { toGrantView } from "./lib/services/emergencyAccessService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
@@ -45,6 +46,8 @@ const decisionValidator = v.object({
   reasons: v.array(v.string()),
   decidedAt: v.number(),
   factors: v.optional(factorsValidator),
+  /** ALLOW only: when the decision stops releasing records (INN-51). */
+  allowedUntil: v.optional(v.number()),
 });
 
 const emergencyViewValidator = v.object({
@@ -162,6 +165,8 @@ async function toRequestView(
           reasons: decision.reasons,
           decidedAt: decision.decidedAt,
           factors: decision.factors,
+          allowedUntil:
+            decision.outcome === "ALLOW" ? allowedUntil(decision.decidedAt) : undefined,
         }
       : null,
     emergency: latestGrant ? toGrantView(latestGrant) : null,

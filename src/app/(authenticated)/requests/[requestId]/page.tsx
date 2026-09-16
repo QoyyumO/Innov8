@@ -108,6 +108,7 @@ export default function AccessRequestDetailPage() {
                   !(request.emergency !== null && isGrantLive(request.emergency, now))
                 }
                 hasEmergencyGrant={request.emergency !== null}
+                allowedUntil={request.decision?.allowedUntil}
               />
             </ComponentCard>
           )}

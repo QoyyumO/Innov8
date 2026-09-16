@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePaginatedQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
 import { isClinician } from "@/services/permissions";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
@@ -36,6 +37,7 @@ const HEADER_CELL_CLASS =
 export default function AccessRequestsPage() {
   const router = useRouter();
   const { user, sessionToken } = useAuth();
+  const now = useNow();
   const canRequest = user !== null && isClinician(user.roles);
   const { results, status, loadMore } = usePaginatedQuery(
     api.accessRequests.listMyAccessRequests,
@@ -152,6 +154,13 @@ export default function AccessRequestsPage() {
                             {OUTCOME_LABELS[request.decision.outcome]}
                           </Badge>
                         )}
+                        {request.decision?.allowedUntil !== undefined &&
+                          !request.emergency &&
+                          request.decision.allowedUntil <= now && (
+                            <Badge color="light" size="sm">
+                              Expired
+                            </Badge>
+                          )}
                         {request.emergency && (
                           <Badge color="warning" variant="solid" size="sm">
                             Break-glass
