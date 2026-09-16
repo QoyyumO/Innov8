@@ -16,6 +16,7 @@ export const ALERT_NOT_FOUND_MESSAGE = "Alert not found";
 
 export const HARVEST_ALERT_TITLE = "Bulk record harvest blocked";
 export const BLOCK_ALERT_TITLE = "High-risk access request blocked";
+export const EMERGENCY_ALERT_TITLE = "Break-glass access granted";
 
 export type BlockAlertInput = {
   decisionId: Id<"accessDecisions">;
@@ -64,6 +65,48 @@ export async function raiseBlockAlert(
       patientPublicId: input.patientPublicId,
       recordCount: input.recordCount,
       riskScore: input.riskScore,
+    },
+    createdAt: input.createdAt,
+  });
+
+  return alertId;
+}
+
+export type EmergencyAlertInput = {
+  emergencyAccessId: Id<"emergencyAccess">;
+  actor: Doc<"users">;
+  sessionId?: Id<"sessions">;
+  patientPublicId: string;
+  justification: string;
+  expiresAt: number;
+  createdAt: number;
+};
+
+/** INN-41: every break-glass grant is reported to security for review. */
+export async function raiseEmergencyAlert(
+  db: DatabaseWriter,
+  input: EmergencyAlertInput,
+): Promise<Id<"securityAlerts">> {
+  const minutes = Math.round((input.expiresAt - input.createdAt) / 60_000);
+  const alertId = await db.insert("securityAlerts", {
+    emergencyAccessId: input.emergencyAccessId,
+    severity: "medium",
+    status: "open",
+    title: EMERGENCY_ALERT_TITLE,
+    message: `${describeActor(input.actor)} used break-glass for ${input.patientPublicId} (${minutes} minutes). Justification: "${input.justification}"`,
+    createdAt: input.createdAt,
+  });
+
+  await appendAuditEvent(db, {
+    actorId: input.actor._id,
+    sessionId: input.sessionId,
+    action: "SecurityAlertRaised",
+    entity: "securityAlerts",
+    entityId: alertId,
+    details: {
+      emergencyAccessId: input.emergencyAccessId,
+      severity: "medium",
+      patientPublicId: input.patientPublicId,
     },
     createdAt: input.createdAt,
   });

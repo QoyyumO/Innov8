@@ -11,12 +11,14 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `accessRequests.ts` | `createAccessRequest` (mutation, audited, one patient), `simulateBulkHarvest` (demo mutation, server-fixed 500 records), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
 | `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`) | Requester only; ALLOW or live emergency grant; requested sections from the target facility only |
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` | Security officers and admins; status transitions only |
+| `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
 
 ## Internal functions
 
 | File | Functions | Notes |
 | --- | --- | --- |
 | `auth.ts` | `issuePasswordResetToken` | Demo out-of-band reset token (no email provider) |
+| `emergency.ts` | `expireEmergencyAccess` | Scheduled at grant time; audits `EmergencyExpired` unless already revoked |
 | `seed.ts` | `seedFacilities`, `seedHealthcareWorkers`, `seedPatientsBatch`, `seedAccessEventsBatch`, `verifyDemoSeed` | See root `README.md` and `README-seeding.md` |
 
 ## Shared code (`lib/`)
@@ -27,11 +29,13 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `invariants.ts` — shared assertions (non-empty strings, risk score range, unique ids)
 - `authConstants.ts`, `searchLimits.ts`, `password.ts`, `demoUsers.ts`, `demoIds.ts`, `synthetic.ts`
 - `services/accessControlService.ts` — resolves patient, source/target facility, and held record types for a request
-- `services/alertService.ts` — `raiseBlockAlert` (called on every BLOCK from `accessRequests.ts`) and alert status transitions
+- `services/alertService.ts` — `raiseBlockAlert` (called on every BLOCK from `accessRequests.ts`), `raiseEmergencyAlert` (every break-glass grant), and alert status transitions
+- `services/emergencyAccessService.ts` — break-glass grant, revoke, and expiry; `isLiveGrant` / `listGrantsForRequest` used by record release
+- `emergencyConstants.ts` — client-safe grant length, justification limits, and messages
 - `riskConstants.ts` — `HARVEST_RECORD_COUNT` / `HARVEST_SCORE`, shared by the risk engine, the harvest mutation, and the UI
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
-- `services/recordExchangeService.ts` — view authorisation (ALLOW / emergency grant) and requested-section filtering
+- `services/recordExchangeService.ts` — view authorisation (ALLOW, or a live grant when the request has one) and requested-section filtering
 - `services/riskScoringService.ts` — pure `scoreAccessRequest` (no db access); returns `score`, `outcome`, `reasons`, `factors` for `accessDecisions`
 
 ## Writing a new domain function

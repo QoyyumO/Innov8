@@ -12,6 +12,7 @@ import Loading from "@/components/loading/Loading";
 import { FileIcon } from "@/icons";
 import { DecisionResult } from "../_components/DecisionResult";
 import { AuthorisedSummary } from "../_components/AuthorisedSummary";
+import { EmergencyGrantCard } from "../_components/EmergencyGrantCard";
 
 export default function AccessRequestDetailPage() {
   const params = useParams<{ requestId: string }>();
@@ -66,12 +67,26 @@ export default function AccessRequestDetailPage() {
                 reasons={request.decision.reasons}
                 factors={request.decision.factors}
               />
+            ) : request.emergency ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Break-glass request for {request.publicId} ({request.purpose}). No risk
+                decision was made; the emergency grant below governs access.
+              </p>
             ) : (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 No decision has been recorded for this request.
               </p>
             )}
           </ComponentCard>
+
+          {request.emergency && (
+            <ComponentCard
+              title="Emergency access"
+              desc="Temporary, justified, and audited."
+            >
+              <EmergencyGrantCard grant={request.emergency} canRevoke />
+            </ComponentCard>
+          )}
 
           {request.isOwnRequest && (
             <ComponentCard
@@ -81,7 +96,15 @@ export default function AccessRequestDetailPage() {
               <AuthorisedSummary
                 key={request.requestId}
                 requestId={request.requestId}
+                publicId={request.publicId}
                 outcome={request.decision?.outcome ?? null}
+                canUseBreakGlass={
+                  request.recordCount === 1 &&
+                  request.decision !== null &&
+                  request.decision.outcome !== "ALLOW" &&
+                  request.emergency === null
+                }
+                hasEmergencyGrant={request.emergency !== null}
               />
             </ComponentCard>
           )}

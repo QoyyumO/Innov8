@@ -16,6 +16,7 @@ import {
   isHarvestCount,
   transitionAlert,
 } from "./lib/services/alertService";
+import { toGrantView } from "./lib/services/emergencyAccessService";
 
 const ALERT_REVIEWER_ROLES = [...SECURITY_ROLES, ...ADMIN_ROLES];
 
@@ -41,6 +42,17 @@ const alertViewValidator = v.object({
       hospital: v.string(),
     }),
   ),
+  /** Set for break-glass alerts (INN-41). */
+  emergency: v.union(
+    v.null(),
+    v.object({
+      grantId: v.id("emergencyAccess"),
+      grantedAt: v.number(),
+      expiresAt: v.number(),
+      revokedAt: v.optional(v.number()),
+      justification: v.string(),
+    }),
+  ),
 });
 
 const transitionResultValidator = v.object({
@@ -58,8 +70,12 @@ async function requireAlertReviewer(
 }
 
 async function toAlertView(ctx: QueryCtx, alert: Doc<"securityAlerts">) {
+  const grant = alert.emergencyAccessId
+    ? await ctx.db.get(alert.emergencyAccessId)
+    : null;
   const decision = alert.decisionId ? await ctx.db.get(alert.decisionId) : null;
-  const request = decision ? await ctx.db.get(decision.requestId) : null;
+  const requestId = decision?.requestId ?? grant?.requestId ?? null;
+  const request = requestId ? await ctx.db.get(requestId) : null;
   const [patient, requester] = request
     ? await Promise.all([ctx.db.get(request.patientId), ctx.db.get(request.actorId)])
     : [null, null];
@@ -86,6 +102,7 @@ async function toAlertView(ctx: QueryCtx, alert: Doc<"securityAlerts">) {
           hospital: requester.hospital,
         }
       : null,
+    emergency: grant ? toGrantView(grant) : null,
   };
 }
 

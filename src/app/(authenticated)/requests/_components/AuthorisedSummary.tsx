@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
@@ -21,8 +22,23 @@ type Sections = Extract<NonNullable<ViewResult>, { status: "authorised" }>["sect
 
 type AuthorisedSummaryProps = {
   requestId: string;
+  publicId: string;
   outcome: DecisionOutcome | null;
+  /** Own, single-patient, BLOCK or VERIFY request with no grant yet. */
+  canUseBreakGlass: boolean;
+  hasEmergencyGrant: boolean;
 };
+
+function BreakGlassLink({ requestId, publicId }: { requestId: string; publicId: string }) {
+  return (
+    <Link
+      href={`/emergency?publicId=${encodeURIComponent(publicId)}&requestId=${encodeURIComponent(requestId)}`}
+      className="inline-block text-sm font-medium text-warning-600 hover:text-warning-700 dark:text-orange-400"
+    >
+      Emergency? Use break-glass for this request
+    </Link>
+  );
+}
 
 function SectionList({ items }: { items: string[] }) {
   if (items.length === 0) {
@@ -60,7 +76,13 @@ function renderSection(recordType: RecordType, sections: Sections) {
  * Demo step 5. Clinical content is fetched only when the requester presses
  * the button, because each view is written to the audit trail.
  */
-export function AuthorisedSummary({ requestId, outcome }: AuthorisedSummaryProps) {
+export function AuthorisedSummary({
+  requestId,
+  publicId,
+  outcome,
+  canUseBreakGlass,
+  hasEmergencyGrant,
+}: AuthorisedSummaryProps) {
   const { sessionToken } = useAuth();
   const viewAuthorisedSummary = useMutation(api.records.viewAuthorisedSummary);
   const [result, setResult] = useState<ViewResult | undefined>(undefined);
@@ -91,13 +113,16 @@ export function AuthorisedSummary({ requestId, outcome }: AuthorisedSummaryProps
           <Alert variant="error" title="Records not loaded" message={errorMessage} />
         )}
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {outcome === "ALLOW"
-            ? "Access was allowed. Opening the records releases only the sections you requested, from the facility that holds them, and records the view in the audit trail."
-            : "Access was not allowed. No clinical content is released unless an active emergency grant covers this request."}
+          {hasEmergencyGrant
+            ? "Break-glass access covers this request while the grant is active. Opening the records releases only the sections on the request and records the view in the audit trail."
+            : outcome === "ALLOW"
+              ? "Access was allowed. Opening the records releases only the sections you requested, from the facility that holds them, and records the view in the audit trail."
+              : "Access was not allowed. No clinical content is released unless an active emergency grant covers this request."}
         </p>
         <Button onClick={handleView} disabled={isLoading || !sessionToken}>
           {isLoading ? "Opening…" : "View authorised records"}
         </Button>
+        {canUseBreakGlass && <BreakGlassLink requestId={requestId} publicId={publicId} />}
       </div>
     );
   }
@@ -114,13 +139,20 @@ export function AuthorisedSummary({ requestId, outcome }: AuthorisedSummaryProps
 
   if (result.status === "denied") {
     return (
-      <Alert
-        variant="error"
-        title="No clinical content released"
-        message={`This request is ${result.outcome ?? "undecided"}${
-          result.riskScore !== null ? ` (risk ${result.riskScore}/100)` : ""
-        }. Records stay with the holding facility.`}
-      />
+      <div className="space-y-3">
+        <Alert
+          variant="error"
+          title="No clinical content released"
+          message={
+            hasEmergencyGrant
+              ? "Emergency access for this request has ended. Records stay with the holding facility."
+              : `This request is ${result.outcome ?? "undecided"}${
+                  result.riskScore !== null ? ` (risk ${result.riskScore}/100)` : ""
+                }. Records stay with the holding facility.`
+          }
+        />
+        {canUseBreakGlass && <BreakGlassLink requestId={requestId} publicId={publicId} />}
+      </div>
     );
   }
 

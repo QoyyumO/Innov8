@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
 import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
@@ -20,12 +21,14 @@ import {
 import { AlertIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
 import type { AlertStatus } from "../../../../../convex/lib/domain";
+import { findEmergencyInputError } from "../../../../../convex/lib/emergencyConstants";
 import { OUTCOME_BADGE_COLORS, formatRequestTime } from "../../_components/accessLabels";
 import {
   ALERT_SEVERITY_BADGE_COLORS,
   ALERT_STATUS_BADGE_COLORS,
   ALERT_STATUS_LABELS,
 } from "../../_components/alertLabels";
+import { describeGrantStatus, isGrantLive } from "../../_components/emergencyLabels";
 
 const HEADER_CELL_CLASS =
   "px-4 py-3 text-left text-sm font-medium text-gray-500 whitespace-nowrap";
@@ -48,7 +51,10 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
   );
   const acknowledgeAlert = useMutation(api.alerts.acknowledgeAlert);
   const closeAlert = useMutation(api.alerts.closeAlert);
+  const revokeEmergencyAccess = useMutation(api.emergency.revokeEmergencyAccess);
+  const now = useNow();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [revokingGrantId, setRevokingGrantId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const runAction = async (alertId: string, action: PendingAction["action"]) => {
@@ -69,6 +75,26 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
       );
     } finally {
       setPendingAction(null);
+    }
+  };
+
+  const revokeGrant = async (grantId: string) => {
+    if (!sessionToken) {
+      return;
+    }
+    setErrorMessage(null);
+    setRevokingGrantId(grantId);
+    try {
+      await revokeEmergencyAccess({ token: sessionToken, grantId });
+    } catch (error) {
+      console.error("Error revoking emergency access:", error);
+      const message = error instanceof Error ? error.message : "";
+      setErrorMessage(
+        findEmergencyInputError(message) ??
+          toUserFacingError(error, "Emergency access could not be revoked. Try again."),
+      );
+    } finally {
+      setRevokingGrantId(null);
     }
   };
 
@@ -147,6 +173,11 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
                           Harvest
                         </Badge>
                       )}
+                      {alert.emergency && (
+                        <Badge color="warning" variant="solid" size="sm">
+                          Break-glass
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 max-w-md text-sm text-gray-600 dark:text-gray-300">
                       {alert.message}
@@ -154,6 +185,11 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {formatRequestTime(alert.createdAt)}
                     </p>
+                    {alert.emergency && (
+                      <p className="mt-1 text-xs font-medium text-warning-600 dark:text-orange-400">
+                        {describeGrantStatus(alert.emergency, now)}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell className="px-4 py-4 align-top text-sm text-gray-700 dark:text-gray-300">
                     {alert.requester ? (
@@ -191,6 +227,10 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
                       <Badge color={OUTCOME_BADGE_COLORS[alert.outcome]} size="sm">
                         {alert.outcome} · {alert.riskScore}/100
                       </Badge>
+                    ) : alert.emergency ? (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Override
+                      </span>
                     ) : (
                       "—"
                     )}
@@ -223,6 +263,18 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
                             onClick={() => runAction(alert.alertId, "close")}
                           >
                             {isPending && pendingAction?.action === "close" ? "Saving…" : "Close"}
+                          </Button>
+                        )}
+                        {alert.emergency && isGrantLive(alert.emergency, now) && (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            disabled={revokingGrantId === alert.emergency.grantId}
+                            onClick={() => revokeGrant(alert.emergency!.grantId)}
+                          >
+                            {revokingGrantId === alert.emergency.grantId
+                              ? "Revoking…"
+                              : "Revoke access"}
                           </Button>
                         )}
                       </div>

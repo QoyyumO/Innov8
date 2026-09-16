@@ -26,10 +26,11 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-37** — `AccessControlService` (`convex/lib/services/accessControlService.ts`) + `convex/accessRequests.ts`: AccessRequest and Decision aggregates are live; `AccessRequested` and outcome events are audited.
 - **INN-40** — `RecordExchangeService` (`convex/lib/services/recordExchangeService.ts`) + `convex/records.ts`: permitted fields only, target facility only, after ALLOW or a live emergency grant; `RecordViewed` audited.
 - **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted).
+- **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants; `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
 
 ## Next (live demo path)
 
-Do not keep dummy dashboards as the only UI. Remaining path: break-glass (INN-41) → audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+Do not keep dummy dashboards as the only UI. Remaining path: audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
@@ -71,14 +72,14 @@ Do not keep dummy dashboards as the only UI. Remaining path: break-glass (INN-41
 - **AccessControlService** — RBAC + hospital, purpose, relationship — *implemented (INN-35 session/role, INN-37 patient/facility/record-type resolution)*
 - **RiskScoringService** — explainable score; treatment + known relationship ≈ 8; 500-record harvest ≈ 94 — *implemented (INN-38); used by `createAccessRequest` (INN-37)*
 - **RecordExchangeService** — fetch only permitted fields after ALLOW — *implemented (INN-40); honours live emergency grants on the same request*
-- **EmergencyAccessService** — break-glass grant/revoke — *INN-41*
-- **AlertService** — notify security on BLOCK / emergency — *implemented for BLOCK (INN-39); emergency alerts in INN-41*
+- **EmergencyAccessService** — break-glass grant/revoke/expire — *implemented (INN-41)*
+- **AlertService** — notify security on BLOCK / emergency — *implemented for BLOCK (INN-39) and break-glass (INN-41)*
 - **AuditLogService** — append-only events — *implemented (INN-35)*
 - **ConsentService** — should-have after demo — *INN-45*
 
 ## Domain events (audit)
 
-`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `SecurityAlertRaised`
+`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`
 
 ## Invariants
 
