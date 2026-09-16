@@ -81,13 +81,12 @@ export async function findLiveGrantForPatient(
 ): Promise<Doc<"emergencyAccess"> | null> {
   const grants = await db
     .query("emergencyAccess")
-    .withIndex("by_actorId", (query) => query.eq("actorId", actorId))
+    .withIndex("by_actorId_and_patientId", (query) =>
+      query.eq("actorId", actorId).eq("patientId", patientId),
+    )
     .order("desc")
     .take(GRANT_LOOKUP_LIMIT);
-  return (
-    grants.find((grant) => grant.patientId === patientId && isLiveGrant(grant, now)) ??
-    null
-  );
+  return grants.find((grant) => isLiveGrant(grant, now)) ?? null;
 }
 
 async function requireEligibleRequest(
@@ -263,15 +262,23 @@ export async function revokeGrant(
   return { grantId, revokedAt: now };
 }
 
+export type ExpireGrantResult =
+  | "expired"
+  | "skipped"
+  | { status: "not_due"; expiresAt: number };
+
 /** Scheduled at `expiresAt`. Audits once; revoked grants are skipped. */
 export async function expireGrant(
   db: DatabaseWriter,
   grantId: Id<"emergencyAccess">,
   now: number,
-): Promise<"expired" | "skipped"> {
+): Promise<ExpireGrantResult> {
   const grant = await db.get(grantId);
-  if (!grant || grant.revokedAt !== undefined || grant.expiresAt > now) {
+  if (!grant || grant.revokedAt !== undefined) {
     return "skipped";
+  }
+  if (grant.expiresAt > now) {
+    return { status: "not_due", expiresAt: grant.expiresAt };
   }
   await appendAuditEvent(db, {
     actorId: grant.actorId,

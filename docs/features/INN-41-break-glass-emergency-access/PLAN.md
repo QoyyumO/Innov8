@@ -27,6 +27,7 @@ Demo step 7. When normal ALLOW (or consent) cannot complete, a clinician can use
 ### Part A — Schema (small, additive)
 
 - `emergencyAccess.by_requestId` index — lookup by request (record exchange, request views) instead of scanning an actor's grants.
+- `emergencyAccess.by_actorId_and_patientId` — live-grant lookup for one clinician and patient.
 - `auditAction` gains `EmergencyRevoked`. Adding a literal to the union is backward compatible with stored data.
 
 `emergencyAccess.requestId` stays required, so every grant hangs off an access request.
@@ -41,7 +42,7 @@ Demo step 7. When normal ALLOW (or consent) cannot complete, a clinician can use
 - Refuses if the caller already has a live grant for that patient.
 - Inserts `emergencyAccess` (`grantedAt` now, `expiresAt` now + 15 min), audits `EmergencyGranted`, raises a medium security alert ("Break-glass access granted", with requester, patient, justification, expiry) and audits `SecurityAlertRaised`, and schedules `internal.emergency.expireEmergencyAccess` at `expiresAt`.
 - `revokeGrant` — sets `revokedAt`, audits `EmergencyRevoked`. Allowed for the grant holder, security officers, and admins; refused once expired or already revoked.
-- `expireGrant` — scheduled; if not revoked, audits `EmergencyExpired` once. `revokedAt` is reserved for revocation.
+- `expireGrant` — scheduled; if not revoked, audits `EmergencyExpired` once. If the job runs before `expiresAt`, it reschedules instead of skipping forever. `revokedAt` is reserved for revocation.
 
 ### Part C — Record exchange (INN-40 overlap)
 
@@ -59,12 +60,12 @@ Demo step 7. When normal ALLOW (or consent) cannot complete, a clinician can use
 ### Part E — UI
 
 - `emergency/page.tsx` — clinicians only. `BreakGlassForm`: public ID (prefilled from `?publicId=`, default PAT-002391), record types (all four by default), justification `TextArea`, "Access lasts 15 minutes" text, warning banner, and an acknowledgement checkbox that must be ticked. With `?requestId=`, the grant links to that denied request. On success: expiry time and **Open emergency records** → `/requests/[requestId]`. Shows an existing live grant for the patient instead of the form.
-- `requests/[requestId]`: break-glass card (justification, expiry or "Ended", **End access now** for the holder); `AuthorisedSummary` offers **Use break-glass** on a denied one-patient request.
+- `requests/[requestId]`: break-glass card (justification, expiry or "Ended", **End access now** for the holder); `AuthorisedSummary` offers **Use break-glass** on a denied one-patient request that does not already have a *live* grant (the link returns after expiry or revoke).
 - `/requests` list: "Break-glass" badge when the request has a grant and no decision.
 
 ### Part F — Tests (`convex/emergency.test.ts`)
 
-Grant without a request (new emergency request, no decision, audits, medium alert, scheduled expiry); justification rules; one live grant per patient; linking to own BLOCK / VERIFY request allowed, ALLOW / harvest / other clinician's / other patient's refused; non-clinicians and suspended users refused; summary visible while live and refused after expiry (fake timers + scheduled expiry → `EmergencyExpired` once) or revoke (`EmergencyRevoked`); revoke permissions (holder, security, admin yes; other clinician no); `getActiveEmergencyAccess`; security alert listing shows the emergency details.
+Grant without a request (new emergency request, no decision, audits, medium alert, scheduled expiry); justification rules; one live grant per patient; linking to own BLOCK / VERIFY request allowed, ALLOW / harvest / other clinician's / other patient's refused; non-clinicians and suspended users refused; summary visible while live and refused after expiry (fake timers + scheduled expiry → `EmergencyExpired` once) or revoke (`EmergencyRevoked`); an early expiry job reschedules so the audit is not dropped; revoke permissions (holder, security, admin yes; other clinician no); `getActiveEmergencyAccess`; security alert listing shows the emergency details.
 
 ---
 

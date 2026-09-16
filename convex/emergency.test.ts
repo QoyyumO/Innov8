@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
@@ -387,6 +387,31 @@ describe("authorised records under break-glass", () => {
         publicId: "PAT-002391",
       }),
     ).toBeNull();
+  });
+
+  test("an early expiry job reschedules instead of dropping EmergencyExpired", async () => {
+    vi.useFakeTimers();
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const grant = await breakGlass(testBackend, token);
+
+    const early = await testBackend.mutation(internal.emergency.expireEmergencyAccess, {
+      grantId: grant.grantId,
+    });
+    expect(early).toBe("rescheduled");
+    expect(await auditActions(testBackend)).not.toContain("EmergencyExpired");
+
+    const scheduled = await testBackend.run((ctx) =>
+      ctx.db.system.query("_scheduled_functions").take(10),
+    );
+    expect(
+      scheduled.filter(
+        (job) =>
+          job.name === "emergency:expireEmergencyAccess" &&
+          job.scheduledTime === grant.expiresAt,
+      ).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   test("revoking ends access immediately and the expiry job then skips it", async () => {

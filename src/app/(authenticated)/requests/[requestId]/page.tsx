@@ -5,11 +5,13 @@ import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import ComponentCard from "@/components/common/ComponentCard";
 import EmptyState from "@/components/empty-state/EmptyState";
 import Loading from "@/components/loading/Loading";
 import { FileIcon } from "@/icons";
+import { isGrantLive } from "../../_components/emergencyLabels";
 import { DecisionResult } from "../_components/DecisionResult";
 import { AuthorisedSummary } from "../_components/AuthorisedSummary";
 import { EmergencyGrantCard } from "../_components/EmergencyGrantCard";
@@ -18,6 +20,7 @@ export default function AccessRequestDetailPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = typeof params.requestId === "string" ? params.requestId : "";
   const { sessionToken } = useAuth();
+  const now = useNow();
   const request = useQuery(
     api.accessRequests.getAccessRequest,
     sessionToken && requestId !== "" ? { token: sessionToken, requestId } : "skip",
@@ -102,7 +105,7 @@ export default function AccessRequestDetailPage() {
                   request.recordCount === 1 &&
                   request.decision !== null &&
                   request.decision.outcome !== "ALLOW" &&
-                  request.emergency === null
+                  !(request.emergency !== null && isGrantLive(request.emergency, now))
                 }
                 hasEmergencyGrant={request.emergency !== null}
               />

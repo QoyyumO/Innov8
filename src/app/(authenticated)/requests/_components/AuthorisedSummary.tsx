@@ -24,7 +24,7 @@ type AuthorisedSummaryProps = {
   requestId: string;
   publicId: string;
   outcome: DecisionOutcome | null;
-  /** Own, single-patient, BLOCK or VERIFY request with no grant yet. */
+  /** Own, single-patient, BLOCK or VERIFY request without a live grant. */
   canUseBreakGlass: boolean;
   hasEmergencyGrant: boolean;
 };

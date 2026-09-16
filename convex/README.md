@@ -18,7 +18,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | File | Functions | Notes |
 | --- | --- | --- |
 | `auth.ts` | `issuePasswordResetToken` | Demo out-of-band reset token (no email provider) |
-| `emergency.ts` | `expireEmergencyAccess` | Scheduled at grant time; audits `EmergencyExpired` unless already revoked |
+| `emergency.ts` | `expireEmergencyAccess` | Scheduled at grant time; audits `EmergencyExpired` unless already revoked; reschedules if it ran early |
 | `seed.ts` | `seedFacilities`, `seedHealthcareWorkers`, `seedPatientsBatch`, `seedAccessEventsBatch`, `verifyDemoSeed` | See root `README.md` and `README-seeding.md` |
 
 ## Shared code (`lib/`)

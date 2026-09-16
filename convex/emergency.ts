@@ -147,8 +147,21 @@ export const expireEmergencyAccess = internalMutation({
   args: {
     grantId: v.id("emergencyAccess"),
   },
-  returns: v.union(v.literal("expired"), v.literal("skipped")),
+  returns: v.union(
+    v.literal("expired"),
+    v.literal("skipped"),
+    v.literal("rescheduled"),
+  ),
   handler: async (ctx, args) => {
-    return await expireGrant(ctx.db, args.grantId, Date.now());
+    const result = await expireGrant(ctx.db, args.grantId, Date.now());
+    if (typeof result === "object") {
+      await ctx.scheduler.runAt(
+        result.expiresAt,
+        internal.emergency.expireEmergencyAccess,
+        { grantId: args.grantId },
+      );
+      return "rescheduled";
+    }
+    return result;
   },
 });

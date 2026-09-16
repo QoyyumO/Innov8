@@ -160,6 +160,19 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
     );
   }
 
+  if (activeGrant) {
+    return (
+      <Alert
+        variant="info"
+        title="You already have emergency access to this patient"
+        message={describeGrantStatus(activeGrant, now)}
+        showLink
+        linkHref={`/requests/${activeGrant.requestId}`}
+        linkText="Open emergency records"
+      />
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Alert
@@ -170,17 +183,6 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
 
       {errorMessage && (
         <Alert variant="error" title="Emergency access not granted" message={errorMessage} />
-      )}
-
-      {activeGrant && (
-        <Alert
-          variant="info"
-          title="You already have emergency access to this patient"
-          message={describeGrantStatus(activeGrant, now)}
-          showLink
-          linkHref={`/requests/${activeGrant.requestId}`}
-          linkText="Open emergency records"
-        />
       )}
 
       <div>
@@ -249,7 +251,7 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
       <Button
         type="submit"
         variant="warning"
-        disabled={isSubmitting || !sessionToken || Boolean(activeGrant)}
+        disabled={isSubmitting || !sessionToken}
       >
         {isSubmitting ? "Granting…" : `Use break-glass (${TTL_MINUTES} minutes)`}
       </Button>

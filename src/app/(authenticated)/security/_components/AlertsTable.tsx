@@ -110,7 +110,7 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
     return (
       <EmptyState
         title={status ? `No ${ALERT_STATUS_LABELS[status].toLowerCase()} alerts` : "No alerts"}
-        description="Blocked access requests raise alerts here. Try the bulk-harvest simulation on the access requests page."
+        description="Blocked harvests and break-glass grants raise alerts here. Try the bulk-harvest simulation on the access requests page, or review emergency access."
         icon={<AlertIcon className="h-12 w-12 text-brand-500" />}
       />
     );
