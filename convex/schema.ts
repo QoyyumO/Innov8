@@ -140,7 +140,7 @@ export default defineSchema({
     ),
   })
     .index("by_requestId", ["requestId"])
-    .index("by_outcome", ["outcome"])
+    .index("by_outcome_decidedAt", ["outcome", "decidedAt"])
     .index("by_decidedAt", ["decidedAt"]),
 
   emergencyAccess: defineTable({

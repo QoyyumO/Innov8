@@ -9,7 +9,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 ## Done (foundational UI)
 
 - Session auth, roles, account settings
-- Role dashboards with **dummy** cards (not live domain data)
+- Role dashboards (live since INN-43)
 - Healthcare palette and AppShell
 
 ## Done (schema + §14 seed)
@@ -28,10 +28,11 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted).
 - **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants; `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
 - **INN-42** — AuditEvent read model (`convex/audit.ts`): role-scoped, paginated, newest-first by `createdAt`; still append-only (no update/delete path).
+- **INN-43** — Dashboard read models (`convex/dashboards.ts`): bounded summaries over AccessRequest, Decision, EmergencyAccess, SecurityAlert, and AuditEvent, plus the Facility list.
 
 ## Next (live demo path)
 
-Do not keep dummy dashboards as the only UI. Remaining path: live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. Next: should-have VERIFY step-up (INN-44), consent (INN-45), and patient access history (INN-46). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
