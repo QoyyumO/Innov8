@@ -121,10 +121,27 @@ const ALLOWED_TRANSITIONS: Record<AlertStatus, readonly AlertStatus[]> = {
   closed: [],
 };
 
+const TRANSITION_AUDIT_ACTIONS = {
+  acknowledged: "SecurityAlertAcknowledged",
+  closed: "SecurityAlertClosed",
+} as const;
+
+export type AlertReviewer = {
+  user: Doc<"users">;
+  session: Doc<"sessions">;
+};
+
+/**
+ * Moves an alert forward (open → acknowledged → closed, or open → closed)
+ * and audits who did it (INN-50). Invalid transitions throw, so nothing is
+ * written for them.
+ */
 export async function transitionAlert(
   db: DatabaseWriter,
+  { user, session }: AlertReviewer,
   alertId: Id<"securityAlerts">,
-  nextStatus: AlertStatus,
+  nextStatus: Exclude<AlertStatus, "open">,
+  now: number,
 ): Promise<Doc<"securityAlerts">> {
   const alert = await db.get(alertId);
   if (!alert) {
@@ -134,5 +151,18 @@ export async function transitionAlert(
     throw new Error(`Alert is already ${alert.status}`);
   }
   await db.patch(alertId, { status: nextStatus });
+  await appendAuditEvent(db, {
+    actorId: user._id,
+    sessionId: session._id,
+    action: TRANSITION_AUDIT_ACTIONS[nextStatus],
+    entity: "securityAlerts",
+    entityId: alertId,
+    details: {
+      fromStatus: alert.status,
+      toStatus: nextStatus,
+      severity: alert.severity,
+    },
+    createdAt: now,
+  });
   return { ...alert, status: nextStatus };
 }
