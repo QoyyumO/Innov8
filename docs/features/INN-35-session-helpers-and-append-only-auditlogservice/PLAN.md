@@ -1,6 +1,7 @@
 # INN-35: Session helpers and append-only AuditLogService — Implementation Plan
 
-**Git branch:** `INN-35-session-helpers-and-append-only-auditlogservice`
+**Git branch:** `INN-35-session-helpers-and-append-only-auditlogservice`  
+**PR:** [#3](https://github.com/QoyyumO/Innov8/pull/3) (merged)
 
 ## Context
 
@@ -10,13 +11,14 @@ Shared plumbing for every later demo-path function (search → request → decis
 
 ## Scope
 
-- [ ] `requireSession(ctx, token)` — throws on missing / unknown / expired token, missing user, or non-`active` account
-- [ ] `requireRole(user, roles)` plus role groups for clinician, security officer, and admin
-- [ ] Move `publicUser` out of `auth.ts` into a shared helper so domain functions can reuse it (never returns `hashedPassword`)
-- [ ] `convex/lib/services/auditLogService.ts` — `appendAuditEvent(db, event)`, insert-only into `auditEvents`
-- [ ] Log `UserLoggedIn` from the existing `login` mutation (with `sessionId`)
-- [ ] Document the client token pattern in `src/hooks/useAuth.ts`
-- [ ] No Next.js API routes; no public update/delete of audit rows
+- [x] `requireSession(ctx, token)` — throws on missing / unknown / expired token, missing user, or non-`active` account
+- [x] `requireRole(user, roles)` plus role groups for clinician, security officer, and admin
+- [x] Move `publicUser` out of `auth.ts` into a shared helper so domain functions can reuse it (never returns `hashedPassword`)
+- [x] `convex/lib/services/auditLogService.ts` — `appendAuditEvent(db, event)`, insert-only into `auditEvents`
+- [x] Log `UserLoggedIn` from the existing `login` mutation (with `sessionId`)
+- [x] Document the client token pattern in `src/hooks/useAuth.ts`
+- [x] Tests in `convex/session.test.ts` (vitest + convex-test; merged via INN-49)
+- [x] No Next.js API routes; no public update/delete of audit rows
 
 ---
 
@@ -36,7 +38,7 @@ Only caller is `login`. Needed so the login audit row can carry `sessionId`.
 
 Moved from `convex/auth.ts`, typed with `Doc<"users">`. Same output shape as today so `AuthContext` and existing callers are unchanged.
 
-`requireSessionUser` and `getCurrentUser` are left as-is in this ticket (the suspended-account gap there is tracked in INN-47).
+`requireSessionUser` and `getCurrentUser` also reject non-active accounts since INN-47 (PR #4) merged.
 
 ### Part B — Roles (`convex/lib/roles.ts`)
 
@@ -68,5 +70,5 @@ Doc comment showing `useQuery(api.x.y, sessionToken ? { token: sessionToken } : 
 
 ## Open questions
 
-- [ ] Should `requireSessionUser` delegate to `requireSession` once INN-47 lands, so `updateProfile` / `changePassword` also reject suspended users?
+- [x] Suspended users on `updateProfile` / `changePassword` — handled by INN-47 in `requireSessionUser`. Could still delegate to `requireSession` later to remove the duplicate check.
 - [ ] Should `seedAccessEvent` in `convex/seed.ts` switch to `appendAuditEvent` in a follow-up?

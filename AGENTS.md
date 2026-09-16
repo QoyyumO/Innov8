@@ -79,13 +79,31 @@ Consent, step-up verification, record writing, deep audit investigation, and a p
 
 ## Current status and next work
 
-Foundational UI is in place: session login, account settings, and **dummy** role dashboards.
+Foundational UI is in place: session login, password reset, account settings, and **dummy** role dashboards.
 
-**Schema (INN-18)** and **§14 seed (INN-19)** are implemented. Tables live in `convex/schema.ts`. Seed lives in `convex/seed.ts`. Plans: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`, `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. How to run and seed: root `README.md`.
+On `main` (plans in `docs/features/`, index in `docs/README.md`):
+
+- **INN-18** schema and **INN-19** §14 seed — tables in `convex/schema.ts`, seed in `convex/seed.ts`.
+- **INN-35** session and audit plumbing — `requireSession` / `publicUser` (`convex/lib/session.ts`), `requireRole` + role groups (`convex/lib/roles.ts`), insert-only `appendAuditEvent` (`convex/lib/services/auditLogService.ts`). Every domain function must use these; never authorize from a client `userId`.
+- **INN-36** patient discovery — `convex/patients.ts`, `/patients`, `/patients/[publicId]`. Demo step 2 works: identity + record existence only, audited.
+- **INN-47** password reset hardening — hashed single-use reset tokens (15 min), issued via `internal.auth.issuePasswordResetToken` (no email yet). Sessions last 30 minutes; suspended accounts are rejected everywhere.
+- **INN-48** clean-checkout build — no `prepare` script; `type-check` runs `next typegen` first.
+
+Tests: `npm test` (vitest + convex-test, `convex/**/*.test.ts`). Run it with `npm run check` before every PR.
 
 Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only — do not import school entities.
 
-**Next:** live demo path on seeded data (search PAT-002391, purpose request, ALLOW/BLOCK, authorised view, harvest alert, break-glass, audit). Do **not** revive canceled tickets INN-5–INN-17; file new Innov8 issues.
+**Next (demo steps 3–7), in dependency order:**
+
+1. [INN-38](https://linear.app/innov8-health/issue/INN-38) risk scoring service (ALLOW ~8 / harvest BLOCK ~94) — claimed, unblocked.
+2. [INN-37](https://linear.app/innov8-health/issue/INN-37) purpose-based access request — waits on INN-38.
+3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
+4. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security`, [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — wait on INN-37.
+5. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass (waits on INN-40), [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (waits on INN-37, INN-39).
+
+Should-have after the demo works: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
+
+When a ticket changes what works, update `README.md` ("What works today"), `docs/README.md`, this section, `Innov8_DDD.md`, and `.cursor/rules/innov8-next-tasks.mdc` in the same PR.
 
 Use Linear **Innov8** only. Never Skilladder.
 

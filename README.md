@@ -46,6 +46,34 @@ Password for all demo accounts: `password123`
 
 Demo users are created on first login (`ensureDemoUsers` in `convex/auth.ts`). Seed (below) attaches `facilityId`, `workerId`, and hour/volume baselines without changing the password.
 
+Sessions last **30 minutes**. Suspended accounts are rejected on every authenticated call, not just at login.
+
+### Password reset (demo)
+
+There is no email provider yet. `/forgot-password` always shows a generic message and never returns a token. To test the reset flow, issue a one-time token from the CLI (valid 15 minutes, single use):
+
+```bash
+npx convex run internal.auth.issuePasswordResetToken '{"email":"ibrahim@fmc.abuja.ng"}'
+```
+
+Then open `/reset-password?email=ibrahim@fmc.abuja.ng` and paste the token.
+
+## What works today
+
+Track C demo steps (see `AGENTS.md`):
+
+| Step | Status |
+| --- | --- |
+| 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
+| 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
+| 3–4. Purpose request + risk decision | Not yet — INN-37 (request) and INN-38 (risk scoring) |
+| 5. Authorised summary | Not yet — INN-40 |
+| 6. Harvest BLOCK + alert | Not yet — INN-39 |
+| 7. Break-glass | Not yet — INN-41 |
+| Audit trail / security dashboards | Not yet — INN-42, INN-43 |
+
+Role dashboards still show **dummy** numbers. Sidebar links for `/requests`, `/emergency`, `/audit`, `/security`, and `/facilities` 404 until their tickets land.
+
 ## Seed synthetic data
 
 Seed is **internal** Convex mutations (`convex/seed.ts`). Run them from the CLI or dashboard, not from the browser. Functions are idempotent: re-running skips rows that already exist.
@@ -94,14 +122,26 @@ More detail (indexes, demo rows, files): [`convex/README-seeding.md`](convex/REA
 ## Checks
 
 ```bash
-npm run check   # eslint + tsc --noEmit
+npm run check   # eslint + next typegen + tsc --noEmit
+npm test        # vitest + convex-test (convex/**/*.test.ts)
 ```
+
+Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run them before opening a PR.
 
 ## Repo map
 
-- `src/app/` — `(authenticated)` and `(not-authenticated)` routes
+- `src/app/(authenticated)/` — dashboard, `patients/`, `account-settings/`
+- `src/app/(not-authenticated)/` — `login/`, `forgot-password/`, `reset-password/`, `unauthorized/`
+- `src/hooks/useAuth.ts` — how pages pass the session token to Convex
 - `convex/schema.ts` — access-layer tables
-- `convex/auth.ts` — session login (`innov8_session_token`)
+- `convex/auth.ts` — login, session, password reset (`innov8_session_token`)
+- `convex/patients.ts` — patient search + existence-only discovery
+- `convex/seed.ts` — internal §14 seed mutations
+- `convex/lib/session.ts` — `requireSession`, `publicUser`
+- `convex/lib/roles.ts` — `requireRole` and role groups
+- `convex/lib/services/` — domain services (`auditLogService`, `patientDiscoveryService`)
+- `convex/*.test.ts` — backend tests
+- `docs/features/` — one `PLAN.md` per ticket ([index](docs/README.md))
 - `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)
 
 Linear workspace: [Innov8](https://linear.app/innov8-health) (`INN-XX` only).

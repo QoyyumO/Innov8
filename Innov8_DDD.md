@@ -17,15 +17,22 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 1. **Adebare** — Convex schema [INN-18](https://linear.app/innov8-health/issue/INN-18) (INN-20…INN-30) on `main`. Plan: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`.
 2. **Henry** — synthetic seed [INN-19](https://linear.app/innov8-health/issue/INN-19) (INN-31 patients, INN-32 workers, INN-33 access events). Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. Runbook: root `README.md` and `convex/README-seeding.md`.
 
+## Done (live demo path so far)
+
+- **INN-35** — `AuditLogService` (`convex/lib/services/auditLogService.ts`), `requireSession`, `requireRole`. Login audits `UserLoggedIn`.
+- **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched`; discovery returns identity + record existence only.
+- **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min; suspended accounts rejected on every call.
+
 ## Next (live demo path)
 
-Do not keep dummy dashboards as the only UI. Wire search → purpose request → risk ALLOW/BLOCK → authorised view → harvest block → break-glass → audit using the seeded tables. INN-5–INN-17 stay **Canceled**; open new tickets instead of reviving those ids.
+Do not keep dummy dashboards as the only UI. Remaining path: purpose request (INN-37) → risk ALLOW/BLOCK (INN-38) → authorised view (INN-40) → harvest block + alert (INN-39) → break-glass (INN-41) → audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
 - **Facility**: code, name, city (FMC Lagos, FMC Abuja, optional Abeokuta)
 - **User**: existing users table (email, roles, hospital, department, profile, accountStatus)
-- **Session**: existing sessions table
+- **Session**: existing sessions table (30-minute TTL)
+- **PasswordResetToken**: userId, tokenHash, expiresAt, usedAt (INN-47)
 - **Patient**: publicId (`PAT-002391`), homeFacilityId, demographics (synthetic), identifiers for search
 - **RecordIndex**: patientId, facilityId, recordTypes[] — **existence only**, not full chart
 - **ClinicalSummary**: permitted fields after ALLOW (summary, allergies, medications, diagnoses)
@@ -56,14 +63,14 @@ Do not keep dummy dashboards as the only UI. Wire search → purpose request →
 
 ## Domain services
 
-- **PatientDiscoveryService** — identify patient; disclose existence, not contents
-- **AccessControlService** — RBAC + hospital, purpose, relationship
-- **RiskScoringService** — explainable score; treatment + known relationship ≈ 8; 500-record harvest ≈ 94
-- **RecordExchangeService** — fetch only permitted fields after ALLOW
-- **EmergencyAccessService** — break-glass grant/revoke
-- **AlertService** — notify security on BLOCK / emergency
-- **AuditLogService** — append-only events
-- **ConsentService** — should-have after demo
+- **PatientDiscoveryService** — identify patient; disclose existence, not contents — *implemented (INN-36)*
+- **AccessControlService** — RBAC + hospital, purpose, relationship — *`requireSession` / `requireRole` done (INN-35); request checks in INN-37*
+- **RiskScoringService** — explainable score; treatment + known relationship ≈ 8; 500-record harvest ≈ 94 — *INN-38*
+- **RecordExchangeService** — fetch only permitted fields after ALLOW — *INN-40*
+- **EmergencyAccessService** — break-glass grant/revoke — *INN-41*
+- **AlertService** — notify security on BLOCK / emergency — *INN-39*
+- **AuditLogService** — append-only events — *implemented (INN-35)*
+- **ConsentService** — should-have after demo — *INN-45*
 
 ## Domain events (audit)
 

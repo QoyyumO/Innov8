@@ -3,29 +3,42 @@ description: Next Innov8 MVP tasks, DDD map, and Linear Innov8 backlog
 alwaysApply: true
 ---
 
-# Next work after schema + seed
+# Next Innov8 work
 
-Foundational UI is done (auth, account settings, dummy role dashboards). **INN-18 schema** and **INN-19 §14 seed** are in the repo. Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
+Foundational UI is done (auth, password reset, account settings, dummy role dashboards). Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
 
 Read `Innov8_DDD.md`, `AGENTS.md`, and `docs/README.md` before adding domain pages.
 
 ## Current focus
 
-Wire the Track C demo on **seeded** tables. Do **not** revive canceled issues INN-5–INN-17; open new Innov8 tickets.
+Wire the rest of the Track C demo on **seeded** tables. Do **not** revive canceled issues INN-5–INN-17 or INN-34; open new Innov8 tickets.
 
 Search PAT-002391 → purpose request → risk ALLOW (~8) / harvest BLOCK (~94) → authorised summary → break-glass → audit / security dashboard.
 
-### Done — Adebare schema ([INN-18](https://linear.app/innov8-health/issue/INN-18))
+Domain functions must use `requireSession` + `requireRole` and write audit rows with `appendAuditEvent`. Run `npm run check` and `npm test` before a PR.
 
-INN-20…INN-30 on `main`. Plan: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`.
+### Done on `main`
 
-### Done — Henry seed ([INN-19](https://linear.app/innov8-health/issue/INN-19))
+- [INN-18](https://linear.app/innov8-health/issue/INN-18) schema (INN-20…INN-30)
+- [INN-19](https://linear.app/innov8-health/issue/INN-19) §14 seed (INN-31 patients, INN-32 workers, INN-33 access events)
+- [INN-35](https://linear.app/innov8-health/issue/INN-35) session helpers + append-only audit log
+- [INN-36](https://linear.app/innov8-health/issue/INN-36) patient discovery API + `/patients` (demo step 2)
+- [INN-47](https://linear.app/innov8-health/issue/INN-47) password reset hardening, 30-minute sessions
+- [INN-48](https://linear.app/innov8-health/issue/INN-48) clean-checkout `npm ci` + typegen
 
-1. [INN-31](https://linear.app/innov8-health/issue/INN-31) — 10,000 patients including **PAT-002391**
-2. [INN-32](https://linear.app/innov8-health/issue/INN-32) — 500 healthcare workers
-3. [INN-33](https://linear.app/innov8-health/issue/INN-33) — 100,000 access events (~95% normal / 5% anomalies)
+Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
-Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. How to seed: root `README.md`.
+### Next (dependency order)
+
+1. [INN-38](https://linear.app/innov8-health/issue/INN-38) risk scoring service — claimed, unblocked
+2. [INN-37](https://linear.app/innov8-health/issue/INN-37) purpose-based access request — waits on INN-38
+3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked
+4. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts, [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — wait on INN-37
+5. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass, [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards
+
+Should-have: INN-44, INN-45, INN-46.
+
+When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 
 ## Linear
 

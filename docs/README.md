@@ -4,11 +4,12 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 
 | Folder | Ticket | Status |
 | --- | --- | --- |
-| [INN-18-convex-schema-access-layer](features/INN-18-convex-schema-access-layer/PLAN.md) | Schema + validators (INN-20…INN-30) | Done on `main` |
-| [INN-19-synthetic-datasets-from-section-14](features/INN-19-synthetic-datasets-from-section-14/PLAN.md) | §14 seed (INN-31…INN-33) | Implemented; PR [#1](https://github.com/QoyyumO/Innov8/pull/1) (`henry`) |
+| [INN-18-convex-schema-access-layer](features/INN-18-convex-schema-access-layer/PLAN.md) | Schema + validators (INN-20…INN-30) | Done on `main` ([#2](https://github.com/QoyyumO/Innov8/pull/2)) |
+| [INN-19-synthetic-datasets-from-section-14](features/INN-19-synthetic-datasets-from-section-14/PLAN.md) | §14 seed (INN-31…INN-33) | Done on `main` ([#1](https://github.com/QoyyumO/Innov8/pull/1)) |
+| [INN-35-session-helpers-and-append-only-auditlogservice](features/INN-35-session-helpers-and-append-only-auditlogservice/PLAN.md) | Session helpers + append-only audit log | Done on `main` ([#3](https://github.com/QoyyumO/Innov8/pull/3)) |
+| [INN-36-patient-discovery-api-and-search-ui](features/INN-36-patient-discovery-api-and-search-ui/PLAN.md) | Patient discovery API + existence-only search UI | Done on `main` ([#6](https://github.com/QoyyumO/Innov8/pull/6)) |
 | [INN-47-password-reset-account-takeover](features/INN-47-password-reset-account-takeover/PLAN.md) | Password reset takeover + session status | Done on `main` ([#4](https://github.com/QoyyumO/Innov8/pull/4)) |
-| [INN-48-broken-build-npm-ci](features/INN-48-broken-build-npm-ci/PLAN.md) | Clean-checkout `npm ci` + typegen | In progress |
-| [INN-35-session-helpers-and-append-only-auditlogservice](features/INN-35-session-helpers-and-append-only-auditlogservice/PLAN.md) | Session helpers + append-only audit log | In review |
-| [INN-36-patient-discovery-api-and-search-ui](features/INN-36-patient-discovery-api-and-search-ui/PLAN.md) | Patient discovery API + existence-only search UI | In progress |
+| [INN-48-broken-build-npm-ci](features/INN-48-broken-build-npm-ci/PLAN.md) | Clean-checkout `npm ci` + typegen | Done on `main` ([#5](https://github.com/QoyyumO/Innov8/pull/5)) |
+| [INN-49-sync-docs-and-add-inn-35-tests](features/INN-49-sync-docs-and-add-inn-35-tests/PLAN.md) | Docs sync + INN-35 tests | In review |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
