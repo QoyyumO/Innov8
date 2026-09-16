@@ -67,7 +67,7 @@ export const DEMO_USERS: Array<{
   },
 ];
 
-/** Healthcare-worker demo emails only — Chioma is a patient account, not one of the 500. */
+/** Healthcare-worker demo emails only — Chioma is a patient account, not a worker. */
 export const DEMO_WORKER_SEEDS: Array<{
   email: string;
   workerId: string;

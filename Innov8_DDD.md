@@ -15,7 +15,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 ## Done (schema + §14 seed)
 
 1. **Adebare** — Convex schema [INN-18](https://linear.app/innov8-health/issue/INN-18) (INN-20…INN-30) on `main`. Plan: `docs/features/INN-18-convex-schema-access-layer/PLAN.md`.
-2. **Henry** — synthetic seed [INN-19](https://linear.app/innov8-health/issue/INN-19) (INN-31 patients, INN-32 workers, INN-33 access events). Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. Runbook: root `README.md` and `convex/README-seeding.md`.
+2. **Henry** — synthetic seed [INN-19](https://linear.app/innov8-health/issue/INN-19) (INN-31 patients, INN-32 workers, INN-33 access events). Plan: `docs/features/INN-19-synthetic-datasets-from-section-14/PLAN.md`. Operational seed is demo-scale ([INN-55](https://linear.app/innov8-health/issue/INN-55)): 24 workers, 200 patients plus PAT-002391, 200 access events. Do not re-run the historical 10k/100k volumes on the free plan. Runbook: root `README.md` and `convex/README-seeding.md`.
 
 ## Done (live demo path so far)
 
@@ -33,6 +33,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-54** — Login failures return a form error (no overlay); Keep me logged in is a 7-day session; seed non-harvest `recordCount` is 1.
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
 - **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
+- **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan.
 
 ## Next (live demo path)
 

@@ -237,6 +237,17 @@ export { DEMO_PATIENT_PUBLIC_ID } from "./demoIds";
 export const DEMO_PATIENT_INDEX = 2391;
 export const DEMO_PATIENT_DOB_MS = Date.UTC(1988, 3, 12);
 
+/**
+ * Demo-scale seed defaults. Historical §14 volumes (500 workers, 10k patients,
+ * 100k events) overflow the Convex free plan — do not use them as defaults.
+ */
+export const SEED_WORKER_COUNT = 24;
+export const SEED_PATIENT_COUNT = 200;
+export const SEED_ACCESS_EVENT_COUNT = 200;
+export const SEED_PATIENT_BATCH_SIZE = 50;
+export const SEED_ACCESS_EVENT_BATCH_SIZE = 50;
+export const SEED_CLEAR_BATCH_SIZE = 100;
+
 export const SEED_EVENT_BASE_MS = Date.UTC(2026, 5, 1);
 export const DEMO_ALLOW_REQUESTED_AT = SEED_EVENT_BASE_MS - 2000;
 export const DEMO_BLOCK_REQUESTED_AT = SEED_EVENT_BASE_MS - 1000;

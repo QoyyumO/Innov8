@@ -26,7 +26,13 @@ import {
   MEDICATIONS,
   NORMAL_PURPOSES,
   RECORD_TYPES,
+  SEED_ACCESS_EVENT_BATCH_SIZE,
+  SEED_ACCESS_EVENT_COUNT,
+  SEED_CLEAR_BATCH_SIZE,
   SEED_EVENT_BASE_MS,
+  SEED_PATIENT_BATCH_SIZE,
+  SEED_PATIENT_COUNT,
+  SEED_WORKER_COUNT,
   WORKER_ROLE_POOL,
   mulberry32,
   normalizeSearchName,
@@ -106,7 +112,7 @@ export const seedHealthcareWorkers = internalMutation({
   args: { count: v.optional(v.number()) },
   returns: v.object({ inserted: v.number(), updated: v.number(), skipped: v.number() }),
   handler: async (ctx, args) => {
-    const total = args.count ?? 500;
+    const total = args.count ?? SEED_WORKER_COUNT;
     const facilities = await loadFacilities(ctx);
     const rand = mulberry32(42);
     const hashedPassword = await hashPassword(DEMO_PASSWORD);
@@ -281,88 +287,104 @@ async function upsertRecordIndexAndSummary(
   }
 }
 
+async function upsertSyntheticPatient(
+  ctx: MutationCtx,
+  facilities: Doc<"facilities">[],
+  patientIndex: number,
+) {
+  const lagos = requireFacility(facilities, "FMC-LOS");
+  const publicId = `PAT-${pad(patientIndex, 6)}`;
+  const isDemoPatient = patientIndex === DEMO_PATIENT_INDEX;
+  const rand = mulberry32(1_000_003 * patientIndex + 7);
+  const facility = isDemoPatient ? lagos : pick(rand, facilities);
+  const firstName = isDemoPatient ? "Chioma" : pick(rand, FIRST_NAMES);
+  const lastName = isDemoPatient ? "Okonkwo" : pick(rand, LAST_NAMES);
+  const gender = isDemoPatient ? "female" : pick(rand, GENDERS);
+  const bloodGroup = isDemoPatient ? "O+" : pick(rand, BLOOD_GROUPS);
+  const dateOfBirth = isDemoPatient
+    ? DEMO_PATIENT_DOB_MS
+    : unixDateOfBirth(rand);
+  const searchName = normalizeSearchName(firstName, lastName);
+  const updatedAt = SEED_EVENT_BASE_MS - patientIndex * 86_400_000;
+
+  const existing = await ctx.db
+    .query("patients")
+    .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
+    .first();
+
+  const patientId = existing
+    ? existing._id
+    : await ctx.db.insert("patients", {
+        publicId,
+        homeFacilityId: facility._id,
+        profile: { firstName, lastName },
+        dateOfBirth,
+        gender,
+        bloodGroup,
+        searchName,
+      });
+
+  if (existing && isDemoPatient) {
+    await ctx.db.patch(existing._id, {
+      homeFacilityId: lagos._id,
+      profile: { firstName: "Chioma", lastName: "Okonkwo" },
+      dateOfBirth: DEMO_PATIENT_DOB_MS,
+      gender: "female",
+      bloodGroup: "O+",
+      searchName: "chioma okonkwo",
+    });
+  }
+
+  const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);
+  const allergies = isDemoPatient ? ["Penicillin"] : [pick(rand, ALLERGIES)];
+  const medications = isDemoPatient
+    ? ["Lisinopril 10mg"]
+    : [pick(rand, MEDICATIONS)];
+
+  await upsertRecordIndexAndSummary(ctx, {
+    patientId,
+    facilityId: isDemoPatient ? lagos._id : facility._id,
+    recordTypes: [...RECORD_TYPES],
+    medicalSummary: isDemoPatient
+      ? "Chioma Okonkwo is usually treated at FMC Lagos. Synthetic summary for the Track C demo: stable hypertension, no acute distress."
+      : `Synthetic summary for ${publicId}. Stable; routine follow-up recommended.`,
+    allergies,
+    medications,
+    diagnoses: [condition],
+    conditions: [condition],
+    updatedAt,
+  });
+}
+
 export const seedPatientsBatch = internalMutation({
   args: {
-    cursor: v.number(),
-    batchSize: v.number(),
-    total: v.number(),
+    cursor: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
+    total: v.optional(v.number()),
+    continueToEvents: v.optional(v.boolean()),
   },
   returns: v.object({ cursor: v.number(), done: v.boolean() }),
-  handler: async (ctx, { cursor, batchSize, total }) => {
+  handler: async (ctx, args) => {
+    const cursor = args.cursor ?? 0;
+    const batchSize = args.batchSize ?? SEED_PATIENT_BATCH_SIZE;
+    const total = args.total ?? SEED_PATIENT_COUNT;
+    const continueToEvents = args.continueToEvents ?? false;
     const facilities = await loadFacilities(ctx);
-    const lagos = requireFacility(facilities, "FMC-LOS");
     const end = Math.min(cursor + batchSize, total);
+
+    if (cursor === 0) {
+      await upsertSyntheticPatient(ctx, facilities, DEMO_PATIENT_INDEX);
+    }
 
     for (
       let patientIndex = cursor + 1;
       patientIndex <= end;
       patientIndex += 1
     ) {
-      const publicId = `PAT-${pad(patientIndex, 6)}`;
-      const isDemoPatient = patientIndex === DEMO_PATIENT_INDEX;
-      const rand = mulberry32(1_000_003 * patientIndex + 7);
-      const facility = isDemoPatient ? lagos : pick(rand, facilities);
-      const firstName = isDemoPatient ? "Chioma" : pick(rand, FIRST_NAMES);
-      const lastName = isDemoPatient ? "Okonkwo" : pick(rand, LAST_NAMES);
-      const gender = isDemoPatient ? "female" : pick(rand, GENDERS);
-      const bloodGroup = isDemoPatient ? "O+" : pick(rand, BLOOD_GROUPS);
-      const dateOfBirth = isDemoPatient
-        ? DEMO_PATIENT_DOB_MS
-        : unixDateOfBirth(rand);
-      const searchName = normalizeSearchName(firstName, lastName);
-      const updatedAt = SEED_EVENT_BASE_MS - patientIndex * 86_400_000;
-
-      const existing = await ctx.db
-        .query("patients")
-        .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
-        .first();
-
-      const patientId = existing
-        ? existing._id
-        : await ctx.db.insert("patients", {
-            publicId,
-            homeFacilityId: facility._id,
-            profile: { firstName, lastName },
-            dateOfBirth,
-            gender,
-            bloodGroup,
-            searchName,
-          });
-
-      if (existing && isDemoPatient) {
-        await ctx.db.patch(existing._id, {
-          homeFacilityId: lagos._id,
-          profile: { firstName: "Chioma", lastName: "Okonkwo" },
-          dateOfBirth: DEMO_PATIENT_DOB_MS,
-          gender: "female",
-          bloodGroup: "O+",
-          searchName: "chioma okonkwo",
-        });
+      if (patientIndex === DEMO_PATIENT_INDEX) {
+        continue;
       }
-
-      const condition = isDemoPatient
-        ? "Hypertension"
-        : pick(rand, CONDITIONS);
-      const allergies = isDemoPatient
-        ? ["Penicillin"]
-        : [pick(rand, ALLERGIES)];
-      const medications = isDemoPatient
-        ? ["Lisinopril 10mg"]
-        : [pick(rand, MEDICATIONS)];
-
-      await upsertRecordIndexAndSummary(ctx, {
-        patientId,
-        facilityId: isDemoPatient ? lagos._id : facility._id,
-        recordTypes: [...RECORD_TYPES],
-        medicalSummary: isDemoPatient
-          ? "Chioma Okonkwo is usually treated at FMC Lagos. Synthetic summary for the Track C demo: stable hypertension, no acute distress."
-          : `Synthetic summary for ${publicId}. Stable; routine follow-up recommended.`,
-        allergies,
-        medications,
-        diagnoses: [condition],
-        conditions: [condition],
-        updatedAt,
-      });
+      await upsertSyntheticPatient(ctx, facilities, patientIndex);
     }
 
     const done = end >= total;
@@ -371,6 +393,15 @@ export const seedPatientsBatch = internalMutation({
         cursor: end,
         batchSize,
         total,
+        continueToEvents,
+      });
+    } else if (continueToEvents) {
+      await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
+        cursor: 0,
+        batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
+        total: SEED_ACCESS_EVENT_COUNT,
+        patientCount: total,
+        workerCount: SEED_WORKER_COUNT,
       });
     }
     return { cursor: end, done };
@@ -545,21 +576,23 @@ async function seedDemoScenarioEvents(ctx: MutationCtx) {
 
 export const seedAccessEventsBatch = internalMutation({
   args: {
-    cursor: v.number(),
-    batchSize: v.number(),
-    total: v.number(),
-    patientCount: v.number(),
-    workerCount: v.number(),
+    cursor: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
+    total: v.optional(v.number()),
+    patientCount: v.optional(v.number()),
+    workerCount: v.optional(v.number()),
   },
   returns: v.object({
     cursor: v.number(),
     done: v.boolean(),
     skipped: v.number(),
   }),
-  handler: async (
-    ctx,
-    { cursor, batchSize, total, patientCount, workerCount },
-  ) => {
+  handler: async (ctx, args) => {
+    const cursor = args.cursor ?? 0;
+    const batchSize = args.batchSize ?? SEED_ACCESS_EVENT_BATCH_SIZE;
+    const total = args.total ?? SEED_ACCESS_EVENT_COUNT;
+    const patientCount = args.patientCount ?? SEED_PATIENT_COUNT;
+    const workerCount = args.workerCount ?? SEED_WORKER_COUNT;
     if (cursor === 0) {
       await seedDemoScenarioEvents(ctx);
     }
@@ -652,6 +685,140 @@ export const seedAccessEventsBatch = internalMutation({
       });
     }
     return { cursor: end, done, skipped };
+  },
+});
+
+const CLEAR_TABLES = [
+  "auditEvents",
+  "securityAlerts",
+  "emergencyAccess",
+  "accessDecisions",
+  "accessRequests",
+  "clinicalSummaries",
+  "recordIndexes",
+  "patients",
+  "passwordResetTokens",
+  "sessions",
+] as const;
+
+type ClearTable = (typeof CLEAR_TABLES)[number];
+
+const DEMO_EMAILS = new Set(DEMO_USERS.map((demoUser) => demoUser.email));
+
+function workerIndexFromId(workerId: string | undefined): number | null {
+  if (workerId === undefined) {
+    return null;
+  }
+  const match = /^WRK-(\d+)$/.exec(workerId);
+  if (match === null) {
+    return null;
+  }
+  const digits = match[1];
+  if (digits === undefined) {
+    return null;
+  }
+  return Number(digits);
+}
+
+function shouldKeepUser(user: Doc<"users">): boolean {
+  if (DEMO_EMAILS.has(user.email)) {
+    return true;
+  }
+  const workerIndex = workerIndexFromId(user.workerId);
+  return (
+    workerIndex !== null &&
+    workerIndex >= 1 &&
+    workerIndex <= SEED_WORKER_COUNT
+  );
+}
+
+async function deleteTableBatch(
+  ctx: MutationCtx,
+  table: ClearTable,
+  batchSize: number,
+): Promise<number> {
+  const rows = await ctx.db.query(table).take(batchSize);
+  for (const row of rows) {
+    await ctx.db.delete(row._id);
+  }
+  return rows.length;
+}
+
+export const clearSeedDataBatch = internalMutation({
+  args: {
+    tableIndex: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
+  },
+  returns: v.object({
+    table: v.string(),
+    deleted: v.number(),
+    done: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const tableIndex = args.tableIndex ?? 0;
+    const batchSize = args.batchSize ?? SEED_CLEAR_BATCH_SIZE;
+
+    if (tableIndex < CLEAR_TABLES.length) {
+      const table = CLEAR_TABLES[tableIndex];
+      if (table === undefined) {
+        throw new Error(`Unknown clear table index ${tableIndex}`);
+      }
+      const deleted = await deleteTableBatch(ctx, table, batchSize);
+      const tableDone = deleted < batchSize;
+      const nextIndex = tableDone ? tableIndex + 1 : tableIndex;
+      await ctx.scheduler.runAfter(0, internal.seed.clearSeedDataBatch, {
+        tableIndex: nextIndex,
+        batchSize,
+      });
+      return { table, deleted, done: false };
+    }
+
+    const users = await ctx.db.query("users").take(batchSize);
+    let deleted = 0;
+    for (const user of users) {
+      if (!shouldKeepUser(user)) {
+        await ctx.db.delete(user._id);
+        deleted += 1;
+      }
+    }
+    const scannedAll = users.length < batchSize;
+    if (!scannedAll && deleted === 0) {
+      throw new Error(
+        "clearSeedDataBatch cannot progress: keeper count is >= batchSize.",
+      );
+    }
+    if (!scannedAll) {
+      await ctx.scheduler.runAfter(0, internal.seed.clearSeedDataBatch, {
+        tableIndex,
+        batchSize,
+      });
+    }
+    return { table: "users", deleted, done: scannedAll };
+  },
+});
+
+export const seedDemoDataset = internalMutation({
+  args: {},
+  returns: v.object({ started: v.boolean() }),
+  handler: async (ctx) => {
+    const facilitiesResult: { inserted: number; skipped: number } =
+      await ctx.runMutation(internal.seed.seedFacilities, {});
+    const workersResult: {
+      inserted: number;
+      updated: number;
+      skipped: number;
+    } = await ctx.runMutation(internal.seed.seedHealthcareWorkers, {
+      count: SEED_WORKER_COUNT,
+    });
+    void facilitiesResult;
+    void workersResult;
+    await ctx.scheduler.runAfter(0, internal.seed.seedPatientsBatch, {
+      cursor: 0,
+      batchSize: SEED_PATIENT_BATCH_SIZE,
+      total: SEED_PATIENT_COUNT,
+      continueToEvents: true,
+    });
+    return { started: true };
   },
 });
 
