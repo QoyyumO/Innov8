@@ -22,7 +22,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-35** — `AuditLogService` (`convex/lib/services/auditLogService.ts`), `requireSession`, `requireRole`. Login audits `UserLoggedIn`.
 - **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched`; discovery returns identity + record existence only.
 - **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min; suspended accounts rejected on every call.
-- **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
+- **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` (`scoreAccessRequest` return type) with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 
 ## Next (live demo path)
 

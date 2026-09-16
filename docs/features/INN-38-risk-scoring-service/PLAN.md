@@ -31,25 +31,26 @@ Additive points, clamped to 0–100, then the harvest rule.
 
 | Factor | Points | Reason text (always one per factor) |
 | --- | --- | --- |
-| Base | 5 | — |
-| Role: doctor, nurse, pharmacist, laboratory | 0 | "`<role>` is a clinical role" |
+| Base | 5 | — (no reason; points only) |
+| Role: doctor, nurse, pharmacist, laboratory | 0 | "Clinical role (doctor)" (underscores in the role become spaces) |
 | Role: hospital_admin, system_admin | 15 | "Administrative role requesting clinical records" |
 | Role: security_officer | 25 | "Security role requesting clinical records" |
 | Role: patient / no clinical role | 80 | "Role is not permitted to request clinical records" |
 | Purpose: treatment | 0 | "Treatment purpose" |
-| Purpose: emergency, follow-up | 5 | |
-| Purpose: referral | 8 | |
+| Purpose: emergency | 5 | "Emergency purpose" |
+| Purpose: follow-up | 5 | "Follow-up purpose" |
+| Purpose: referral | 8 | "Referral purpose" |
 | Purpose: administrative | 20 | "Administrative purpose needs extra scrutiny" |
 | Cross-facility | 3 | "Records are held at another facility" |
 | Same facility | 0 | "Records are held at the requester's facility" |
 | 1 record | 0 | "Single patient record" |
 | 2 … baseline | 5 | "N records, within normal volume (baseline)" |
-| > baseline | 35 | "N records, above normal volume (baseline)" |
-| Outside `normalAccessHours` (non-clinical purposes only) | 15 | "Outside normal access hours" |
+| > baseline | 35 | "N records, far above normal volume (baseline)" |
+| Outside `normalAccessHours` (non-clinical purposes only) | 15 | "Outside the requester's normal access hours" |
 
 Baseline defaults to 20 when `normalPatientVolume` is missing. Access hours are interpreted in West Africa Time (UTC+1, no DST); overnight windows (start > end) are supported. Treatment and emergency skip the after-hours penalty so real night-time care — and the live demo — are not penalised.
 
-**Harvest rule:** `recordCount >= 500` → `score = max(score, 94)` and adds "Harvest pattern: request covers N patient records".
+**Harvest rule:** `recordCount >= 500` → `score = max(score, 94)` and adds "Harvest pattern: one request covers N patient records".
 
 Checks: Ibrahim treatment = 5 + 0 + 0 + 3 + 0 = **8**. Harvest = **94**. Administrative request after hours at the same facility = 5 + 20 + 15 = **40 → VERIFY** (matches the INN-44 example).
 
@@ -59,7 +60,7 @@ Checks: Ibrahim treatment = 5 + 0 + 0 + 3 + 0 = **8**. Harvest = **94**. Adminis
 scoreAccessRequest({
   actorRoles, purpose, recordTypes, recordCount,
   sameHospital, requestedAt, normalAccessHours?, normalPatientVolume?,
-}) → {
+}) → RiskBreakdown {
   score, outcome, reasons,
   factors: { role, purpose, sameHospital, recordCount },
 }

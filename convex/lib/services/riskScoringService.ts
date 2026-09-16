@@ -62,6 +62,11 @@ export type AccessHours = { start: string; end: string };
 export type RiskInput = {
   actorRoles: readonly UserRole[];
   purpose: Purpose;
+  /**
+   * Caller contract for INN-37: at least one type is required so an empty
+   * request cannot be scored. Types are not weighted; more types do not
+   * raise the score.
+   */
   recordTypes: readonly RecordType[];
   /** Number of patient records the request covers (1 for a normal lookup). */
   recordCount: number;
@@ -79,13 +84,17 @@ export type RiskFactors = {
   recordCount: number;
 };
 
-export type RiskResult = {
+/** Domain value object (`Innov8_DDD.md` RiskBreakdown). */
+export type RiskBreakdown = {
   score: number;
   outcome: DecisionOutcome;
   reasons: string[];
   /** Snapshot for `accessDecisions.factors`. */
   factors: RiskFactors;
 };
+
+/** Alias of RiskBreakdown for callers that used the earlier name. */
+export type RiskResult = RiskBreakdown;
 
 export function outcomeForScore(score: number): DecisionOutcome {
   if (score >= BLOCK_THRESHOLD) {
@@ -205,7 +214,7 @@ export function isOutsideAccessHours(
   return !isInside;
 }
 
-export function scoreAccessRequest(input: RiskInput): RiskResult {
+export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
   if (input.recordTypes.length === 0) {
     throw new Error("Risk scoring requires at least one record type");
   }
