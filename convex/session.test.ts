@@ -10,6 +10,7 @@ import {
   ADMIN_ROLES,
   CLINICIAN_ROLES,
   SECURITY_ROLES,
+  isAuditReviewer,
   requireRole,
 } from "./lib/roles";
 import { publicUser, requireSession } from "./lib/session";
@@ -160,6 +161,14 @@ describe("requireRole", () => {
     expect(() => requireRole({ roles: [] }, CLINICIAN_ROLES)).toThrow(
       /permission/,
     );
+  });
+
+  test("isAuditReviewer is security officers and admins, not clinicians or patients", () => {
+    expect(isAuditReviewer({ roles: ["security_officer"] })).toBe(true);
+    expect(isAuditReviewer({ roles: ["hospital_admin"] })).toBe(true);
+    expect(isAuditReviewer({ roles: ["system_admin"] })).toBe(true);
+    expect(isAuditReviewer({ roles: ["doctor"] })).toBe(false);
+    expect(isAuditReviewer({ roles: ["patient"] })).toBe(false);
   });
 });
 

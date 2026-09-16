@@ -4,10 +4,8 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage, PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import { AuditAction, auditAction, auditDetails } from "./lib/domain";
-import { ADMIN_ROLES, SECURITY_ROLES } from "./lib/roles";
+import { isAuditReviewer } from "./lib/roles";
 import { requireSession } from "./lib/session";
-
-const AUDIT_REVIEWER_ROLES = [...SECURITY_ROLES, ...ADMIN_ROLES];
 
 const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
@@ -17,6 +15,7 @@ const auditEventViewValidator = v.object({
   action: auditAction,
   entity: v.string(),
   entityId: v.union(v.null(), v.string()),
+  /** Stored audit payload (metadata, including break-glass justification). Not clinical sections. */
   details: auditDetails,
   actor: v.union(
     v.null(),
@@ -105,14 +104,16 @@ function queryEvents(
 /**
  * Read-only audit trail (INN-42), newest first.
  *
- * Everyone sees their own events. Security officers and admins see every
- * event and may filter to one actor. There is deliberately no function that
- * updates or deletes audit rows.
+ * Everyone sees their own events, so this query uses `requireSession` without
+ * `requireRole`. Reviewers (`isAuditReviewer`) see every event and may filter
+ * to one actor; facility-scoped hospital-admin views are INN-52. There is
+ * deliberately no function that updates or deletes audit rows.
  */
 export const listAuditEvents = query({
   args: {
     token: v.optional(v.string()),
     action: v.optional(auditAction),
+    /** String so a malformed id is an empty page (`normalizeId`), not a `v.id` validator error. */
     actorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
@@ -128,7 +129,7 @@ export const listAuditEvents = query({
       throw error;
     }
 
-    const isReviewer = AUDIT_REVIEWER_ROLES.some((role) => user.roles.includes(role));
+    const isReviewer = isAuditReviewer(user);
     let actorId: Id<"users"> | undefined = isReviewer ? undefined : user._id;
     if (args.actorId !== undefined) {
       const requestedActorId = ctx.db.normalizeId("users", args.actorId);

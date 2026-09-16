@@ -61,4 +61,5 @@ Human labels and badge colours per action.
 ## Open questions
 
 - [ ] Alert acknowledge/close are still not audited (no `auditAction` value). Out of scope; follow-up ticket.
-- [ ] Facility-scoped views for hospital admins. Out of scope; reviewers see all events for now.
+- [ ] Facility-scoped views for hospital admins (INN-52). Out of scope; reviewers see all events for now.
+- [ ] Audit `details` are the stored payload (metadata, including break-glass justification), not clinical sections. The table truncates values to 80 characters. Intentional.

@@ -68,6 +68,7 @@ export function AuditEventsTable({ canFilterByActor, actorId }: AuditEventsTable
         <div className="w-full max-w-xs">
           <Label htmlFor="audit-action-filter">Action</Label>
           <Select
+            id="audit-action-filter"
             options={ACTION_OPTIONS}
             defaultValue={ALL_ACTIONS}
             onChange={handleActionChange}
