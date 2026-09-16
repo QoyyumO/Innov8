@@ -15,6 +15,7 @@ interface SelectProps {
   success?: boolean;
   hint?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -27,6 +28,7 @@ const Select: React.FC<SelectProps> = ({
   success = false,
   hint = '',
   disabled = false,
+  id,
 }) => {
   // Manage the selected value
   const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
@@ -55,6 +57,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <>
       <select
+        id={id}
         className={selectClasses}
         onChange={handleChange}
         defaultValue={defaultValue}

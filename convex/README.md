@@ -9,8 +9,10 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `auth.ts` | `login`, `logout`, `getCurrentUser`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword` | Session token `innov8_session_token`; 30-minute sessions |
 | `patients.ts` | `searchPatients` (mutation, audited), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
 | `accessRequests.ts` | `createAccessRequest` (mutation, audited, one patient), `simulateBulkHarvest` (demo mutation, server-fixed 500 records), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
-| `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`) | Requester only; ALLOW or live emergency grant; requested sections from the target facility only |
+| `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`; expired ALLOW attempts audited `AccessExpired`) | Requester only; ALLOW within 24 hours of the decision, or a live emergency grant; requested sections from the target facility only |
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` | Security officers and admins; status transitions only |
+| `audit.ts` | `listAuditEvents` (paginated query) | Own events for everyone; all events (optionally one actor) for security officers and admins; read-only |
+| `dashboards.ts` | `getClinicianDashboard`, `getSecurityDashboard` (queries; `since` = start of the Lagos day), `listFacilities` | Clinicians see their own summary; security officers and admins see the exchange; any signed-in user lists facilities. All bounded |
 | `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
 
 ## Internal functions
@@ -31,6 +33,8 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `services/accessControlService.ts` — resolves patient, source/target facility, and held record types for a request
 - `services/alertService.ts` — `raiseBlockAlert` (called on every BLOCK from `accessRequests.ts`), `raiseEmergencyAlert` (every break-glass grant), and alert status transitions
 - `services/emergencyAccessService.ts` — break-glass grant, revoke, and expiry; `isLiveGrant` / `listGrantsForRequest` used by record release
+- `accessWindow.ts` — client-safe ALLOW validity window (24 h) and expiry helpers
+- `dashboardConstants.ts` — client-safe dashboard caps, `startOfLagosDay`, `formatBoundedCount`
 - `emergencyConstants.ts` — client-safe grant length, justification limits, and messages
 - `riskConstants.ts` — `HARVEST_RECORD_COUNT` / `HARVEST_SCORE`, shared by the risk engine, the harvest mutation, and the UI
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`

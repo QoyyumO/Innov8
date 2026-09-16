@@ -35,6 +35,16 @@ export const SECURITY_ROLES: readonly UserRole[] = ["security_officer"];
 
 export const ADMIN_ROLES: readonly UserRole[] = ["hospital_admin", "system_admin"];
 
+/** Security officers and admins — global audit/alert review (facility scope is INN-52). */
+export const AUDIT_REVIEWER_ROLES: readonly UserRole[] = [
+  ...SECURITY_ROLES,
+  ...ADMIN_ROLES,
+];
+
+export function isAuditReviewer(user: { roles: readonly UserRole[] }): boolean {
+  return AUDIT_REVIEWER_ROLES.some((role) => user.roles.includes(role));
+}
+
 /**
  * Throws unless the user holds at least one of `allowedRoles`.
  * Call after `requireSession`, e.g. `requireRole(user, CLINICIAN_ROLES)`.

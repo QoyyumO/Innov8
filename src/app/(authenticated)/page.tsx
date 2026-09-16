@@ -9,17 +9,14 @@ import {
   isPharmacist,
   isSecurityOfficer,
 } from "@/services/permissions";
-import DoctorDashboard from "./_components/DoctorDashboard";
-import NurseDashboard from "./_components/NurseDashboard";
-import PharmacistDashboard from "./_components/PharmacistDashboard";
-import LaboratoryDashboard from "./_components/LaboratoryDashboard";
+import ClinicianDashboard from "./_components/ClinicianDashboard";
 import SecurityDashboard from "./_components/SecurityDashboard";
 import AdminDashboard from "./_components/AdminDashboard";
 import PatientDashboard from "./_components/PatientDashboard";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const roles = user?.roles || [];
+  const roles = user?.roles ?? [];
 
   if (isPatient(roles)) {
     return <PatientDashboard />;
@@ -34,16 +31,16 @@ export default function Dashboard() {
   }
 
   if (isNurse(roles)) {
-    return <NurseDashboard />;
+    return <ClinicianDashboard kind="nurse" />;
   }
 
   if (isPharmacist(roles)) {
-    return <PharmacistDashboard />;
+    return <ClinicianDashboard kind="pharmacist" />;
   }
 
   if (isLaboratory(roles)) {
-    return <LaboratoryDashboard />;
+    return <ClinicianDashboard kind="laboratory" />;
   }
 
-  return <DoctorDashboard />;
+  return <ClinicianDashboard kind="doctor" />;
 }

@@ -9,7 +9,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 ## Done (foundational UI)
 
 - Session auth, roles, account settings
-- Role dashboards with **dummy** cards (not live domain data)
+- Role dashboards (live since INN-43)
 - Healthcare palette and AppShell
 
 ## Done (schema + §14 seed)
@@ -27,10 +27,13 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-40** — `RecordExchangeService` (`convex/lib/services/recordExchangeService.ts`) + `convex/records.ts`: permitted fields only, target facility only, after ALLOW or a live emergency grant; `RecordViewed` audited.
 - **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted).
 - **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants; `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
+- **INN-42** — AuditEvent read model (`convex/audit.ts`): role-scoped, paginated, newest-first by `createdAt`; still append-only (no update/delete path).
+- **INN-43** — Dashboard read models (`convex/dashboards.ts`): bounded summaries over AccessRequest, Decision, EmergencyAccess, SecurityAlert, and AuditEvent, plus the Facility list.
+- **INN-51** — Decision validity: an ALLOW authorises record release for 24 hours from `decidedAt`; later attempts are refused and recorded as `AccessExpired`.
 
 ## Next (live demo path)
 
-Do not keep dummy dashboards as the only UI. Remaining path: audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. Next: should-have VERIFY step-up (INN-44), consent (INN-45), and patient access history (INN-46). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
@@ -74,12 +77,12 @@ Do not keep dummy dashboards as the only UI. Remaining path: audit UI (INN-42) �
 - **RecordExchangeService** — fetch only permitted fields after ALLOW — *implemented (INN-40); honours live emergency grants on the same request*
 - **EmergencyAccessService** — break-glass grant/revoke/expire — *implemented (INN-41)*
 - **AlertService** — notify security on BLOCK / emergency — *implemented for BLOCK (INN-39) and break-glass (INN-41)*
-- **AuditLogService** — append-only events — *implemented (INN-35)*
+- **AuditLogService** — append-only events — *implemented (INN-35); read-only trail in INN-42*
 - **ConsentService** — should-have after demo — *INN-45*
 
 ## Domain events (audit)
 
-`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`
+`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`
 
 ## Invariants
 

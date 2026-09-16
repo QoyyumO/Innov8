@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Next Innov8 work
 
-Foundational UI is done (auth, password reset, account settings, dummy role dashboards). Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
+Foundational UI is done (auth, password reset, account settings, live role dashboards). Do **not** invent school/SIMS entities. The SIMS `DDD_Proposal.md` is a method reference only.
 
 Read `Innov8_DDD.md`, `AGENTS.md`, and `docs/README.md` before adding domain pages.
 
@@ -30,15 +30,15 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised clinical summary, audited `RecordViewed` (demo step 5)
 - [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK → security alert, `/security` queue (demo step 6)
 - [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass: 15-minute grant, alert, scheduled expiry, early revoke, `/emergency` (demo step 7)
+- [INN-42](https://linear.app/innov8-health/issue/INN-42) read-only audit trail, `/audit`
+- [INN-43](https://linear.app/innov8-health/issue/INN-43) live role dashboards, `/facilities`
+- [INN-51](https://linear.app/innov8-health/issue/INN-51) ALLOW decisions expire after 24 hours (`AccessExpired`)
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
-### Next (dependency order)
+### Next
 
-1. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked
-2. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked
-
-Should-have: INN-44, INN-45, INN-46.
+The MVP demo path is complete. Should-have: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient access history). Follow-ups: INN-50 (audit alert actions), INN-52 (facility-scoped admin views), INN-53 (stored counters).
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

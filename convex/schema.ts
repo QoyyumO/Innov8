@@ -140,7 +140,7 @@ export default defineSchema({
     ),
   })
     .index("by_requestId", ["requestId"])
-    .index("by_outcome", ["outcome"])
+    .index("by_outcome_decidedAt", ["outcome", "decidedAt"])
     .index("by_decidedAt", ["decidedAt"]),
 
   emergencyAccess: defineTable({
@@ -180,7 +180,8 @@ export default defineSchema({
     details: auditDetails,
     createdAt: v.number(),
   })
-    .index("by_actorId", ["actorId"])
-    .index("by_action", ["action"])
+    .index("by_actorId_createdAt", ["actorId", "createdAt"])
+    .index("by_action_createdAt", ["action", "createdAt"])
+    .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 });

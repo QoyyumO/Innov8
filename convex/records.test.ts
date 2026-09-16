@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import schema from "./schema";
@@ -8,6 +8,7 @@ import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import type { RecordType } from "./lib/domain";
+import { ALLOW_EXPIRED_REASON, ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const FATIMA_EMAIL = "fatima@fmc.abuja.ng";
@@ -179,9 +180,16 @@ describe("viewAuthorisedSummary after ALLOW", () => {
 
     const view = await viewSummary(testBackend, token, request.requestId);
 
+    const storedDecision = await testBackend.run((ctx) =>
+      ctx.db
+        .query("accessDecisions")
+        .withIndex("by_requestId", (query) => query.eq("requestId", request.requestId))
+        .unique(),
+    );
     expect(view).toEqual({
       status: "authorised",
       grantedBy: "decision",
+      allowedUntil: storedDecision!.decidedAt + ALLOW_VALIDITY_MS,
       publicId: "PAT-002391",
       facility: { code: "FMC-LOS", name: "FMC Lagos" },
       recordTypes: ALL_RECORD_TYPES,
@@ -409,5 +417,137 @@ describe("emergency grants", () => {
 
     expect(view).toMatchObject({ status: "denied", outcome: "BLOCK" });
     assertNoSummaryText(view);
+  });
+});
+
+describe("ALLOW validity window (INN-51)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function accessExpiredEvents(testBackend: TestBackend) {
+    return await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(100)).filter(
+        (event) => event.action === "AccessExpired",
+      ),
+    );
+  }
+
+  test("records open inside the window and are refused, and audited, once it passes", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const startedAt = Date.UTC(2026, 8, 16, 9, 0);
+    vi.setSystemTime(startedAt);
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const request = await createRequest(testBackend, token, ["allergies"]);
+    expect(request.outcome).toBe("ALLOW");
+
+    vi.setSystemTime(startedAt + ALLOW_VALIDITY_MS - 1);
+    const lateToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const lastView = await viewSummary(testBackend, lateToken, request.requestId);
+    expect(lastView).toMatchObject({
+      status: "authorised",
+      grantedBy: "decision",
+      allowedUntil: startedAt + ALLOW_VALIDITY_MS,
+    });
+
+    vi.setSystemTime(startedAt + ALLOW_VALIDITY_MS);
+    const expiredToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const refused = await viewSummary(testBackend, expiredToken, request.requestId);
+    expect(refused).toEqual({
+      status: "denied",
+      outcome: "ALLOW",
+      riskScore: 8,
+      reasons: [ALLOW_EXPIRED_REASON],
+      expiredAt: startedAt + ALLOW_VALIDITY_MS,
+    });
+    assertNoSummaryText(refused);
+
+    expect(await recordViewedEvents(testBackend)).toHaveLength(1);
+    const expired = await accessExpiredEvents(testBackend);
+    expect(expired).toHaveLength(1);
+    expect(expired[0]).toMatchObject({
+      entity: "accessRequests",
+      entityId: request.requestId,
+      createdAt: startedAt + ALLOW_VALIDITY_MS,
+      details: {
+        patientPublicId: "PAT-002391",
+        recordTypes: ["allergies"],
+        expiredAt: startedAt + ALLOW_VALIDITY_MS,
+      },
+    });
+  });
+
+  test("an ALLOW from 25 hours ago (e.g. seeded) no longer releases records", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const request = await createRequest(testBackend, token);
+    await testBackend.run(async (ctx) => {
+      const stored = await ctx.db
+        .query("accessDecisions")
+        .withIndex("by_requestId", (query) => query.eq("requestId", request.requestId))
+        .unique();
+      // The agreed window is 24 hours.
+      await ctx.db.patch(stored!._id, { decidedAt: Date.now() - 25 * 60 * 60 * 1000 });
+    });
+
+    const view = await viewSummary(testBackend, token, request.requestId);
+    expect(view).toMatchObject({ status: "denied", reasons: [ALLOW_EXPIRED_REASON] });
+    assertNoSummaryText(view);
+
+    const detail = await testBackend.query(api.accessRequests.getAccessRequest, {
+      token,
+      requestId: request.requestId,
+    });
+    expect(detail?.decision?.allowedUntil).toBeLessThan(Date.now());
+  });
+
+  test("a live emergency grant still decides, even on an expired ALLOW", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const request = await createRequest(testBackend, token, ["allergies"]);
+    await testBackend.run(async (ctx) => {
+      const stored = await ctx.db
+        .query("accessDecisions")
+        .withIndex("by_requestId", (query) => query.eq("requestId", request.requestId))
+        .unique();
+      await ctx.db.patch(stored!._id, { decidedAt: Date.now() - 2 * ALLOW_VALIDITY_MS });
+      const storedRequest = await ctx.db.get(request.requestId);
+      await ctx.db.insert("emergencyAccess", {
+        requestId: request.requestId,
+        actorId: storedRequest!.actorId,
+        patientId: storedRequest!.patientId,
+        justification: "Unconscious patient in A&E",
+        grantedAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+      });
+    });
+
+    const view = await viewSummary(testBackend, token, request.requestId);
+    expect(view).toMatchObject({ status: "authorised", grantedBy: "emergency" });
+    expect(view).not.toHaveProperty("allowedUntil");
+    expect(await accessExpiredEvents(testBackend)).toHaveLength(0);
+  });
+
+  test("BLOCK and VERIFY refusals are not expiry and write no AccessExpired", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    for (const decision of [HARVEST_DECISION, VERIFY_DECISION]) {
+      const request = await createDecidedRequest(testBackend, token, decision);
+      const view = await viewSummary(testBackend, token, request.requestId);
+      expect(view).toMatchObject({ status: "denied", outcome: decision.outcome });
+      expect(view).not.toHaveProperty("expiredAt");
+
+      const detail = await testBackend.query(api.accessRequests.getAccessRequest, {
+        token,
+        requestId: request.requestId,
+      });
+      expect(detail?.decision).not.toHaveProperty("allowedUntil");
+    }
+    expect(await accessExpiredEvents(testBackend)).toHaveLength(0);
   });
 });

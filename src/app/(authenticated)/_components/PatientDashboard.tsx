@@ -1,15 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
-import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
+import EmptyState from "@/components/empty-state/EmptyState";
 import Alert from "@/components/ui/alert/Alert";
-import { DocsIcon, EyeIcon, LockIcon } from "@/icons";
+import Button from "@/components/ui/button/Button";
+import { EyeIcon } from "@/icons";
 import { WelcomeCard } from "./DashboardWidgets";
-import { DEMO_PATIENT, patientAccessEvents } from "./dashboardDummy";
 
 export default function PatientDashboard() {
+  const router = useRouter();
   const { user } = useAuth();
   const name = user
     ? `${user.profile.firstName} ${user.profile.lastName}`.trim()
@@ -25,58 +27,29 @@ export default function PatientDashboard() {
           hospital={user?.hospital}
           department="Home facility"
           roleLabel="Patient"
-        />
+        >
+          <div className="mt-4">
+            <Button size="sm" variant="outline" onClick={() => router.push("/audit")}>
+              My sign-in activity
+            </Button>
+          </div>
+        </WelcomeCard>
 
         <Alert
           variant="info"
           title="Your records stay at your facility"
-          message={`Dummy view for ${DEMO_PATIENT.id}. Innov8 only shows who asked to see your records — it is not a full personal health record.`}
+          message="Innov8 does not copy your records. Clinicians at other hospitals must request access for a stated purpose, and every request is audited."
         />
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          <MetricCard
-            title="Home facility"
-            value="Lagos"
-            description="FMC Lagos"
-            icon={<LockIcon className="h-6 w-6 text-brand-500" />}
-          />
-          <MetricCard
-            title="Views today"
-            value="2"
-            description="Treatment purpose"
-            icon={<EyeIcon className="h-6 w-6 text-brand-500" />}
-          />
-          <MetricCard
-            title="Pending consents"
-            value="0"
-            description="Should-have after the demo path"
-            icon={<DocsIcon className="h-6 w-6 text-brand-500" />}
-          />
-        </div>
 
         <ComponentCard
           title="Who accessed your records"
-          desc="Dummy access events. A full patient portal comes after the clinician demo works."
+          desc="A history of clinicians who viewed your records."
         >
-          <div className="space-y-3">
-            {patientAccessEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-start justify-between rounded-lg border border-gray-100 p-4 dark:border-gray-800"
-              >
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-white/90">
-                    {event.actor}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    {event.facility} · {event.purpose}
-                  </p>
-                  <p className="text-xs text-gray-500">{event.fields}</p>
-                </div>
-                <span className="ml-4 text-xs text-gray-500">{event.time}</span>
-              </div>
-            ))}
-          </div>
+          <EmptyState
+            title="Not available yet"
+            description="Your access history will appear here once the patient portal is live."
+            icon={<EyeIcon className="h-12 w-12 text-brand-500" />}
+          />
         </ComponentCard>
       </div>
     </div>
