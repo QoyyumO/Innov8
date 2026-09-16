@@ -143,18 +143,26 @@ export default function AccessRequestsPage() {
                       )}
                     </TableCell>
                     <TableCell className="px-4 py-4">
-                      {request.decision ? (
-                        <Badge
-                          color={OUTCOME_BADGE_COLORS[request.decision.outcome]}
-                          size="sm"
-                        >
-                          {OUTCOME_LABELS[request.decision.outcome]}
-                        </Badge>
-                      ) : (
-                        <Badge color="light" size="sm">
-                          Pending
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {request.decision && (
+                          <Badge
+                            color={OUTCOME_BADGE_COLORS[request.decision.outcome]}
+                            size="sm"
+                          >
+                            {OUTCOME_LABELS[request.decision.outcome]}
+                          </Badge>
+                        )}
+                        {request.emergency && (
+                          <Badge color="warning" variant="solid" size="sm">
+                            Break-glass
+                          </Badge>
+                        )}
+                        {!request.decision && !request.emergency && (
+                          <Badge color="light" size="sm">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="px-4 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
                       {request.decision ? `${request.decision.riskScore}/100` : "—"}

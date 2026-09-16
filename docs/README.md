@@ -15,5 +15,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-37-access-request-api-and-ui](features/INN-37-access-request-api-and-ui/PLAN.md) | Purpose-based access request API + `/requests` UI | In review |
 | [INN-40-authorised-clinical-summary](features/INN-40-authorised-clinical-summary/PLAN.md) | Authorised clinical summary after ALLOW | In review |
 | [INN-39-harvest-block-security-alerts](features/INN-39-harvest-block-security-alerts/PLAN.md) | Harvest BLOCK, security alerts API, `/security` UI | In review |
+| [INN-41-break-glass-emergency-access](features/INN-41-break-glass-emergency-access/PLAN.md) | Break-glass emergency access (15-minute grant, alert, expiry, revoke) | In review |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

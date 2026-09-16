@@ -92,16 +92,16 @@ On `main` (plans in `docs/features/`, index in `docs/README.md`):
 - **INN-37** access requests — `convex/accessRequests.ts` (`createAccessRequest`, `listMyAccessRequests`, `getAccessRequest`) + `convex/lib/services/accessControlService.ts`. Clinicians only; source facility from `users.facilityId` (falls back to `hospital` name), target from the patient's record index; stores request + decision; audits `AccessRequested` and `AccessAllowed` / `AccessChallenged` / `AccessBlocked`. UI: `/requests`, `/requests/new`, `/requests/[requestId]`. Demo steps 3–4 work. Scores one patient per request; `recordCount` is never a client argument.
 - **INN-40** authorised summary — `convex/records.ts` `viewAuthorisedSummary` (mutation, so it can audit) + `convex/lib/services/recordExchangeService.ts`. Only the requester; only after ALLOW or a live emergency grant on the same request; only the requested record types; only the target facility's summary (`conditions` never returned). Audits `RecordViewed`. UI: **View authorised records** on `/requests/[requestId]`. Demo step 5 works.
 - **INN-39** harvest block + alerts — `simulateBulkHarvest` (clinicians; the server fixes `recordCount` at 500, one request row) is the demo harvest; `createAccessRequest` stays one patient. Both share `recordAccessRequest`, so every BLOCK raises a high, open `securityAlerts` row and audits `SecurityAlertRaised` (`convex/lib/services/alertService.ts`). `convex/alerts.ts`: `listSecurityAlerts` (security officers + admins, paginated, status filter), `acknowledgeAlert`, `closeAlert` (open → acknowledged → closed; never deleted). UI: harvest simulation on `/requests`, `/security` queue, live open alerts on the security dashboard. Demo step 6 works. Officer actions are not yet audited (no `auditAction` value).
+- **INN-41** break-glass — `convex/emergency.ts` (`grantEmergencyAccess`, `getActiveEmergencyAccess`, `revokeEmergencyAccess`, internal `expireEmergencyAccess`) + `convex/lib/services/emergencyAccessService.ts`. Clinicians only; justification 10–500 characters; one live grant per clinician and patient; the server fixes the length at 15 minutes (`EMERGENCY_ACCESS_TTL_MS`). Either links to the caller's own single-patient BLOCK/VERIFY request or creates an `emergency`-purpose request with no decision. Audits `EmergencyGranted`, raises a medium alert with `emergencyAccessId`, and schedules expiry (`EmergencyExpired`). The holder, security officers, and admins can end it early (`EmergencyRevoked`). When a request has a grant, the grant alone decides whether records open. UI: `/emergency`, **Use break-glass** on blocked/challenged requests, grant card on `/requests/[requestId]`, **Revoke access** on `/security`. Demo step 7 works.
 
 Tests: `npm test` (vitest + convex-test, `convex/**/*.test.ts`). Run it with `npm run check` before every PR.
 
 Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only — do not import school entities.
 
-**Next (demo steps 3–7), in dependency order:**
+**Next, in dependency order:**
 
-1. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass — unblocked; insert `emergencyAccess` with the request id (`recordExchangeService` already honours it) and raise an alert with `emergencyAccessId`.
-2. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
-3. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked; the security dashboard already shows live open alerts.
+1. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
+2. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked; the security dashboard already shows live open alerts.
 
 Should-have after the demo works: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 

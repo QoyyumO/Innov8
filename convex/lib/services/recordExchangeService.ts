@@ -1,6 +1,7 @@
 import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
 import { DecisionOutcome, RecordType } from "../domain";
+import { isLiveGrant, listGrantsForRequest } from "./emergencyAccessService";
 
 /**
  * Record exchange service (INN-40).
@@ -10,8 +11,6 @@ import { DecisionOutcome, RecordType } from "../domain";
  * are copied into the response — `conditions` and unrequested fields never
  * leave this module.
  */
-
-const EMERGENCY_GRANT_LOOKUP_LIMIT = 20;
 
 export type AuthorisedSections = {
   medicalSummary?: string;
@@ -30,48 +29,42 @@ export type ViewAuthorisation =
       reasons: string[];
     };
 
-async function findLiveEmergencyGrant(
-  db: DatabaseReader,
-  request: Doc<"accessRequests">,
-  now: number,
-): Promise<Doc<"emergencyAccess"> | null> {
-  const grants = await db
-    .query("emergencyAccess")
-    .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
-    .order("desc")
-    .take(EMERGENCY_GRANT_LOOKUP_LIMIT);
-  return (
-    grants.find(
-      (grant) => grant.revokedAt === undefined && grant.expiresAt > now,
-    ) ?? null
-  );
-}
-
 /**
- * ALLOW decisions authorise a view. Otherwise a live (unexpired, unrevoked)
- * emergency grant on this same request does (INN-41). Anything else is
- * denied, with the decision's outcome and reasons for the UI.
+ * When a request has any emergency grant (INN-41), the grant alone governs
+ * it: authorised only while a grant is live, refused after expiry or
+ * revocation. Otherwise an ALLOW decision authorises the view. Anything else
+ * is denied, with the decision's outcome and reasons for the UI.
  */
 export async function resolveViewAuthorisation(
   db: DatabaseReader,
   request: Doc<"accessRequests">,
   now: number,
 ): Promise<ViewAuthorisation> {
+  const grants = await listGrantsForRequest(db, request._id);
   const decision = await db
     .query("accessDecisions")
     .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
     .unique();
-  if (decision?.outcome === "ALLOW") {
-    return { isAuthorised: true, grantedBy: "decision" };
+
+  if (grants.length > 0) {
+    const liveGrant = grants.find((grant) => isLiveGrant(grant, now));
+    if (liveGrant) {
+      return {
+        isAuthorised: true,
+        grantedBy: "emergency",
+        emergencyExpiresAt: liveGrant.expiresAt,
+      };
+    }
+    return {
+      isAuthorised: false,
+      outcome: decision?.outcome ?? null,
+      riskScore: decision?.riskScore ?? null,
+      reasons: ["Emergency access for this request has ended"],
+    };
   }
 
-  const grant = await findLiveEmergencyGrant(db, request, now);
-  if (grant) {
-    return {
-      isAuthorised: true,
-      grantedBy: "emergency",
-      emergencyExpiresAt: grant.expiresAt,
-    };
+  if (decision?.outcome === "ALLOW") {
+    return { isAuthorised: true, grantedBy: "decision" };
   }
 
   return {

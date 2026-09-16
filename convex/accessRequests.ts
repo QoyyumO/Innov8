@@ -23,6 +23,7 @@ import {
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { raiseBlockAlert } from "./lib/services/alertService";
+import { toGrantView } from "./lib/services/emergencyAccessService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import { scoreAccessRequest } from "./lib/services/riskScoringService";
 
@@ -46,6 +47,14 @@ const decisionValidator = v.object({
   factors: v.optional(factorsValidator),
 });
 
+const emergencyViewValidator = v.object({
+  grantId: v.id("emergencyAccess"),
+  grantedAt: v.number(),
+  expiresAt: v.number(),
+  revokedAt: v.optional(v.number()),
+  justification: v.string(),
+});
+
 /** Request + decision, never clinical content. */
 const accessRequestViewValidator = v.object({
   requestId: v.id("accessRequests"),
@@ -58,6 +67,8 @@ const accessRequestViewValidator = v.object({
   requestedAt: v.number(),
   isOwnRequest: v.boolean(),
   decision: v.union(v.null(), decisionValidator),
+  /** Newest break-glass grant on this request (INN-41), if any. */
+  emergency: v.union(v.null(), emergencyViewValidator),
 });
 
 const createResultValidator = v.object({
@@ -118,15 +129,21 @@ async function toRequestView(
   viewerId: Id<"users">,
   facilityCache: Map<Id<"facilities">, { code: string; name: string }>,
 ) {
-  const [decision, patient, sourceFacility, targetFacility] = await Promise.all([
-    ctx.db
-      .query("accessDecisions")
-      .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
-      .unique(),
-    ctx.db.get(request.patientId),
-    loadFacilityRef(ctx, request.sourceFacilityId, facilityCache),
-    loadFacilityRef(ctx, request.targetFacilityId, facilityCache),
-  ]);
+  const [decision, patient, sourceFacility, targetFacility, latestGrant] =
+    await Promise.all([
+      ctx.db
+        .query("accessDecisions")
+        .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
+        .unique(),
+      ctx.db.get(request.patientId),
+      loadFacilityRef(ctx, request.sourceFacilityId, facilityCache),
+      loadFacilityRef(ctx, request.targetFacilityId, facilityCache),
+      ctx.db
+        .query("emergencyAccess")
+        .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
+        .order("desc")
+        .first(),
+    ]);
 
   return {
     requestId: request._id,
@@ -147,6 +164,7 @@ async function toRequestView(
           factors: decision.factors,
         }
       : null,
+    emergency: latestGrant ? toGrantView(latestGrant) : null,
   };
 }
 
