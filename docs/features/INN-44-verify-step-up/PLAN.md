@@ -20,7 +20,7 @@ Decisions (agreed with Adebare):
 - [x] Only the requester's own single-patient VERIFY request is eligible; anything else is refused and writes nothing
 - [x] Right password: decision becomes ALLOW with `verifiedAt` and an extra reason; audits `StepUpCompleted` and `AccessAllowed` (`viaStepUp`). The 24-hour window (INN-51) starts at `verifiedAt`
 - [x] Wrong password: counted and audited as `StepUpFailed`. The third makes the decision BLOCK with `escalatedAt`, audits `AccessBlocked` (`escalatedFromVerify`), and raises a high alert
-- [x] Empty password is rejected without counting
+- [x] Empty or whitespace-only password is rejected without counting
 - [x] Request views expose `verifiedAt`, `escalatedAt`, and `stepUpAttemptsLeft` (VERIFY only)
 - [x] UI: `StepUpVerification` (button + password dialog). It opens automatically when a new request returns VERIFY, and appears on `/requests/[requestId]` and in the `/requests` list. `DecisionResult` shows verified / escalated state. `/audit` labels the new actions
 - [x] Tests in `convex/stepUp.test.ts`

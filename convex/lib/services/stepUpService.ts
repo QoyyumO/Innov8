@@ -70,7 +70,7 @@ export async function completeStepUp(
   now: number,
 ): Promise<StepUpResult> {
   const { request, decision } = await requireChallengedRequest(db, user, requestId);
-  if (password === "") {
+  if (password.trim() === "") {
     throw new Error(STEP_UP_PASSWORD_REQUIRED_MESSAGE);
   }
   const patient = await db.get(request.patientId);

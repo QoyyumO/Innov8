@@ -6,7 +6,7 @@
 
 An ALLOW decision released records forever: `resolveViewAuthorisation` only checked `outcome === "ALLOW"`, so a clinician could reopen a patient's records days later from the same request. Break-glass grants already expire after 15 minutes; allowed access should be time-boxed too. Filed as a follow-up to INN-40 / INN-41.
 
-Decisions (agreed with Adebare): the window is **24 hours** from `decidedAt`, and a refused attempt on an expired request is audited as a new `AccessExpired` event.
+Decisions (agreed with Eno): the window is **24 hours** from `decidedAt`, and a refused attempt on an expired request is audited as a new `AccessExpired` event.
 
 ---
 

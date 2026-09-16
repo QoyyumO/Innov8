@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,10 +52,18 @@ export function StepUpVerification({
   const completeVerification = useMutation(api.stepUp.completeVerification);
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [password, setPassword] = useState("");
-  const [remaining, setRemaining] = useState(attemptsLeft);
+  const [optimisticRemaining, setOptimisticRemaining] = useState<number | null>(
+    null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+
+  const remaining = optimisticRemaining ?? attemptsLeft;
+
+  useEffect(() => {
+    setOptimisticRemaining(null);
+  }, [attemptsLeft]);
 
   const close = () => {
     setIsOpen(false);
@@ -73,7 +81,7 @@ export function StepUpVerification({
       setErrorMessage(SESSION_EXPIRED_MESSAGE);
       return;
     }
-    if (password === "") {
+    if (password.trim() === "") {
       setErrorMessage("Enter your password to verify.");
       return;
     }
@@ -87,7 +95,7 @@ export function StepUpVerification({
       } else if (result.status === "blocked") {
         setOutcome({ kind: "blocked" });
       } else {
-        setRemaining(result.attemptsLeft);
+        setOptimisticRemaining(result.attemptsLeft);
         setErrorMessage(
           `Incorrect password — ${describeAttempts(result.attemptsLeft)} before this request is blocked.`,
         );

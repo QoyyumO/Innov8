@@ -314,6 +314,9 @@ describe("completeVerification", () => {
     await expect(verify(testBackend, token, requestId, "")).rejects.toThrow(
       STEP_UP_PASSWORD_REQUIRED_MESSAGE,
     );
+    await expect(verify(testBackend, token, requestId, "   ")).rejects.toThrow(
+      STEP_UP_PASSWORD_REQUIRED_MESSAGE,
+    );
     const decision = await storedDecision(testBackend, requestId);
     expect(decision?.stepUpFailures).toBeUndefined();
     expect(await auditActions(testBackend)).not.toContain("StepUpFailed");
