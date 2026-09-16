@@ -98,16 +98,46 @@ async function createRequest(
   testBackend: TestBackend,
   token: string,
   recordTypes: RecordType[] = ALL_RECORD_TYPES,
-  recordCount?: number,
 ) {
   return await testBackend.mutation(api.accessRequests.createAccessRequest, {
     token,
     publicId: "PAT-002391",
     purpose: "treatment",
     recordTypes,
-    recordCount,
   });
 }
+
+/**
+ * `createAccessRequest` always scores one patient (ALLOW 8 for Ibrahim), so
+ * tests that need a BLOCK or VERIFY decision rewrite the stored decision.
+ */
+async function createDecidedRequest(
+  testBackend: TestBackend,
+  token: string,
+  decision: { outcome: "BLOCK" | "VERIFY"; riskScore: number; reasons: string[] },
+  recordTypes: RecordType[] = ALL_RECORD_TYPES,
+) {
+  const request = await createRequest(testBackend, token, recordTypes);
+  await testBackend.run(async (ctx) => {
+    const stored = await ctx.db
+      .query("accessDecisions")
+      .withIndex("by_requestId", (query) => query.eq("requestId", request.requestId))
+      .unique();
+    await ctx.db.patch(stored!._id, decision);
+  });
+  return request;
+}
+
+const HARVEST_DECISION = {
+  outcome: "BLOCK" as const,
+  riskScore: 94,
+  reasons: ["Harvest pattern: one request covers 500 patient records"],
+};
+const VERIFY_DECISION = {
+  outcome: "VERIFY" as const,
+  riskScore: 43,
+  reasons: ["21 records, far above normal volume (20)"],
+};
 
 async function viewSummary(testBackend: TestBackend, token: string | undefined, requestId: string) {
   return await testBackend.mutation(api.records.viewAuthorisedSummary, {
@@ -249,8 +279,7 @@ describe("viewAuthorisedSummary refusals", () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const harvest = await createRequest(testBackend, token, ALL_RECORD_TYPES, 500);
-    expect(harvest.outcome).toBe("BLOCK");
+    const harvest = await createDecidedRequest(testBackend, token, HARVEST_DECISION);
 
     const view = await viewSummary(testBackend, token, harvest.requestId);
 
@@ -266,8 +295,7 @@ describe("viewAuthorisedSummary refusals", () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const aboveBaseline = await createRequest(testBackend, token, ALL_RECORD_TYPES, 21);
-    expect(aboveBaseline.outcome).toBe("VERIFY");
+    const aboveBaseline = await createDecidedRequest(testBackend, token, VERIFY_DECISION);
 
     const view = await viewSummary(testBackend, token, aboveBaseline.requestId);
 
@@ -330,8 +358,8 @@ describe("emergency grants", () => {
   ) {
     await seedDemoWorld(testBackend);
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const blocked = await createRequest(testBackend, token, ["allergies"], 500);
-    const other = await createRequest(testBackend, token, ["medications"], 500);
+    const blocked = await createDecidedRequest(testBackend, token, HARVEST_DECISION, ["allergies"]);
+    const other = await createDecidedRequest(testBackend, token, HARVEST_DECISION, ["medications"]);
     await testBackend.run(async (ctx) => {
       const request = await ctx.db.get(blocked.requestId);
       const now = Date.now();
