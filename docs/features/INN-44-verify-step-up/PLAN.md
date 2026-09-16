@@ -6,7 +6,7 @@
 
 The risk engine (INN-38) already returns VERIFY for mid-risk requests (e.g. administrative access after hours), and INN-37 audits it as `AccessChallenged`. Until now a VERIFY request was a dead end: nothing was released, and there was no way to complete it. This should-have ticket adds the step-up. Unblocked (INN-37 is done); owner Adebare.
 
-Decisions (agreed with Eno):
+Decisions (agreed with Adebare):
 - Step-up is **re-entering the clinician's own password**. No new identity table and no OTP.
 - **3 wrong passwords block the request** and raise a security alert.
 

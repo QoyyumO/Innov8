@@ -4,7 +4,7 @@
 
 ## Context
 
-High-priority install/build bug (Eno / code review). `prepare` runs `cd .. && husky install sims/.husky`. Husky is not a dependency, and `sims/` is a sibling folder from another local layout. Fresh `npm ci` therefore exits non-zero (`husky: not found`) and will break Vercel/CI. Separately, `tsc --noEmit` fails on a bare clone until Next has generated `.next/types` (`LayoutProps` in `src/app/layout.tsx`).
+High-priority install/build bug (Adebare / code review). `prepare` runs `cd .. && husky install sims/.husky`. Husky is not a dependency, and `sims/` is a sibling folder from another local layout. Fresh `npm ci` therefore exits non-zero (`husky: not found`) and will break Vercel/CI. Separately, `tsc --noEmit` fails on a bare clone until Next has generated `.next/types` (`LayoutProps` in `src/app/layout.tsx`).
 
 ---
 
