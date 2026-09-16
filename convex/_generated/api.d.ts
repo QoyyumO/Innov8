@@ -22,10 +22,12 @@ import type * as lib_searchLimits from "../lib/searchLimits.js";
 import type * as lib_services_accessControlService from "../lib/services/accessControlService.js";
 import type * as lib_services_auditLogService from "../lib/services/auditLogService.js";
 import type * as lib_services_patientDiscoveryService from "../lib/services/patientDiscoveryService.js";
+import type * as lib_services_recordExchangeService from "../lib/services/recordExchangeService.js";
 import type * as lib_services_riskScoringService from "../lib/services/riskScoringService.js";
 import type * as lib_session from "../lib/session.js";
 import type * as lib_synthetic from "../lib/synthetic.js";
 import type * as patients from "../patients.js";
+import type * as records from "../records.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -49,10 +51,12 @@ declare const fullApi: ApiFromModules<{
   "lib/services/accessControlService": typeof lib_services_accessControlService;
   "lib/services/auditLogService": typeof lib_services_auditLogService;
   "lib/services/patientDiscoveryService": typeof lib_services_patientDiscoveryService;
+  "lib/services/recordExchangeService": typeof lib_services_recordExchangeService;
   "lib/services/riskScoringService": typeof lib_services_riskScoringService;
   "lib/session": typeof lib_session;
   "lib/synthetic": typeof lib_synthetic;
   patients: typeof patients;
+  records: typeof records;
   seed: typeof seed;
 }>;
 

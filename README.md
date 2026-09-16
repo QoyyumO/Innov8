@@ -67,7 +67,7 @@ Track C demo steps (see `AGENTS.md`):
 | 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
 | 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW |
-| 5. Authorised summary | Not yet — INN-40 |
+| 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed` |
 | 6. Harvest BLOCK + alert | Not yet — INN-39 |
 | 7. Break-glass | Not yet — INN-41 |
 | Audit trail / security dashboards | Not yet — INN-42, INN-43 |
@@ -137,10 +137,11 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/auth.ts` — login, session, password reset (`innov8_session_token`)
 - `convex/patients.ts` — patient search + existence-only discovery
 - `convex/accessRequests.ts` — create / list / view purpose-based access requests and decisions
+- `convex/records.ts` — release authorised clinical sections after ALLOW (or a live emergency grant)
 - `convex/seed.ts` — internal §14 seed mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
-- `convex/lib/services/` — domain services (`accessControlService`, `auditLogService`, `patientDiscoveryService`, `riskScoringService`)
+- `convex/lib/services/` — domain services (`accessControlService`, `auditLogService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)
 - `convex/*.test.ts` — backend tests
 - `docs/features/` — one `PLAN.md` per ticket ([index](docs/README.md))
 - `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)

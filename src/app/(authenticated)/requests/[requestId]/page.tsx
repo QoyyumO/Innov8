@@ -11,6 +11,7 @@ import EmptyState from "@/components/empty-state/EmptyState";
 import Loading from "@/components/loading/Loading";
 import { FileIcon } from "@/icons";
 import { DecisionResult } from "../_components/DecisionResult";
+import { AuthorisedSummary } from "../_components/AuthorisedSummary";
 
 export default function AccessRequestDetailPage() {
   const params = useParams<{ requestId: string }>();
@@ -71,6 +72,19 @@ export default function AccessRequestDetailPage() {
               </p>
             )}
           </ComponentCard>
+
+          {request.isOwnRequest && (
+            <ComponentCard
+              title="Authorised records"
+              desc={`Held at ${request.targetFacility.name}`}
+            >
+              <AuthorisedSummary
+                key={request.requestId}
+                requestId={request.requestId}
+                outcome={request.decision?.outcome ?? null}
+              />
+            </ComponentCard>
+          )}
 
           <Link
             href={`/patients/${encodeURIComponent(request.publicId)}`}

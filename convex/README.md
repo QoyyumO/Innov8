@@ -9,6 +9,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `auth.ts` | `login`, `logout`, `getCurrentUser`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword` | Session token `innov8_session_token`; 30-minute sessions |
 | `patients.ts` | `searchPatients` (mutation, audited), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
 | `accessRequests.ts` | `createAccessRequest` (mutation, audited), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
+| `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`) | Requester only; ALLOW or live emergency grant; requested sections from the target facility only |
 
 ## Internal functions
 
@@ -27,6 +28,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `services/accessControlService.ts` — resolves patient, source/target facility, and held record types for a request
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
+- `services/recordExchangeService.ts` — view authorisation (ALLOW / emergency grant) and requested-section filtering
 - `services/riskScoringService.ts` — pure `scoreAccessRequest` (no db access); returns `score`, `outcome`, `reasons`, `factors` for `accessDecisions`
 
 ## Writing a new domain function

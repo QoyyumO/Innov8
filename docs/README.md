@@ -13,5 +13,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-49-sync-docs-and-add-inn-35-tests](features/INN-49-sync-docs-and-add-inn-35-tests/PLAN.md) | Docs sync + INN-35 tests | Done on `main` ([#7](https://github.com/QoyyumO/Innov8/pull/7)) |
 | [INN-38-risk-scoring-service](features/INN-38-risk-scoring-service/PLAN.md) | Risk scoring service (ALLOW ~8 / harvest BLOCK ~94) | In review |
 | [INN-37-access-request-api-and-ui](features/INN-37-access-request-api-and-ui/PLAN.md) | Purpose-based access request API + `/requests` UI | In review |
+| [INN-40-authorised-clinical-summary](features/INN-40-authorised-clinical-summary/PLAN.md) | Authorised clinical summary after ALLOW | In review |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
