@@ -154,6 +154,7 @@ export default defineSchema({
   })
     .index("by_actorId", ["actorId"])
     .index("by_patientId", ["patientId"])
+    .index("by_requestId", ["requestId"])
     .index("by_expiresAt", ["expiresAt"]),
 
   securityAlerts: defineTable({

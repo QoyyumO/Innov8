@@ -1,8 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { decisionOutcome, recordType } from "./lib/domain";
-import { CLINICIAN_ROLES, requireRole } from "./lib/roles";
-import { requireSession } from "./lib/session";
+import { requireClinicianSession } from "./lib/roles";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   loadTargetSummary,
@@ -60,8 +59,7 @@ export const viewAuthorisedSummary = mutation({
   },
   returns: viewResultValidator,
   handler: async (ctx, args) => {
-    const { user, session } = await requireSession(ctx, args.token);
-    requireRole(user, CLINICIAN_ROLES);
+    const { user, session } = await requireClinicianSession(ctx, args.token);
 
     const requestId = ctx.db.normalizeId("accessRequests", args.requestId);
     const request = requestId ? await ctx.db.get(requestId) : null;

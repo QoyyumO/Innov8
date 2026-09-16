@@ -11,7 +11,7 @@ import { DecisionOutcome, RecordType } from "../domain";
  * leave this module.
  */
 
-const EMERGENCY_GRANT_LOOKUP_LIMIT = 50;
+const EMERGENCY_GRANT_LOOKUP_LIMIT = 20;
 
 export type AuthorisedSections = {
   medicalSummary?: string;
@@ -37,15 +37,12 @@ async function findLiveEmergencyGrant(
 ): Promise<Doc<"emergencyAccess"> | null> {
   const grants = await db
     .query("emergencyAccess")
-    .withIndex("by_actorId", (query) => query.eq("actorId", request.actorId))
+    .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
     .order("desc")
     .take(EMERGENCY_GRANT_LOOKUP_LIMIT);
   return (
     grants.find(
-      (grant) =>
-        grant.requestId === request._id &&
-        grant.revokedAt === undefined &&
-        grant.expiresAt > now,
+      (grant) => grant.revokedAt === undefined && grant.expiresAt > now,
     ) ?? null
   );
 }

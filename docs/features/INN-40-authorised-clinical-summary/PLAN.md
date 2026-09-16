@@ -28,12 +28,12 @@ Demo step 5. After an ALLOW decision (or a live emergency grant on the same requ
 
 - Decision via `accessDecisions.by_requestId`.
 - `ALLOW` → authorised by `"decision"`.
-- Otherwise, an emergency grant for **this request** (`emergencyAccess.by_actorId`, bounded `.take`, `requestId` match, not revoked, `expiresAt > now`) → authorised by `"emergency"` with its expiry. INN-41 creates these grants.
+- Otherwise, an emergency grant for **this request** (`emergencyAccess.by_requestId`, not revoked, `expiresAt > now`) → authorised by `"emergency"` with its expiry. INN-41 creates these grants.
 - Otherwise denied with the decision's outcome, score, and reasons.
 
-#### A2. `loadAuthorisedSections(db, request)`
+#### A2. `loadTargetSummary` + `pickAuthorisedSections`
 
-`clinicalSummaries.by_patientId_facilityId` with the request's **target** facility. Builds only the requested fields:
+`loadTargetSummary` reads `clinicalSummaries.by_patientId_facilityId` for the request's **target** facility. `pickAuthorisedSections` copies only the requested fields:
 
 | Record type | Field |
 | --- | --- |
@@ -67,7 +67,7 @@ Audit `RecordViewed` (`entity: "clinicalSummaries"`, details: request id, patien
 
 ### Part D — Tests (`convex/records.test.ts`)
 
-ALLOW shows exactly the requested sections from the target facility (and not another facility's summary); changing requested types changes sections; BLOCK and VERIFY are denied with no leak and no audit; another clinician, security officer, and anonymous callers get null / errors; `RecordViewed` written once per successful view with the session id; emergency grant on a VERIFY/BLOCK request authorises until expiry or revocation; grant for a different request does not; missing summary → `unavailable`.
+ALLOW shows exactly the requested sections from the target facility (and not another facility's summary); changing requested types changes sections; BLOCK and VERIFY are denied with no leak and no audit (those outcomes are patched onto the stored decision — `createAccessRequest` always scores one patient); another clinician, security officer, and anonymous callers get null / errors; `RecordViewed` written once per successful view with the session id; emergency grant on a VERIFY/BLOCK request authorises until expiry or revocation; grant for a different request does not; missing summary → `unavailable`.
 
 ---
 
