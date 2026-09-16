@@ -16,6 +16,7 @@ import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
 import { resolveReviewerScope } from "./lib/facilityScope";
+import { FacilityTotals, getFacilityTotals } from "./lib/facilityStats";
 import { requireSession } from "./lib/session";
 import { isLiveGrant } from "./lib/services/emergencyAccessService";
 
@@ -75,6 +76,8 @@ const securityDashboardValidator = v.object({
   auditEventsToday: boundedCountValidator,
   activeGrants: v.array(activeGrantValidator),
   recentDecisions: v.array(dashboardRowValidator),
+  /** Stored totals (INN-53): the exchange, or the hospital admin's facility. */
+  population: v.object({ workerCount: v.number(), patientCount: v.number() }),
 });
 
 const facilityViewValidator = v.object({
@@ -83,6 +86,8 @@ const facilityViewValidator = v.object({
   name: v.string(),
   city: v.string(),
   status: facilityStatus,
+  workerCount: v.number(),
+  patientCount: v.number(),
 });
 
 function isAuthError(error: unknown): boolean {
@@ -353,6 +358,7 @@ async function buildFacilitySecurityDashboard(
       auditEventsToday: noCount,
       activeGrants: [],
       recentDecisions: [],
+      population: { workerCount: 0, patientCount: 0 },
     };
   }
   const load = createLoader(ctx);
@@ -419,7 +425,20 @@ async function buildFacilitySecurityDashboard(
     auditEventsToday: toBoundedCount(auditToday, AUDIT_TODAY_COUNT_LIMIT),
     activeGrants: await toGrantRows(load, liveGrants),
     recentDecisions,
+    population: await getFacilityTotals(ctx.db, facilityId),
   };
+}
+
+/** Sum of stored facility totals across the exchange (INN-53). */
+async function getExchangeTotals(ctx: QueryCtx): Promise<FacilityTotals> {
+  const rows = await ctx.db.query("facilityStats").take(FACILITY_LIST_LIMIT);
+  return rows.reduce(
+    (totals, row) => ({
+      workerCount: totals.workerCount + row.workerCount,
+      patientCount: totals.patientCount + row.patientCount,
+    }),
+    { workerCount: 0, patientCount: 0 },
+  );
 }
 
 /**
@@ -507,11 +526,12 @@ export const getSecurityDashboard = query({
         expiringGrants.filter((grant) => isLiveGrant(grant, now)),
       ),
       recentDecisions,
+      population: await getExchangeTotals(ctx),
     };
   },
 });
 
-/** Participating hospitals, for any signed-in user. */
+/** Participating hospitals with stored worker / patient totals (INN-53), for any signed-in user. */
 export const listFacilities = query({
   args: {
     token: v.optional(v.string()),
@@ -530,12 +550,15 @@ export const listFacilities = query({
       .query("facilities")
       .withIndex("by_code")
       .take(FACILITY_LIST_LIMIT);
-    return facilities.map((facility) => ({
-      facilityId: facility._id,
-      code: facility.code,
-      name: facility.name,
-      city: facility.city,
-      status: facility.status,
-    }));
+    return await Promise.all(
+      facilities.map(async (facility) => ({
+        facilityId: facility._id,
+        code: facility.code,
+        name: facility.name,
+        city: facility.city,
+        status: facility.status,
+        ...(await getFacilityTotals(ctx.db, facility._id)),
+      })),
+    );
   },
 });

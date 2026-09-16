@@ -16,13 +16,14 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-40-authorised-clinical-summary](features/INN-40-authorised-clinical-summary/PLAN.md) | Authorised clinical summary after ALLOW | Done on `main` ([#10](https://github.com/QoyyumO/Innov8/pull/10)) |
 | [INN-39-harvest-block-security-alerts](features/INN-39-harvest-block-security-alerts/PLAN.md) | Harvest BLOCK, security alerts API, `/security` UI | Done on `main` ([#11](https://github.com/QoyyumO/Innov8/pull/11)) |
 | [INN-41-break-glass-emergency-access](features/INN-41-break-glass-emergency-access/PLAN.md) | Break-glass emergency access (15-minute grant, alert, expiry, revoke) | Done on `main` ([#12](https://github.com/QoyyumO/Innov8/pull/12)) |
-| [INN-42-audit-trail](features/INN-42-audit-trail/PLAN.md) | Read-only audit trail query + `/audit` UI | In review |
-| [INN-43-live-dashboards](features/INN-43-live-dashboards/PLAN.md) | Live role dashboards + `/facilities` | In review |
-| [INN-51-expire-allow-decisions](features/INN-51-expire-allow-decisions/PLAN.md) | ALLOW decisions expire after 24 hours (`AccessExpired` audit) | In review |
-| [INN-54-fix-leftover-qa-issues](features/INN-54-fix-leftover-qa-issues/PLAN.md) | Login errors, seed recordCount, mobile overlay | In review ([#18](https://github.com/QoyyumO/Innov8/pull/18)) |
-| [INN-44-verify-step-up](features/INN-44-verify-step-up/PLAN.md) | VERIFY step-up: password re-entry, block after 3 failures | In review ([#16](https://github.com/QoyyumO/Innov8/pull/16)) |
-| [INN-50-audit-alert-actions](features/INN-50-audit-alert-actions/PLAN.md) | Audit alert acknowledge / close | In review ([#17](https://github.com/QoyyumO/Innov8/pull/17)) |
-| [INN-55-shrink-seed-for-free-plan](features/INN-55-shrink-seed-for-free-plan/PLAN.md) | Demo-scale seed (24 workers / 200 patients / 200 events) + wipe | In progress |
+| [INN-42-audit-trail](features/INN-42-audit-trail/PLAN.md) | Read-only audit trail query + `/audit` UI | Done on `main` ([#13](https://github.com/QoyyumO/Innov8/pull/13)) |
+| [INN-43-live-dashboards](features/INN-43-live-dashboards/PLAN.md) | Live role dashboards + `/facilities` | Done on `main` ([#14](https://github.com/QoyyumO/Innov8/pull/14)) |
+| [INN-51-expire-allow-decisions](features/INN-51-expire-allow-decisions/PLAN.md) | ALLOW decisions expire after 24 hours (`AccessExpired` audit) | Done on `main` ([#15](https://github.com/QoyyumO/Innov8/pull/15)) |
+| [INN-44-verify-step-up](features/INN-44-verify-step-up/PLAN.md) | VERIFY step-up: password re-entry, block after 3 failures | Done on `main` ([#16](https://github.com/QoyyumO/Innov8/pull/16)) |
+| [INN-50-audit-alert-actions](features/INN-50-audit-alert-actions/PLAN.md) | Audit alert acknowledge / close | Done on `main` ([#17](https://github.com/QoyyumO/Innov8/pull/17)) |
+| [INN-54-fix-leftover-qa-issues](features/INN-54-fix-leftover-qa-issues/PLAN.md) | Login errors, seed recordCount, mobile overlay | Done on `main` ([#18](https://github.com/QoyyumO/Innov8/pull/18)) |
+| [INN-55-shrink-seed-for-free-plan](features/INN-55-shrink-seed-for-free-plan/PLAN.md) | Demo-scale seed (24 workers / 200 patients / 200 events) + wipe | Done on `main` ([#22](https://github.com/QoyyumO/Innov8/pull/22)) |
 | [INN-52-facility-scoped-admin-views](features/INN-52-facility-scoped-admin-views/PLAN.md) | Hospital admins see only their facility's activity | In review ([#19](https://github.com/QoyyumO/Innov8/pull/19)) |
+| [INN-53-facility-stat-counters](features/INN-53-facility-stat-counters/PLAN.md) | Stored per-facility worker / patient totals | In review ([#20](https://github.com/QoyyumO/Innov8/pull/20)) |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

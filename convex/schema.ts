@@ -197,6 +197,15 @@ export default defineSchema({
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 
+  // INN-53: stored per-facility totals, so dashboards never count users or
+  // patients live. Maintained by `convex/lib/facilityStats.ts`.
+  facilityStats: defineTable({
+    facilityId: v.id("facilities"),
+    workerCount: v.number(),
+    patientCount: v.number(),
+    updatedAt: v.number(),
+  }).index("by_facilityId", ["facilityId"]),
+
   // INN-52: one row per facility an audit event involves (the actor's
   // facility plus the source/target of the request it is about), so a
   // hospital admin's trail is a single indexed, paginated stream.

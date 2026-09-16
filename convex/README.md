@@ -12,7 +12,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`; expired ALLOW attempts audited `AccessExpired`) | Requester only; ALLOW within 24 hours of the decision, or a live emergency grant; requested sections from the target facility only |
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` (mutations, audited) | Security officers and admins; status transitions only |
 | `audit.ts` | `listAuditEvents` (paginated query) | Own events for everyone; all events (optionally one actor) for security officers and system admins; hospital admins see events involving their facility; read-only |
-| `dashboards.ts` | `getClinicianDashboard`, `getSecurityDashboard` (queries; `since` = start of the Lagos day), `listFacilities` | Clinicians see their own summary; security officers and system admins see the exchange; hospital admins see their facility; any signed-in user lists facilities. All bounded |
+| `dashboards.ts` | `getClinicianDashboard`, `getSecurityDashboard` (queries; `since` = start of the Lagos day), `listFacilities` (with worker / patient totals) | Clinicians see their own summary; security officers and system admins see the exchange; hospital admins see their facility; any signed-in user lists facilities. All bounded |
 | `stepUp.ts` | `completeVerification` (mutation, audited `StepUpCompleted` / `StepUpFailed`) | Requester's own single-patient VERIFY request; password re-entry → ALLOW; 3 failures → BLOCK + alert |
 | `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
 
@@ -23,6 +23,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `auth.ts` | `issuePasswordResetToken` | Demo out-of-band reset token (no email provider) |
 | `emergency.ts` | `expireEmergencyAccess` | Scheduled at grant time; audits `EmergencyExpired` unless already revoked; reschedules if it ran early |
 | `facilityScopeBackfill.ts` | `start`, `backfillAlertFacilities`, `backfillGrantFacilities`, `backfillAuditEventFacilities` | One-time INN-52 backfill of `alertFacilities` / grant facility ids / `auditEventFacilities`; batched, idempotent |
+| `facilityStatsRecount.ts` | `start`, `recountFacility` | INN-53 rebuild of `facilityStats` from users / patients; batched, idempotent |
 | `seed.ts` | `seedFacilities`, `seedHealthcareWorkers`, `seedPatientsBatch`, `seedAccessEventsBatch`, `seedDemoDataset`, `clearSeedDataBatch`, `verifyDemoSeed` | Demo-scale seed + wipe; see root `README.md` and `README-seeding.md` |
 
 ## Shared code (`lib/`)
@@ -43,6 +44,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
 - `services/recordExchangeService.ts` — view authorisation (ALLOW, or a live grant when the request has one) and requested-section filtering
 - `services/stepUpService.ts` — VERIFY step-up: password check, failure count, ALLOW or escalation to BLOCK
+- `facilityStats.ts` — stored per-facility worker / patient totals; the only way to insert or re-home users and patients (INN-53)
 - `facilityScope.ts` — hospital-admin facility scope: resolve facility, request/alert checks, `alertFacilities` upkeep (INN-52)
 - `services/auditFacilityService.ts` — which facilities an audit event involves; writes `auditEventFacilities`
 - `stepUpConstants.ts` — client-safe step-up limit and messages

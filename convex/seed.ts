@@ -4,6 +4,12 @@ import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { hashPassword } from "./lib/password";
 import { linkAlertFacilities } from "./lib/facilityScope";
+import {
+  insertCountedPatient,
+  insertCountedUser,
+  patchCountedPatient,
+  patchCountedUser,
+} from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   DEMO_PASSWORD,
@@ -151,12 +157,12 @@ export const seedHealthcareWorkers = internalMutation({
       }
 
       if (existing) {
-        await ctx.db.patch(existing._id, workerFields);
+        await patchCountedUser(ctx.db, existing, workerFields);
         updated += 1;
         continue;
       }
 
-      await ctx.db.insert("users", {
+      await insertCountedUser(ctx.db, {
         email: demoUser.email,
         hashedPassword,
         roles: demoUser.roles,
@@ -195,7 +201,7 @@ export const seedHealthcareWorkers = internalMutation({
         .withIndex("by_email", (q) => q.eq("email", email))
         .first();
       if (existingByEmail) {
-        await ctx.db.patch(existingByEmail._id, {
+        await patchCountedUser(ctx.db, existingByEmail, {
           facilityId: facility._id,
           workerId,
           department,
@@ -206,7 +212,7 @@ export const seedHealthcareWorkers = internalMutation({
         continue;
       }
 
-      await ctx.db.insert("users", {
+      await insertCountedUser(ctx.db, {
         email,
         hashedPassword,
         roles: [role],
@@ -316,7 +322,7 @@ async function upsertSyntheticPatient(
 
   const patientId = existing
     ? existing._id
-    : await ctx.db.insert("patients", {
+    : await insertCountedPatient(ctx.db, {
         publicId,
         homeFacilityId: facility._id,
         profile: { firstName, lastName },
@@ -327,7 +333,7 @@ async function upsertSyntheticPatient(
       });
 
   if (existing && isDemoPatient) {
-    await ctx.db.patch(existing._id, {
+    await patchCountedPatient(ctx.db, existing, {
       homeFacilityId: lagos._id,
       profile: { firstName: "Chioma", lastName: "Okonkwo" },
       dateOfBirth: DEMO_PATIENT_DOB_MS,
@@ -708,6 +714,7 @@ const CLEAR_TABLES = [
   "clinicalSummaries",
   "recordIndexes",
   "patients",
+  "facilityStats",
   "passwordResetTokens",
   "sessions",
 ] as const;
@@ -803,6 +810,8 @@ export const clearSeedDataBatch = internalMutation({
         tableIndex,
         batchSize,
       });
+    } else {
+      await ctx.scheduler.runAfter(0, internal.facilityStatsRecount.start, {});
     }
     return { table: "users", deleted, done: scannedAll };
   },
