@@ -28,6 +28,14 @@ export function startOfLagosDay(timestamp: number): number {
   return lagosTime - (lagosTime % DAY_MS) - LAGOS_UTC_OFFSET_MS;
 }
 
+/**
+ * Clients pass `since` so the query cache key is the calendar day. Never
+ * honour a window that starts before the current Lagos midnight.
+ */
+export function clampDashboardSince(requestedSince: number, now: number): number {
+  return Math.max(requestedSince, startOfLagosDay(now));
+}
+
 /** "12", or "100+" when a bounded count hit its cap. */
 export function formatBoundedCount(count: number, isCapped: boolean): string {
   return isCapped ? `${count}+` : String(count);

@@ -71,3 +71,4 @@ Any signed-in user; `by_code`, capped at 50.
 
 - [ ] Worker and patient totals are not shown: counting 500 workers / 10k patients needs stored counters. Out of scope.
 - [ ] Patient access history on the patient dashboard is INN-46.
+- [ ] Facility-scoped views for hospital admins (INN-52). Out of scope; the security/admin dashboard is exchange-wide.

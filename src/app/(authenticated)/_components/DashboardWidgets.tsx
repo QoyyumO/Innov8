@@ -88,7 +88,7 @@ export function DashboardRequestsTable({
               Purpose
             </TableCell>
             <TableCell isHeader className={HEADER_CELL_CLASS}>
-              Source
+              Holding facility
             </TableCell>
             <TableCell isHeader className={HEADER_CELL_CLASS}>
               Decision

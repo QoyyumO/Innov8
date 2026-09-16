@@ -5,6 +5,7 @@ import { isAuthErrorMessage } from "./lib/authConstants";
 import {
   ACTIVE_GRANT_LIMIT,
   AUDIT_TODAY_COUNT_LIMIT,
+  clampDashboardSince,
   FACILITY_LIST_LIMIT,
   HARVEST_LOOKBACK_LIMIT,
   OPEN_ALERT_COUNT_LIMIT,
@@ -13,12 +14,7 @@ import {
 } from "./lib/dashboardConstants";
 import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
-import {
-  ADMIN_ROLES,
-  requireClinicianSession,
-  requireRole,
-  SECURITY_ROLES,
-} from "./lib/roles";
+import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import { isLiveGrant } from "./lib/services/emergencyAccessService";
 
@@ -26,8 +22,6 @@ import { isLiveGrant } from "./lib/services/emergencyAccessService";
  * Live dashboards (INN-43). Every read is bounded by an index range or a
  * `.take()` cap; counts report `isCapped` instead of scanning further.
  */
-
-const DASHBOARD_REVIEWER_ROLES = [...SECURITY_ROLES, ...ADMIN_ROLES];
 
 const boundedCountValidator = v.object({
   count: v.number(),
@@ -127,6 +121,7 @@ async function toDashboardRow(
   ctx: QueryCtx,
   load: Loader,
   request: Doc<"accessRequests">,
+  now: number,
   knownDecision?: Doc<"accessDecisions"> | null,
 ) {
   const [decision, patient, requester, targetFacility, grant] = await Promise.all([
@@ -151,7 +146,7 @@ async function toDashboardRow(
     requestedAt: request.requestedAt,
     outcome: decision?.outcome ?? null,
     riskScore: decision?.riskScore ?? null,
-    isBreakGlass: grant !== null,
+    isBreakGlass: grant !== null && isLiveGrant(grant, now),
   };
 }
 
@@ -193,6 +188,7 @@ export const getClinicianDashboard = query({
     }
     const load = createLoader(ctx);
     const now = Date.now();
+    const since = clampDashboardSince(args.since, now);
 
     const [newestRequests, todayRequests, newestGrants] = await Promise.all([
       ctx.db
@@ -203,7 +199,7 @@ export const getClinicianDashboard = query({
       ctx.db
         .query("accessRequests")
         .withIndex("by_actorId_requestedAt", (query) =>
-          query.eq("actorId", user._id).gte("requestedAt", args.since),
+          query.eq("actorId", user._id).gte("requestedAt", since),
         )
         .order("desc")
         .take(TODAY_COUNT_LIMIT + 1),
@@ -225,17 +221,26 @@ export const getClinicianDashboard = query({
     const recentRequests = await Promise.all(
       newestRequests
         .slice(0, RECENT_REQUEST_LIMIT)
-        .map((request) => toDashboardRow(ctx, load, request)),
+        .map((request) => toDashboardRow(ctx, load, request, now)),
     );
 
+    const harvestCandidates = newestRequests.filter(
+      (request) => (request.recordCount ?? 1) >= HARVEST_RECORD_COUNT,
+    );
+    const harvestDecisions = await Promise.all(
+      harvestCandidates.map((request) => findDecision(ctx, request._id)),
+    );
     let latestBlockedHarvest = null;
-    for (const request of newestRequests) {
-      if ((request.recordCount ?? 1) < HARVEST_RECORD_COUNT) {
-        continue;
-      }
-      const decision = await findDecision(ctx, request._id);
+    for (let index = 0; index < harvestCandidates.length; index += 1) {
+      const decision = harvestDecisions[index];
       if (decision?.outcome === "BLOCK") {
-        latestBlockedHarvest = await toDashboardRow(ctx, load, request, decision);
+        latestBlockedHarvest = await toDashboardRow(
+          ctx,
+          load,
+          harvestCandidates[index],
+          now,
+          decision,
+        );
         break;
       }
     }
@@ -259,7 +264,7 @@ export const getClinicianDashboard = query({
   },
 });
 
-/** Exchange-wide view for security officers and admins. */
+/** Exchange-wide view for security officers and admins. Facility scope is INN-52. */
 export const getSecurityDashboard = query({
   args: {
     token: v.optional(v.string()),
@@ -270,7 +275,7 @@ export const getSecurityDashboard = query({
   handler: async (ctx, args) => {
     try {
       const { user } = await requireSession(ctx, args.token);
-      requireRole(user, DASHBOARD_REVIEWER_ROLES);
+      requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
       if (isAuthError(error)) {
         return null;
@@ -279,22 +284,24 @@ export const getSecurityDashboard = query({
     }
     const load = createLoader(ctx);
     const now = Date.now();
+    const since = clampDashboardSince(args.since, now);
 
     const [openAlerts, blockedToday, auditToday, expiringGrants, latestDecisions] =
       await Promise.all([
         ctx.db
           .query("securityAlerts")
           .withIndex("by_status", (query) => query.eq("status", "open"))
+          .order("desc")
           .take(OPEN_ALERT_COUNT_LIMIT + 1),
         ctx.db
           .query("accessDecisions")
           .withIndex("by_outcome_decidedAt", (query) =>
-            query.eq("outcome", "BLOCK").gte("decidedAt", args.since),
+            query.eq("outcome", "BLOCK").gte("decidedAt", since),
           )
           .take(TODAY_COUNT_LIMIT + 1),
         ctx.db
           .query("auditEvents")
-          .withIndex("by_createdAt", (query) => query.gte("createdAt", args.since))
+          .withIndex("by_createdAt", (query) => query.gte("createdAt", since))
           .take(AUDIT_TODAY_COUNT_LIMIT + 1),
         ctx.db
           .query("emergencyAccess")
@@ -315,7 +322,7 @@ export const getSecurityDashboard = query({
       await Promise.all(
         latestDecisions.map(async (decision) => {
           const request = await ctx.db.get(decision.requestId);
-          return request ? await toDashboardRow(ctx, load, request, decision) : null;
+          return request ? await toDashboardRow(ctx, load, request, now, decision) : null;
         }),
       )
     ).filter((row) => row !== null);

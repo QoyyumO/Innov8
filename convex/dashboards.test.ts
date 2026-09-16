@@ -8,6 +8,7 @@ import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import {
   AUDIT_TODAY_COUNT_LIMIT,
+  clampDashboardSince,
   OPEN_ALERT_COUNT_LIMIT,
   TODAY_COUNT_LIMIT,
   startOfLagosDay,
@@ -160,6 +161,14 @@ describe("startOfLagosDay", () => {
     expect(startOfLagosDay(Date.UTC(2026, 8, 16, 23, 30))).toBe(Date.UTC(2026, 8, 16, 23));
     expect(startOfLagosDay(Date.UTC(2026, 8, 16, 22, 59))).toBe(Date.UTC(2026, 8, 15, 23));
   });
+
+  test("clampDashboardSince never starts before the current Lagos midnight", () => {
+    const now = Date.UTC(2026, 8, 16, 12);
+    const dayStart = startOfLagosDay(now);
+    expect(clampDashboardSince(0, now)).toBe(dayStart);
+    expect(clampDashboardSince(dayStart, now)).toBe(dayStart);
+    expect(clampDashboardSince(dayStart + DAY_MS, now)).toBe(dayStart + DAY_MS);
+  });
 });
 
 describe("getClinicianDashboard", () => {
@@ -235,6 +244,12 @@ describe("getClinicianDashboard", () => {
     expect(beforeToday?.lastDecision).toMatchObject({ outcome: "VERIFY", riskScore: 45 });
     expect(beforeToday?.latestBlockedHarvest).toBeNull();
 
+    const inflated = await testBackend.query(api.dashboards.getClinicianDashboard, {
+      token,
+      since: 0,
+    });
+    expect(inflated?.today.total).toEqual({ count: 0, isCapped: false });
+
     for (let index = 0; index <= TODAY_COUNT_LIMIT; index += 1) {
       await insertRequest(testBackend, world, ibrahimId, since + index, {
         outcome: "ALLOW",
@@ -305,7 +320,7 @@ describe("getClinicianDashboard", () => {
       since: today(),
     });
     expect(dashboard?.activeGrants).toEqual([]);
-    expect(dashboard?.recentRequests[0]?.isBreakGlass).toBe(true);
+    expect(dashboard?.recentRequests[0]?.isBreakGlass).toBe(false);
   });
 
   test("returns null for non-clinicians and anonymous callers", async () => {
