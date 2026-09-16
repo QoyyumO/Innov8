@@ -22,7 +22,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
       >
         <AppHeader />
-        <div className="mx-auto max-w-7xl p-4 md:p-6">{children}</div>
+        <div className="relative z-0 mx-auto max-w-7xl p-4 md:p-6">{children}</div>
       </div>
     </div>
   );

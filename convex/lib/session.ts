@@ -5,7 +5,15 @@ import {
   SESSION_EXPIRED_MESSAGE,
 } from "./authConstants";
 
-const SESSION_DURATION_MS = 30 * 60 * 1000;
+export const SESSION_DURATION_MS = 30 * 60 * 1000;
+export const PERSISTENT_SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type SessionTtlKind = "default" | "persistent";
+
+const SESSION_TTL_MS: Record<SessionTtlKind, number> = {
+  default: SESSION_DURATION_MS,
+  persistent: PERSISTENT_SESSION_DURATION_MS,
+};
 
 export function generateSessionToken(): string {
   const randomBytes = crypto.getRandomValues(new Uint8Array(32));
@@ -17,6 +25,7 @@ export function generateSessionToken(): string {
 export async function createSession(
   db: DatabaseWriter,
   userId: Id<"users">,
+  ttlKind: SessionTtlKind = "default",
 ): Promise<{ token: string; sessionId: Id<"sessions"> }> {
   const token = generateSessionToken();
   const now = Date.now();
@@ -24,7 +33,7 @@ export async function createSession(
   const sessionId = await db.insert("sessions", {
     userId,
     token,
-    expiresAt: now + SESSION_DURATION_MS,
+    expiresAt: now + SESSION_TTL_MS[ttlKind],
     createdAt: now,
   });
 

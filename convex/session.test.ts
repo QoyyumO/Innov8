@@ -13,7 +13,7 @@ import {
   isAuditReviewer,
   requireRole,
 } from "./lib/roles";
-import { publicUser, requireSession } from "./lib/session";
+import { PERSISTENT_SESSION_DURATION_MS, publicUser, requireSession } from "./lib/session";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
@@ -72,17 +72,45 @@ describe("login audit (INN-35)", () => {
 
   test("failed login writes no audit row", async () => {
     const testBackend = createTest();
-    await expect(
-      testBackend.mutation(api.auth.login, {
-        email: IBRAHIM_EMAIL,
-        password: "wrong-password",
-      }),
-    ).rejects.toThrow("Invalid email or password");
+    const loginResult = await testBackend.mutation(api.auth.login, {
+      email: IBRAHIM_EMAIL,
+      password: "wrong-password",
+    });
+    expect(loginResult).toEqual({
+      success: false,
+      error: "Invalid email or password",
+    });
 
     const events = await testBackend.run((ctx) =>
       ctx.db.query("auditEvents").collect(),
     );
     expect(events).toHaveLength(0);
+  });
+
+  test("keep me logged in lasts seven days", async () => {
+    const testBackend = createTest();
+    const startedAt = Date.now();
+    const loginResult = await testBackend.mutation(api.auth.login, {
+      email: IBRAHIM_EMAIL,
+      password: DEMO_PASSWORD,
+      keepMeLoggedIn: true,
+    });
+    expect(loginResult.success).toBe(true);
+    if (!loginResult.success) {
+      return;
+    }
+    const session = await testBackend.run(async (ctx) =>
+      ctx.db
+        .query("sessions")
+        .withIndex("by_token", (query) => query.eq("token", loginResult.token))
+        .unique(),
+    );
+    expect(session?.expiresAt).toBeGreaterThanOrEqual(
+      startedAt + PERSISTENT_SESSION_DURATION_MS,
+    );
+    expect(session?.expiresAt).toBeLessThan(
+      startedAt + PERSISTENT_SESSION_DURATION_MS + 5_000,
+    );
   });
 });
 

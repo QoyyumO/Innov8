@@ -2,6 +2,7 @@ import { internalMutation, mutation, query, MutationCtx } from "./_generated/ser
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import {
+  INVALID_CREDENTIALS_MESSAGE,
   MIN_PASSWORD_LENGTH,
   RESET_GENERIC_MESSAGE,
   RESET_INVALID_TOKEN_MESSAGE,
@@ -9,6 +10,7 @@ import {
   RESET_TOKEN_TTL_MS,
 } from "./lib/authConstants";
 import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
+import { publicUserValidator } from "./lib/publicUser";
 import {
   createSession,
   deleteAllUserSessions,
@@ -52,18 +54,29 @@ export const login = mutation({
   args: {
     email: v.string(),
     password: v.string(),
+    keepMeLoggedIn: v.optional(v.boolean()),
   },
+  returns: v.union(
+    publicUserValidator.extend({
+      success: v.literal(true),
+      token: v.string(),
+    }),
+    v.object({
+      success: v.literal(false),
+      error: v.string(),
+    }),
+  ),
   handler: async (ctx, args) => {
     await ensureDemoUsers(ctx);
 
     const emailLower = args.email.toLowerCase().trim();
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .withIndex("by_email", (query) => query.eq("email", emailLower))
       .first();
 
     if (!user || user.accountStatus !== "active") {
-      throw new Error("Invalid email or password");
+      return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
     const isValidPassword = await verifyPassword(
@@ -71,10 +84,14 @@ export const login = mutation({
       user.hashedPassword,
     );
     if (!isValidPassword) {
-      throw new Error("Invalid email or password");
+      return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
-    const { token, sessionId } = await createSession(ctx.db, user._id);
+    const { token, sessionId } = await createSession(
+      ctx.db,
+      user._id,
+      args.keepMeLoggedIn ? "persistent" : "default",
+    );
     await appendAuditEvent(ctx.db, {
       actorId: user._id,
       sessionId,
@@ -85,7 +102,7 @@ export const login = mutation({
     });
 
     return {
-      success: true,
+      success: true as const,
       token,
       ...publicUser(user),
     };
@@ -96,6 +113,7 @@ export const getCurrentUser = query({
   args: {
     token: v.optional(v.string()),
   },
+  returns: v.union(publicUserValidator, v.null()),
   handler: async (ctx, args) => {
     if (!args.token) {
       return null;

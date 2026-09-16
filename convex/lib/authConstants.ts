@@ -10,11 +10,13 @@ export const ACCOUNT_SUSPENDED_MESSAGE =
   "Your account is suspended. Contact your administrator.";
 export const PERMISSION_DENIED_MESSAGE =
   "You do not have permission to perform this action";
+export const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password";
 
 export const AUTH_ERROR_MESSAGES = [
   SESSION_EXPIRED_MESSAGE,
   ACCOUNT_SUSPENDED_MESSAGE,
   PERMISSION_DENIED_MESSAGE,
+  INVALID_CREDENTIALS_MESSAGE,
 ] as const;
 
 export function isAuthErrorMessage(message: string): boolean {

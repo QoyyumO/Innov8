@@ -44,6 +44,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
+    keepMeLoggedIn?: boolean,
   ) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
@@ -115,9 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [shouldClearToken]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, keepMeLoggedIn?: boolean) => {
       try {
-        const result = await loginMutation({ email, password });
+        const result = await loginMutation({
+          email,
+          password,
+          keepMeLoggedIn,
+        });
         if (result.success && result.token) {
           persistSessionToken(result.token);
           return {
@@ -133,7 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
           };
         }
-        return { success: false, error: "Login failed" };
+        return {
+          success: false,
+          error: result.success === false ? result.error : "Login failed",
+        };
       } catch (error) {
         const errorMessage =
           error instanceof Error

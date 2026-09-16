@@ -16,13 +16,20 @@ import { EyeCloseIcon, EyeIcon } from "@/icons";
 interface LoginFormProps {
   onSuccess?: () => void;
   redirectTo?: string;
+  bannerTitle?: string;
+  bannerMessage?: string;
 }
 
-export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
+export function LoginForm({
+  onSuccess,
+  redirectTo,
+  bannerTitle,
+  bannerMessage,
+}: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [keepMeLoggedIn, setKeepMeLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{
@@ -59,12 +66,12 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     }
 
     if (validationErrors[field]) {
-      setValidationErrors((prev) => ({ ...prev, [field]: undefined }));
+      setValidationErrors((previous) => ({ ...previous, [field]: undefined }));
     }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
     setApiError(null);
     setValidationErrors({});
@@ -75,20 +82,24 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     }
 
     try {
-      const result = await login(email.toLowerCase().trim(), password);
+      const result = await login(
+        email.toLowerCase().trim(),
+        password,
+        keepMeLoggedIn,
+      );
 
       if (result.success) {
         onSuccess?.();
-        router.push(redirectTo || "/");
+        router.push(redirectTo ?? "/");
       } else {
         setApiError(
-          result.error || "Login failed. Please check your credentials.",
+          result.error ?? "Login failed. Please check your credentials.",
         );
       }
-    } catch (err) {
+    } catch (error) {
       setApiError(
-        err instanceof Error
-          ? err.message
+        error instanceof Error
+          ? error.message
           : "An unexpected error occurred. Please try again.",
       );
     } finally {
@@ -96,15 +107,19 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
     }
   };
 
+  const alertTitle = apiError ? "Authentication Error" : bannerTitle;
+  const alertMessage = apiError ?? bannerMessage;
+  const alertVariant = apiError ? "error" : "warning";
+
   return (
     <div className="mx-auto w-full max-w-md">
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
-          {apiError && (
+          {alertTitle && alertMessage && (
             <Alert
-              variant="error"
-              title="Authentication Error"
-              message="Invalid credentials"
+              variant={alertVariant}
+              title={alertTitle}
+              message={alertMessage}
             />
           )}
 
@@ -117,7 +132,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
               placeholder="Enter your email"
               type="email"
               value={email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
+              onChange={(event) => handleInputChange("email", event.target.value)}
               error={!!validationErrors.email}
               disabled={isLoading}
               autoComplete="email"
@@ -139,7 +154,9 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
+                onChange={(event) =>
+                  handleInputChange("password", event.target.value)
+                }
                 error={!!validationErrors.password}
                 disabled={isLoading}
                 autoComplete="current-password"
@@ -164,7 +181,7 @@ export function LoginForm({ onSuccess, redirectTo }: LoginFormProps) {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Checkbox checked={isChecked} onChange={setIsChecked} />
+              <Checkbox checked={keepMeLoggedIn} onChange={setKeepMeLoggedIn} />
               <span className="text-theme-sm block font-normal text-gray-700 dark:text-gray-400">
                 Keep me logged in
               </span>

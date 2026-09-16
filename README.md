@@ -64,7 +64,7 @@ Track C demo steps (see `AGENTS.md`):
 
 | Step | Status |
 | --- | --- |
-| 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
+| 1. Authenticate | Done — session login (failed passwords return a form error, not an overlay), 30-minute sessions or 7 days with Keep me logged in, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
 | 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW |
 | 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed`. Allowed access lasts **24 hours** from the decision; after that the request page shows **Request access again**, and any attempt to open the records is refused and audited as `AccessExpired` |
