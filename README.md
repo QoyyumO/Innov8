@@ -79,44 +79,34 @@ No dashboard uses dummy data. The patient dashboard's access history is still to
 
 Seed is **internal** Convex mutations (`convex/seed.ts`). Run them from the CLI or dashboard, not from the browser. Functions are idempotent: re-running skips rows that already exist.
 
-Keep `npx convex dev` running so functions are pushed, then in another terminal:
+Keep `npx convex dev` running so functions are pushed, then in another terminal.
 
-### Smoke (demo path only)
+**Use the demo-scale seed only.** Historical §14 volumes (500 workers, 10,000 patients, 100,000 access events) overflow the Convex free-plan storage cap. Do not run those counts on this team.
 
-Enough for PAT-002391 and Ibrahim ALLOW / BLOCK. Patient index 2391 must exist, so `total` must be at least `2391`.
+If an existing deployment already has the large seed, cancel leftover scheduled seed jobs in the Convex dashboard, then wipe before reseeding:
 
 ```bash
-npx convex run internal.seed.seedFacilities
-npx convex run internal.seed.seedHealthcareWorkers '{"count": 500}'
-npx convex run internal.seed.seedPatientsBatch '{"cursor": 0, "batchSize": 250, "total": 2391}'
+npx convex run internal.seed.clearSeedDataBatch
 ```
 
-Wait until dashboard logs show patient batches finished (`done: true`), then:
+Watch dashboard logs until `{ done: true }` on `users`. Facilities are kept; extra `WRK-00025+` workers are removed. Then:
 
 ```bash
-npx convex run internal.seed.seedAccessEventsBatch '{"cursor": 0, "batchSize": 20, "total": 20, "patientCount": 2391, "workerCount": 500}'
+npx convex run internal.seed.seedDemoDataset
 npx convex run internal.seed.verifyDemoSeed
 ```
 
-`verifyDemoSeed` should show 3 facilities, Ibrahim `WRK-00001`, PAT-002391 at FMC-LOS, allow risk `8`, block risk `94`. Then sign in as Ibrahim.
-
-### Full §14 volumes
-
-Do this on a **dev** (or preview) deployment the team agrees on. 100k access events is a large write — do not run `--prod` unless that is explicit.
+`seedDemoDataset` inserts 3 facilities, 24 workers, 200 patients **plus PAT-002391**, and 200 access events including Ibrahim ALLOW 8 / BLOCK 94. Equivalent step-by-step:
 
 ```bash
 npx convex run internal.seed.seedFacilities
-npx convex run internal.seed.seedHealthcareWorkers '{"count": 500}'
-npx convex run internal.seed.seedPatientsBatch '{"cursor": 0, "batchSize": 250, "total": 10000}'
+npx convex run internal.seed.seedHealthcareWorkers
+npx convex run internal.seed.seedPatientsBatch '{"continueToEvents": true}'
 ```
 
-Wait for ~40 patient batches to finish, then:
+Wait until scheduled patient and event batches finish (`done: true`), then `verifyDemoSeed`. It should show 3 facilities, Ibrahim `WRK-00001`, PAT-002391 at FMC-LOS, allow risk `8`, block risk `94`. Then sign in as Ibrahim.
 
-```bash
-npx convex run internal.seed.seedAccessEventsBatch '{"cursor": 0, "batchSize": 200, "total": 100000, "patientCount": 10000, "workerCount": 500}'
-```
-
-Watch the Convex dashboard until scheduled event batches complete (~500 batches at size 200). Equivalent CLI names: `seed:seedFacilities`, etc.
+PAT-002391 is always upserted on the first patient batch; `total` no longer needs to be 2391.
 
 More detail (indexes, demo rows, files): [`convex/README-seeding.md`](convex/README-seeding.md).
 
@@ -143,7 +133,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/alerts.ts` — security alert queue, acknowledge, close
 - `convex/audit.ts` — read-only, role-scoped audit trail
 - `convex/dashboards.ts` — bounded live dashboard summaries and the facility list
-- `convex/seed.ts` — internal §14 seed mutations
+- `convex/seed.ts` — internal demo-scale seed and wipe mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
 - `convex/lib/services/` — domain services (`accessControlService`, `alertService`, `auditLogService`, `emergencyAccessService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)

@@ -24,6 +24,7 @@ import type * as lib_domain from "../lib/domain.js";
 import type * as lib_emergencyConstants from "../lib/emergencyConstants.js";
 import type * as lib_invariants from "../lib/invariants.js";
 import type * as lib_password from "../lib/password.js";
+import type * as lib_publicUser from "../lib/publicUser.js";
 import type * as lib_riskConstants from "../lib/riskConstants.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_searchLimits from "../lib/searchLimits.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "lib/emergencyConstants": typeof lib_emergencyConstants;
   "lib/invariants": typeof lib_invariants;
   "lib/password": typeof lib_password;
+  "lib/publicUser": typeof lib_publicUser;
   "lib/riskConstants": typeof lib_riskConstants;
   "lib/roles": typeof lib_roles;
   "lib/searchLimits": typeof lib_searchLimits;

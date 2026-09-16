@@ -83,7 +83,7 @@ Foundational UI is in place: session login, password reset, account settings, an
 
 On `main` (plans in `docs/features/`, index in `docs/README.md`):
 
-- **INN-18** schema and **INN-19** §14 seed — tables in `convex/schema.ts`, seed in `convex/seed.ts`.
+- **INN-18** schema and **INN-19** §14 seed — tables in `convex/schema.ts`, seed in `convex/seed.ts`. **INN-55** shrinks the operational seed to demo-scale (24 workers, 200 patients plus PAT-002391, 200 events) so the Convex free plan stays under the storage cap; `clearSeedDataBatch` wipes an oversized deployment before reseeding.
 - **INN-35** session and audit plumbing — `requireSession` / `publicUser` (`convex/lib/session.ts`), `requireRole` + role groups (`convex/lib/roles.ts`), insert-only `appendAuditEvent` (`convex/lib/services/auditLogService.ts`). Every domain function must use these; never authorize from a client `userId`.
 - **INN-36** patient discovery — `convex/patients.ts`, `/patients`, `/patients/[publicId]`. Demo step 2 works: identity + record existence only, audited.
 - **INN-47** password reset hardening — hashed single-use reset tokens (15 min), issued via `internal.auth.issuePasswordResetToken` (no email yet). Sessions last 30 minutes by default, or 7 days when Keep me logged in is checked (INN-54); suspended accounts are rejected everywhere.
