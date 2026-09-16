@@ -9,6 +9,7 @@
  */
 
 import type * as accessRequests from "../accessRequests.js";
+import type * as alerts from "../alerts.js";
 import type * as auth from "../auth.js";
 import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js";
 import type * as lib_authConstants from "../lib/authConstants.js";
@@ -17,9 +18,11 @@ import type * as lib_demoUsers from "../lib/demoUsers.js";
 import type * as lib_domain from "../lib/domain.js";
 import type * as lib_invariants from "../lib/invariants.js";
 import type * as lib_password from "../lib/password.js";
+import type * as lib_riskConstants from "../lib/riskConstants.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_searchLimits from "../lib/searchLimits.js";
 import type * as lib_services_accessControlService from "../lib/services/accessControlService.js";
+import type * as lib_services_alertService from "../lib/services/alertService.js";
 import type * as lib_services_auditLogService from "../lib/services/auditLogService.js";
 import type * as lib_services_patientDiscoveryService from "../lib/services/patientDiscoveryService.js";
 import type * as lib_services_recordExchangeService from "../lib/services/recordExchangeService.js";
@@ -38,6 +41,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   accessRequests: typeof accessRequests;
+  alerts: typeof alerts;
   auth: typeof auth;
   "lib/accessRequestMessages": typeof lib_accessRequestMessages;
   "lib/authConstants": typeof lib_authConstants;
@@ -46,9 +50,11 @@ declare const fullApi: ApiFromModules<{
   "lib/domain": typeof lib_domain;
   "lib/invariants": typeof lib_invariants;
   "lib/password": typeof lib_password;
+  "lib/riskConstants": typeof lib_riskConstants;
   "lib/roles": typeof lib_roles;
   "lib/searchLimits": typeof lib_searchLimits;
   "lib/services/accessControlService": typeof lib_services_accessControlService;
+  "lib/services/alertService": typeof lib_services_alertService;
   "lib/services/auditLogService": typeof lib_services_auditLogService;
   "lib/services/patientDiscoveryService": typeof lib_services_patientDiscoveryService;
   "lib/services/recordExchangeService": typeof lib_services_recordExchangeService;

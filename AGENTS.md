@@ -89,8 +89,9 @@ On `main` (plans in `docs/features/`, index in `docs/README.md`):
 - **INN-47** password reset hardening — hashed single-use reset tokens (15 min), issued via `internal.auth.issuePasswordResetToken` (no email yet). Sessions last 30 minutes; suspended accounts are rejected everywhere.
 - **INN-48** clean-checkout build — no `prepare` script; `type-check` runs `next typegen` first.
 - **INN-38** risk scoring — pure `scoreAccessRequest` in `convex/lib/services/riskScoringService.ts`. Additive, explainable points (role, purpose, cross-facility, volume vs baseline, after-hours for non-clinical purposes) plus a harvest rule (≥ 500 records → at least 94). ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80. Ibrahim treatment → 8; harvest → 94. Returns `reasons` and an `accessDecisions.factors` snapshot; the caller persists the decision.
-- **INN-37** access requests — `convex/accessRequests.ts` (`createAccessRequest`, `listMyAccessRequests`, `getAccessRequest`) + `convex/lib/services/accessControlService.ts`. Clinicians only; source facility from `users.facilityId` (falls back to `hospital` name), target from the patient's record index; stores request + decision; audits `AccessRequested` and `AccessAllowed` / `AccessChallenged` / `AccessBlocked`. UI: `/requests`, `/requests/new`, `/requests/[requestId]`. Demo steps 3–4 work. No security alert on BLOCK yet (INN-39).
+- **INN-37** access requests — `convex/accessRequests.ts` (`createAccessRequest`, `listMyAccessRequests`, `getAccessRequest`) + `convex/lib/services/accessControlService.ts`. Clinicians only; source facility from `users.facilityId` (falls back to `hospital` name), target from the patient's record index; stores request + decision; audits `AccessRequested` and `AccessAllowed` / `AccessChallenged` / `AccessBlocked`. UI: `/requests`, `/requests/new`, `/requests/[requestId]`. Demo steps 3–4 work. Scores one patient per request; `recordCount` is never a client argument.
 - **INN-40** authorised summary — `convex/records.ts` `viewAuthorisedSummary` (mutation, so it can audit) + `convex/lib/services/recordExchangeService.ts`. Only the requester; only after ALLOW or a live emergency grant on the same request; only the requested record types; only the target facility's summary (`conditions` never returned). Audits `RecordViewed`. UI: **View authorised records** on `/requests/[requestId]`. Demo step 5 works.
+- **INN-39** harvest block + alerts — `simulateBulkHarvest` (clinicians; the server fixes `recordCount` at 500, one request row) is the demo harvest; `createAccessRequest` stays one patient. Both share `recordAccessRequest`, so every BLOCK raises a high, open `securityAlerts` row and audits `SecurityAlertRaised` (`convex/lib/services/alertService.ts`). `convex/alerts.ts`: `listSecurityAlerts` (security officers + admins, paginated, status filter), `acknowledgeAlert`, `closeAlert` (open → acknowledged → closed; never deleted). UI: harvest simulation on `/requests`, `/security` queue, live open alerts on the security dashboard. Demo step 6 works. Officer actions are not yet audited (no `auditAction` value).
 
 Tests: `npm test` (vitest + convex-test, `convex/**/*.test.ts`). Run it with `npm run check` before every PR.
 
@@ -98,10 +99,9 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 
 **Next (demo steps 3–7), in dependency order:**
 
-1. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security` — unblocked; `createAccessRequest` scores one patient (`recordCount` 1). Harvest volume must be counted on the server, not passed by the client.
-2. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass — unblocked; insert `emergencyAccess` with the request id and `recordExchangeService` already honours it.
-3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
-4. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (waits on INN-39).
+1. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass — unblocked; insert `emergencyAccess` with the request id (`recordExchangeService` already honours it) and raise an alert with `emergencyAccessId`.
+2. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
+3. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked; the security dashboard already shows live open alerts.
 
 Should-have after the demo works: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 

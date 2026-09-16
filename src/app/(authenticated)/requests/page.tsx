@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileIcon } from "@/icons";
+import { HarvestSimulation } from "./_components/HarvestSimulation";
 import {
   OUTCOME_BADGE_COLORS,
   OUTCOME_LABELS,
@@ -177,6 +178,14 @@ export default function AccessRequestsPage() {
             </Button>
           </div>
         )}
+      </ComponentCard>
+
+      <ComponentCard
+        className="mt-6"
+        title="Demo: suspicious bulk request"
+        desc="Track C step 6 — a sudden 500-record harvest must be blocked and escalated."
+      >
+        <HarvestSimulation />
       </ComponentCard>
     </div>
   );

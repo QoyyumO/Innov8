@@ -8,8 +8,9 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | --- | --- | --- |
 | `auth.ts` | `login`, `logout`, `getCurrentUser`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword` | Session token `innov8_session_token`; 30-minute sessions |
 | `patients.ts` | `searchPatients` (mutation, audited), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
-| `accessRequests.ts` | `createAccessRequest` (mutation, audited), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
+| `accessRequests.ts` | `createAccessRequest` (mutation, audited, one patient), `simulateBulkHarvest` (demo mutation, server-fixed 500 records), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
 | `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`) | Requester only; ALLOW or live emergency grant; requested sections from the target facility only |
+| `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` | Security officers and admins; status transitions only |
 
 ## Internal functions
 
@@ -26,6 +27,8 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `invariants.ts` — shared assertions (non-empty strings, risk score range, unique ids)
 - `authConstants.ts`, `searchLimits.ts`, `password.ts`, `demoUsers.ts`, `demoIds.ts`, `synthetic.ts`
 - `services/accessControlService.ts` — resolves patient, source/target facility, and held record types for a request
+- `services/alertService.ts` — `raiseBlockAlert` (called on every BLOCK from `accessRequests.ts`) and alert status transitions
+- `riskConstants.ts` — `HARVEST_RECORD_COUNT` / `HARVEST_SCORE`, shared by the risk engine, the harvest mutation, and the UI
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
 - `services/recordExchangeService.ts` — view authorisation (ALLOW / emergency grant) and requested-section filtering

@@ -1,4 +1,5 @@
 import { DecisionOutcome, Purpose, RecordType } from "../domain";
+import { HARVEST_RECORD_COUNT, HARVEST_SCORE } from "../riskConstants";
 import { assertDecisionReasons, assertRiskScore } from "../invariants";
 import { ADMIN_ROLES, CLINICIAN_ROLES, SECURITY_ROLES, UserRole } from "../roles";
 
@@ -30,10 +31,7 @@ export const WITHIN_BASELINE_POINTS = 5;
 export const ABOVE_BASELINE_POINTS = 35;
 export const AFTER_HOURS_POINTS = 15;
 
-/** Requests covering at least this many records are treated as harvesting. */
-export const HARVEST_RECORD_COUNT = 500;
-/** Minimum score for a harvest request. */
-export const HARVEST_SCORE = 94;
+export { HARVEST_RECORD_COUNT, HARVEST_SCORE };
 
 /** Used when a worker has no `normalPatientVolume` yet. */
 export const DEFAULT_PATIENT_VOLUME = 20;

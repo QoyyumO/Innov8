@@ -6,11 +6,11 @@ import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
 import Alert from "@/components/ui/alert/Alert";
-import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { AlertIcon, DocsIcon, LockIcon, TimeIcon } from "@/icons";
 import { WelcomeCard, RequestsTable } from "./DashboardWidgets";
-import { doctorRequests, securityAlerts } from "./dashboardDummy";
+import { doctorRequests } from "./dashboardDummy";
+import { AlertsTable } from "../security/_components/AlertsTable";
 
 export default function SecurityDashboard() {
   const router = useRouter();
@@ -77,39 +77,11 @@ export default function SecurityDashboard() {
           />
         </div>
 
-        <ComponentCard title="Security alerts" desc="Dummy queue for the demo scenario.">
-          <div className="space-y-4">
-            {securityAlerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="flex items-start justify-between rounded-lg border border-gray-100 p-4 dark:border-gray-800"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-800 dark:text-white/90">
-                      {alert.title}
-                    </span>
-                    <Badge
-                      color={
-                        alert.severity === "high"
-                          ? "error"
-                          : alert.severity === "medium"
-                            ? "warning"
-                            : "info"
-                      }
-                      size="sm"
-                    >
-                      {alert.severity}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    {alert.detail}
-                  </p>
-                </div>
-                <span className="ml-4 text-xs text-gray-500">{alert.time}</span>
-              </div>
-            ))}
-          </div>
+        <ComponentCard
+          title="Open security alerts"
+          desc="Live queue — newest first. Review and resolve on the security page."
+        >
+          <AlertsTable status="open" pageSize={5} compact />
         </ComponentCard>
 
         <ComponentCard

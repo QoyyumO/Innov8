@@ -68,11 +68,11 @@ Track C demo steps (see `AGENTS.md`):
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
 | 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW |
 | 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed` |
-| 6. Harvest BLOCK + alert | Not yet — INN-39 |
+| 6. Harvest BLOCK + alert | Done — **Simulate bulk harvest (500 records)** on `/requests` calls `simulateBulkHarvest` (the server fixes the count) → BLOCK 94; every BLOCK raises a high-severity alert (`SecurityAlertRaised` audit); security officers and admins review, acknowledge, and close alerts on `/security` |
 | 7. Break-glass | Not yet — INN-41 |
-| Audit trail / security dashboards | Not yet — INN-42, INN-43 |
+| Audit trail / security dashboards | Partly — the security dashboard shows the live open-alert queue; its metric cards and the other dashboards are still dummy (INN-43); audit trail UI is INN-42 |
 
-Role dashboards still show **dummy** numbers. Sidebar links for `/emergency`, `/audit`, `/security`, and `/facilities` 404 until their tickets land.
+Role dashboards still show **dummy** numbers. Sidebar links for `/emergency`, `/audit`, and `/facilities` 404 until their tickets land.
 
 ## Seed synthetic data
 
@@ -130,7 +130,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 
 ## Repo map
 
-- `src/app/(authenticated)/` — dashboard, `patients/`, `requests/`, `account-settings/`; shared labels in `_components/accessLabels.ts`
+- `src/app/(authenticated)/` — dashboard, `patients/`, `requests/`, `security/`, `account-settings/`; shared labels in `_components/accessLabels.ts` and `alertLabels.ts`
 - `src/app/(not-authenticated)/` — `login/`, `forgot-password/`, `reset-password/`, `unauthorized/`
 - `src/hooks/useAuth.ts` — how pages pass the session token to Convex
 - `convex/schema.ts` — access-layer tables
@@ -138,10 +138,11 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/patients.ts` — patient search + existence-only discovery
 - `convex/accessRequests.ts` — create / list / view purpose-based access requests and decisions
 - `convex/records.ts` — release authorised clinical sections after ALLOW (or a live emergency grant)
+- `convex/alerts.ts` — security alert queue, acknowledge, close
 - `convex/seed.ts` — internal §14 seed mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
-- `convex/lib/services/` — domain services (`accessControlService`, `auditLogService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)
+- `convex/lib/services/` — domain services (`accessControlService`, `alertService`, `auditLogService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)
 - `convex/*.test.ts` — backend tests
 - `docs/features/` — one `PLAN.md` per ticket ([index](docs/README.md))
 - `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)
