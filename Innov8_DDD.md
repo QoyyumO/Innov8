@@ -25,13 +25,14 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` (`scoreAccessRequest` return type) with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 - **INN-37** — `AccessControlService` (`convex/lib/services/accessControlService.ts`) + `convex/accessRequests.ts`: AccessRequest and Decision aggregates are live; `AccessRequested` and outcome events are audited.
 - **INN-40** — `RecordExchangeService` (`convex/lib/services/recordExchangeService.ts`) + `convex/records.ts`: permitted fields only, target facility only, after ALLOW or a live emergency grant; `RecordViewed` audited.
-- **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted; audited since INN-50).
+- **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted).
 - **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants; `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
 - **INN-42** — AuditEvent read model (`convex/audit.ts`): role-scoped, paginated, newest-first by `createdAt`; still append-only (no update/delete path).
 - **INN-43** — Dashboard read models (`convex/dashboards.ts`): bounded summaries over AccessRequest, Decision, EmergencyAccess, SecurityAlert, and AuditEvent, plus the Facility list.
 - **INN-51** — Decision validity: an ALLOW authorises record release for 24 hours from `decidedAt`; later attempts are refused and recorded as `AccessExpired`.
 - **INN-54** — Login failures return a form error (no overlay); Keep me logged in is a 7-day session; seed non-harvest `recordCount` is 1.
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
+- **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
 
 ## Next (live demo path)
 
