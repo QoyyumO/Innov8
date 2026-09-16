@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
-import Alert from "@/components/ui/alert/Alert";
 import Button from "@/components/ui/button/Button";
 import { AlertIcon, DocsIcon, LockIcon, TimeIcon } from "@/icons";
 import { WelcomeCard, RequestsTable } from "./DashboardWidgets";
@@ -43,12 +42,6 @@ export default function SecurityDashboard() {
             </Button>
           </div>
         </WelcomeCard>
-
-        <Alert
-          variant="error"
-          title="High-risk block"
-          message="Dr. Ibrahim requested 500 patient records. Risk 94/100. The request was blocked and this alert is waiting for review."
-        />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard

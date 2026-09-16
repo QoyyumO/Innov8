@@ -120,10 +120,9 @@ export const listSecurityAlerts = query({
           .order("desc")
           .paginate(args.paginationOpts);
 
-    const page = [];
-    for (const alert of results.page) {
-      page.push(await toAlertView(ctx, alert));
-    }
+    const page = await Promise.all(
+      results.page.map((alert) => toAlertView(ctx, alert)),
+    );
     return { ...results, page };
   },
 });
