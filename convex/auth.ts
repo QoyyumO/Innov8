@@ -2,14 +2,18 @@ import { internalMutation, mutation, query, MutationCtx } from "./_generated/ser
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import {
+  INVALID_CREDENTIALS_MESSAGE,
   MIN_PASSWORD_LENGTH,
   RESET_GENERIC_MESSAGE,
   RESET_INVALID_TOKEN_MESSAGE,
   RESET_REQUEST_COOLDOWN_MS,
   RESET_TOKEN_TTL_MS,
 } from "./lib/authConstants";
+import { userRole } from "./lib/roles";
 import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
 import {
+  PERSISTENT_SESSION_DURATION_MS,
+  SESSION_DURATION_MS,
   createSession,
   deleteAllUserSessions,
   deleteOtherUserSessions,
@@ -52,18 +56,40 @@ export const login = mutation({
   args: {
     email: v.string(),
     password: v.string(),
+    keepMeLoggedIn: v.optional(v.boolean()),
   },
+  returns: v.union(
+    v.object({
+      success: v.literal(true),
+      token: v.string(),
+      _id: v.id("users"),
+      email: v.string(),
+      roles: v.array(userRole),
+      hospital: v.string(),
+      department: v.optional(v.string()),
+      accountStatus: v.union(v.literal("active"), v.literal("suspended")),
+      profile: v.object({
+        firstName: v.string(),
+        lastName: v.string(),
+        middleName: v.optional(v.string()),
+      }),
+    }),
+    v.object({
+      success: v.literal(false),
+      error: v.string(),
+    }),
+  ),
   handler: async (ctx, args) => {
     await ensureDemoUsers(ctx);
 
     const emailLower = args.email.toLowerCase().trim();
     const user = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .withIndex("by_email", (query) => query.eq("email", emailLower))
       .first();
 
     if (!user || user.accountStatus !== "active") {
-      throw new Error("Invalid email or password");
+      return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
     const isValidPassword = await verifyPassword(
@@ -71,10 +97,13 @@ export const login = mutation({
       user.hashedPassword,
     );
     if (!isValidPassword) {
-      throw new Error("Invalid email or password");
+      return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
-    const { token, sessionId } = await createSession(ctx.db, user._id);
+    const durationMs = args.keepMeLoggedIn
+      ? PERSISTENT_SESSION_DURATION_MS
+      : SESSION_DURATION_MS;
+    const { token, sessionId } = await createSession(ctx.db, user._id, durationMs);
     await appendAuditEvent(ctx.db, {
       actorId: user._id,
       sessionId,
@@ -85,7 +114,7 @@ export const login = mutation({
     });
 
     return {
-      success: true,
+      success: true as const,
       token,
       ...publicUser(user),
     };

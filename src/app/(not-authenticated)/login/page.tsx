@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginForm } from "./_components/LoginForm";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
 import Loading from "@/components/loading/Loading";
 
-export default function LoginPage() {
+function LoginPageBody() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorTitle = searchParams.get("errorTitle") ?? undefined;
+  const errorMessage = searchParams.get("errorMessage") ?? undefined;
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
@@ -51,7 +54,21 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <LoginForm bannerTitle={errorTitle} bannerMessage={errorMessage} />
     </AuthPageLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loading />
+        </div>
+      }
+    >
+      <LoginPageBody />
+    </Suspense>
   );
 }

@@ -19,5 +19,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-42-audit-trail](features/INN-42-audit-trail/PLAN.md) | Read-only audit trail query + `/audit` UI | In review |
 | [INN-43-live-dashboards](features/INN-43-live-dashboards/PLAN.md) | Live role dashboards + `/facilities` | In review |
 | [INN-51-expire-allow-decisions](features/INN-51-expire-allow-decisions/PLAN.md) | ALLOW decisions expire after 24 hours (`AccessExpired` audit) | In review |
+| [INN-54-fix-leftover-qa-issues](features/INN-54-fix-leftover-qa-issues/PLAN.md) | Login errors, seed recordCount, mobile overlay | In progress |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

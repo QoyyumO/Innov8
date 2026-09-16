@@ -408,7 +408,7 @@ async function seedAccessEvent(
   const sourceFacilityId =
     args.worker.facilityId ?? args.patient.homeFacilityId;
   const sameHospital = sourceFacilityId === args.patient.homeFacilityId;
-  const recordCount = args.recordCount ?? args.recordTypes.length;
+  const recordCount = args.recordCount ?? 1;
   const actorRole = args.worker.roles[0] ?? "doctor";
 
   const requestId = await ctx.db.insert("accessRequests", {
@@ -610,7 +610,7 @@ export const seedAccessEventsBatch = internalMutation({
         patient,
         purpose,
         recordTypes: [...RECORD_TYPES],
-        recordCount: isMassAccess ? 500 : RECORD_TYPES.length,
+        recordCount: isMassAccess ? 500 : 1,
         location: isSuspicious && anomalyKind === 2 ? "unknown-device-site" : undefined,
         requestedAt,
         outcome,
