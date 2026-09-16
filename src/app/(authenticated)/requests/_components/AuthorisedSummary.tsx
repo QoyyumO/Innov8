@@ -233,7 +233,7 @@ export function AuthorisedSummary({
 
       <div className="flex flex-wrap items-center gap-2">
         <Badge color="info" size="sm">
-          Source: {result.facility.name}
+          Holding facility: {result.facility.name}
         </Badge>
         <Badge color="light" size="sm">
           {result.publicId}

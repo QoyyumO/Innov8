@@ -36,3 +36,5 @@ The client uses `useNow` to switch a page to the expired state while it is open.
 ## Open questions
 
 - [ ] Should the dashboards count expired ALLOWs separately? Not needed for now.
+- [ ] `AccessExpired` is written on every expired view attempt (ticket). Repeat clicks add extra audit rows; fine for the demo.
+- [ ] If a request ever had a grant, `resolveViewAuthorisation` still lets the grant decide (INN-41). The UI treats only a *live* grant as break-glass so an ended grant does not hide ALLOW expiry.
