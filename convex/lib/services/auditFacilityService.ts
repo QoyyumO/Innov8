@@ -49,7 +49,7 @@ async function findEventRequest(
   return null;
 }
 
-/** Facilities an audit event involves: the actor's, plus its request's source/target or its alert's. */
+/** Facilities an audit event involves: the actor's, plus its request's source/target, its alert's, or its consent's. */
 export async function resolveEventFacilityIds(
   db: DatabaseReader,
   event: AuditEventRow,
@@ -64,6 +64,16 @@ export async function resolveEventFacilityIds(
   const request = await findEventRequest(db, event);
   for (const facilityId of request ? requestFacilityIds(request) : []) {
     facilityIds.add(facilityId);
+  }
+
+  const consentId =
+    event.entity === "consents" && event.entityId
+      ? db.normalizeId("consents", event.entityId)
+      : null;
+  const consent = consentId ? await db.get(consentId) : null;
+  if (consent) {
+    facilityIds.add(consent.facilityId);
+    facilityIds.add(consent.patientFacilityId);
   }
 
   const alertId =

@@ -5,6 +5,7 @@ import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
+import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import {
   AUDIT_TODAY_COUNT_LIMIT,
@@ -99,6 +100,16 @@ async function seedDemoWorld(testBackend: TestBackend): Promise<DemoWorld> {
       facilityId: lagosId,
       recordTypes: [...ALL_RECORD_TYPES],
       updatedAt: Date.now(),
+    });
+    // INN-45: the demo consent for PAT-002391 at FMC Abuja (as in the real seed).
+    await ctx.db.insert("consents", {
+      patientId,
+      facilityId: abujaId,
+      patientFacilityId: lagosId,
+      status: "active",
+      note: "Test consent for FMC Abuja",
+      grantedAt: Date.now(),
+      expiresAt: Date.now() + DEMO_CONSENT_DURATION_MS,
     });
     return { lagosId, abujaId, patientId };
   });

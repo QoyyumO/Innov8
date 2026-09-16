@@ -5,6 +5,7 @@ import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
+import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 import {
@@ -42,7 +43,7 @@ async function loginUser(testBackend: TestBackend, email: string) {
 
 async function seedDemoWorld(testBackend: TestBackend) {
   await testBackend.run(async (ctx) => {
-    await ctx.db.insert("facilities", {
+    const abujaId = await ctx.db.insert("facilities", {
       code: "FMC-ABJ",
       name: "FMC Abuja",
       city: "Abuja",
@@ -68,6 +69,16 @@ async function seedDemoWorld(testBackend: TestBackend) {
       facilityId: lagosId,
       recordTypes: ["medical_summary", "allergies", "medications", "diagnoses"],
       updatedAt: Date.now(),
+    });
+    // INN-45: the demo consent for PAT-002391 at FMC Abuja (as in the real seed).
+    await ctx.db.insert("consents", {
+      patientId,
+      facilityId: abujaId,
+      patientFacilityId: lagosId,
+      status: "active",
+      note: "Test consent for FMC Abuja",
+      grantedAt: Date.now(),
+      expiresAt: Date.now() + DEMO_CONSENT_DURATION_MS,
     });
     await ctx.db.insert("clinicalSummaries", {
       patientId,

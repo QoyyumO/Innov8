@@ -4,6 +4,8 @@ import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { hashPassword } from "./lib/password";
 import { linkAlertFacilities } from "./lib/facilityScope";
+import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
+import { findActiveConsent } from "./lib/services/consentService";
 import {
   insertCountedPatient,
   insertCountedUser,
@@ -232,6 +234,31 @@ export const seedHealthcareWorkers = internalMutation({
   },
 });
 
+/**
+ * INN-45: PAT-002391 consents to FMC Abuja, so Ibrahim's treatment request
+ * stays ALLOW 8. No other synthetic patient has consent.
+ */
+async function ensureDemoConsent(
+  ctx: MutationCtx,
+  patientId: Id<"patients">,
+  abujaId: Id<"facilities">,
+  lagosId: Id<"facilities">,
+) {
+  const now = Date.now();
+  if (await findActiveConsent(ctx.db, patientId, abujaId, now)) {
+    return;
+  }
+  await ctx.db.insert("consents", {
+    patientId,
+    facilityId: abujaId,
+    patientFacilityId: lagosId,
+    status: "active",
+    note: "Seeded demo consent: patient agreed to share records with FMC Abuja",
+    grantedAt: now,
+    expiresAt: now + DEMO_CONSENT_DURATION_MS,
+  });
+}
+
 async function upsertRecordIndexAndSummary(
   ctx: MutationCtx,
   args: {
@@ -341,6 +368,11 @@ async function upsertSyntheticPatient(
       bloodGroup: "O+",
       searchName: "chioma okonkwo",
     });
+  }
+
+  if (isDemoPatient) {
+    const abuja = requireFacility(facilities, "FMC-ABJ");
+    await ensureDemoConsent(ctx, patientId, abuja._id, lagos._id);
   }
 
   const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);
@@ -723,6 +755,7 @@ const CLEAR_TABLES = [
   "accessRequests",
   "clinicalSummaries",
   "recordIndexes",
+  "consents",
   "patients",
   "facilityStats",
   "passwordResetTokens",

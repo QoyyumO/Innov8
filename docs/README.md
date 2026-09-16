@@ -25,5 +25,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-55-shrink-seed-for-free-plan](features/INN-55-shrink-seed-for-free-plan/PLAN.md) | Demo-scale seed (24 workers / 200 patients / 200 events) + wipe | Done on `main` ([#22](https://github.com/QoyyumO/Innov8/pull/22)) |
 | [INN-52-facility-scoped-admin-views](features/INN-52-facility-scoped-admin-views/PLAN.md) | Hospital admins see only their facility's activity | In review ([#19](https://github.com/QoyyumO/Innov8/pull/19)) |
 | [INN-53-facility-stat-counters](features/INN-53-facility-stat-counters/PLAN.md) | Stored per-facility worker / patient totals | In review ([#20](https://github.com/QoyyumO/Innov8/pull/20)) |
+| [INN-45-consent-service](features/INN-45-consent-service/PLAN.md) | Patient consent for cross-facility requests | In review ([#21](https://github.com/QoyyumO/Innov8/pull/21)) |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

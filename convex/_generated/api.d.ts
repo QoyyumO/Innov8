@@ -12,6 +12,7 @@ import type * as accessRequests from "../accessRequests.js";
 import type * as alerts from "../alerts.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
+import type * as consents from "../consents.js";
 import type * as dashboards from "../dashboards.js";
 import type * as emergency from "../emergency.js";
 import type * as facilityScopeBackfill from "../facilityScopeBackfill.js";
@@ -19,6 +20,7 @@ import type * as facilityStatsRecount from "../facilityStatsRecount.js";
 import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js";
 import type * as lib_accessWindow from "../lib/accessWindow.js";
 import type * as lib_authConstants from "../lib/authConstants.js";
+import type * as lib_consentConstants from "../lib/consentConstants.js";
 import type * as lib_dashboardConstants from "../lib/dashboardConstants.js";
 import type * as lib_demoIds from "../lib/demoIds.js";
 import type * as lib_demoUsers from "../lib/demoUsers.js";
@@ -36,6 +38,7 @@ import type * as lib_services_accessControlService from "../lib/services/accessC
 import type * as lib_services_alertService from "../lib/services/alertService.js";
 import type * as lib_services_auditFacilityService from "../lib/services/auditFacilityService.js";
 import type * as lib_services_auditLogService from "../lib/services/auditLogService.js";
+import type * as lib_services_consentService from "../lib/services/consentService.js";
 import type * as lib_services_emergencyAccessService from "../lib/services/emergencyAccessService.js";
 import type * as lib_services_patientDiscoveryService from "../lib/services/patientDiscoveryService.js";
 import type * as lib_services_recordExchangeService from "../lib/services/recordExchangeService.js";
@@ -60,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   alerts: typeof alerts;
   audit: typeof audit;
   auth: typeof auth;
+  consents: typeof consents;
   dashboards: typeof dashboards;
   emergency: typeof emergency;
   facilityScopeBackfill: typeof facilityScopeBackfill;
@@ -67,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   "lib/accessRequestMessages": typeof lib_accessRequestMessages;
   "lib/accessWindow": typeof lib_accessWindow;
   "lib/authConstants": typeof lib_authConstants;
+  "lib/consentConstants": typeof lib_consentConstants;
   "lib/dashboardConstants": typeof lib_dashboardConstants;
   "lib/demoIds": typeof lib_demoIds;
   "lib/demoUsers": typeof lib_demoUsers;
@@ -84,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   "lib/services/alertService": typeof lib_services_alertService;
   "lib/services/auditFacilityService": typeof lib_services_auditFacilityService;
   "lib/services/auditLogService": typeof lib_services_auditLogService;
+  "lib/services/consentService": typeof lib_services_consentService;
   "lib/services/emergencyAccessService": typeof lib_services_emergencyAccessService;
   "lib/services/patientDiscoveryService": typeof lib_services_patientDiscoveryService;
   "lib/services/recordExchangeService": typeof lib_services_recordExchangeService;

@@ -21,18 +21,18 @@ npx convex run internal.seed.clearSeedDataBatch
 
 Watch logs until `{ table: "users", done: true }`. Deletes facility join
 rows (`auditEventFacilities`, `alertFacilities`), audit events, alerts,
-emergency grants, decisions, requests, summaries, record indexes, patients,
-facility stats, reset tokens, sessions, and extra workers (`WRK-00025+`).
-Keeps the 3 facilities and demo login emails. Totals are rebuilt when the
-next `seedPatientsBatch` finishes, not during the wipe.
+emergency grants, decisions, requests, summaries, record indexes, consents,
+patients, facility stats, reset tokens, sessions, and extra workers
+(`WRK-00025+`). Keeps the 3 facilities and demo login emails. Totals are
+rebuilt when the next `seedPatientsBatch` finishes, not during the wipe.
 
 Row-by-row deletes can time out on a 100k-event database ("too many system
 operations"). Faster wipe for an oversized deployment: `npx convex import
 --replace --table <name> empty.json -y` with `[]` for `auditEventFacilities`,
 `alertFacilities`, `auditEvents`, `accessDecisions`, `accessRequests`,
 `patients`, `recordIndexes`, `clinicalSummaries`, `securityAlerts`,
-`facilityStats`, then `sessions` / `passwordResetTokens`. Then run
-`clearSeedDataBatch` with `{"tableIndex": 13}` to trim extra workers.
+`consents`, `facilityStats`, then `sessions` / `passwordResetTokens`. Then
+run `clearSeedDataBatch` with `{"tableIndex": 14}` to trim extra workers.
 
 Row-by-row deletes also count toward monthly database I/O. If mutations stall
 because the team is over quota, create a new empty Convex project, point

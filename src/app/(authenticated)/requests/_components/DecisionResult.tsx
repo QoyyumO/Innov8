@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import type {
+  ConsentCheck,
   DecisionOutcome,
   Purpose,
   RecordType,
@@ -29,6 +30,7 @@ export type DecisionResultProps = {
   factors?: {
     role: string;
     sameHospital: boolean;
+    consent?: ConsentCheck;
   };
   /** Step-up (INN-44): when a VERIFY decision was completed or escalated. */
   verifiedAt?: number;
@@ -127,6 +129,16 @@ export function DecisionResult({
             <Badge color={factors.sameHospital ? "light" : "info"} size="sm">
               {factors.sameHospital ? "Same facility" : "Cross-facility"}
             </Badge>
+            {factors.consent === "active" && (
+              <Badge color="success" size="sm">
+                Consent on file
+              </Badge>
+            )}
+            {factors.consent === "missing" && (
+              <Badge color="warning" size="sm">
+                No patient consent
+              </Badge>
+            )}
           </>
         )}
         <Badge color={recordCount > 1 ? "warning" : "light"} size="sm">
