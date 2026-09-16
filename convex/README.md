@@ -11,6 +11,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `accessRequests.ts` | `createAccessRequest` (mutation, audited, one patient), `simulateBulkHarvest` (demo mutation, server-fixed 500 records), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
 | `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`) | Requester only; ALLOW or live emergency grant; requested sections from the target facility only |
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` | Security officers and admins; status transitions only |
+| `audit.ts` | `listAuditEvents` (paginated query) | Own events for everyone; all events (optionally one actor) for security officers and admins; read-only |
 | `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
 
 ## Internal functions

@@ -10,6 +10,7 @@
 
 import type * as accessRequests from "../accessRequests.js";
 import type * as alerts from "../alerts.js";
+import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as emergency from "../emergency.js";
 import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js";
@@ -45,6 +46,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   accessRequests: typeof accessRequests;
   alerts: typeof alerts;
+  audit: typeof audit;
   auth: typeof auth;
   emergency: typeof emergency;
   "lib/accessRequestMessages": typeof lib_accessRequestMessages;
