@@ -79,7 +79,7 @@ Consent, step-up verification, record writing, deep audit investigation, and a p
 
 ## Current status and next work
 
-Foundational UI is in place: session login, password reset, account settings, and **dummy** role dashboards.
+Foundational UI is in place: session login, password reset, account settings, and live role dashboards (INN-43).
 
 On `main` (plans in `docs/features/`, index in `docs/README.md`):
 
@@ -94,16 +94,14 @@ On `main` (plans in `docs/features/`, index in `docs/README.md`):
 - **INN-39** harvest block + alerts — `simulateBulkHarvest` (clinicians; the server fixes `recordCount` at 500, one request row) is the demo harvest; `createAccessRequest` stays one patient. Both share `recordAccessRequest`, so every BLOCK raises a high, open `securityAlerts` row and audits `SecurityAlertRaised` (`convex/lib/services/alertService.ts`). `convex/alerts.ts`: `listSecurityAlerts` (security officers + admins, paginated, status filter), `acknowledgeAlert`, `closeAlert` (open → acknowledged → closed; never deleted). UI: harvest simulation on `/requests`, `/security` queue, live open alerts on the security dashboard. Demo step 6 works. Officer actions are not yet audited (no `auditAction` value).
 - **INN-41** break-glass — `convex/emergency.ts` (`grantEmergencyAccess`, `getActiveEmergencyAccess`, `revokeEmergencyAccess`, internal `expireEmergencyAccess`) + `convex/lib/services/emergencyAccessService.ts`. Clinicians only; justification 10–500 characters; one live grant per clinician and patient; the server fixes the length at 15 minutes (`EMERGENCY_ACCESS_TTL_MS`). Either links to the caller's own single-patient BLOCK/VERIFY request or creates an `emergency`-purpose request with no decision. Audits `EmergencyGranted`, raises a medium alert with `emergencyAccessId`, and schedules expiry (`EmergencyExpired`). The holder, security officers, and admins can end it early (`EmergencyRevoked`). When a request has a grant, the grant alone decides whether records open. UI: `/emergency`, **Use break-glass** on blocked/challenged requests, grant card on `/requests/[requestId]`, **Revoke access** on `/security`. Demo step 7 works.
 - **INN-42** audit trail — `convex/audit.ts` `listAuditEvents` (paginated, newest first by `createdAt`, optional `action` / `actorId`). Everyone sees their own events; security officers and admins see all and may filter to one actor (others asking for someone else → permission denied). Uses `auditEvents` indexes `by_createdAt`, `by_actorId_createdAt`, `by_action_createdAt`, `by_actorId_action_createdAt` — never `.collect()`. No write functions. UI: `/audit` with an action filter; reviewers click a name to open that person's trail.
+- **INN-43** live dashboards — `convex/dashboards.ts`: `getClinicianDashboard` and `getSecurityDashboard` (both take `since`, the start of the Lagos day from `startOfLagosDay`, so they stay cacheable) and `listFacilities`. Every read is an index range or a `.take()` cap from `convex/lib/dashboardConstants.ts`; capped counts return `isCapped` and show as `100+`. `accessDecisions.by_outcome` became `by_outcome_decidedAt`. UI: one `ClinicianDashboard` (per-role copy) for doctor/nurse/pharmacist/laboratory; live security and admin dashboards; `/facilities`. `dashboardDummy.ts` is gone.
+- **INN-51** ALLOW expiry — an ALLOW releases records for `ALLOW_VALIDITY_MS` (24 h, `convex/lib/accessWindow.ts`, server-fixed) from `decidedAt`. After that `resolveViewAuthorisation` denies with `ALLOW_EXPIRED_REASON`, and `viewAuthorisedSummary` audits `AccessExpired` (BLOCK/VERIFY refusals are not audited). A request with a break-glass grant is still governed by the grant. Request views carry `decision.allowedUntil` (ALLOW only); the request page offers **Request access again**.
 
 Tests: `npm test` (vitest + convex-test, `convex/**/*.test.ts`). Run it with `npm run check` before every PR.
 
 Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only — do not import school entities.
 
-**Next, in dependency order:**
-
-1. [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards — unblocked; the security dashboard already shows live open alerts.
-
-Should-have after the demo works: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
+**Next:** the MVP demo path is complete. Should-have work: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Follow-ups: INN-50 (audit alert actions), INN-52 (facility-scoped admin views), INN-53 (stored counters). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 
 When a ticket changes what works, update `README.md` ("What works today"), `docs/README.md`, this section, `Innov8_DDD.md`, and `.cursor/rules/innov8-next-tasks.mdc` in the same PR.
 

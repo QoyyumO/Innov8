@@ -17,5 +17,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-39-harvest-block-security-alerts](features/INN-39-harvest-block-security-alerts/PLAN.md) | Harvest BLOCK, security alerts API, `/security` UI | Done on `main` ([#11](https://github.com/QoyyumO/Innov8/pull/11)) |
 | [INN-41-break-glass-emergency-access](features/INN-41-break-glass-emergency-access/PLAN.md) | Break-glass emergency access (15-minute grant, alert, expiry, revoke) | Done on `main` ([#12](https://github.com/QoyyumO/Innov8/pull/12)) |
 | [INN-42-audit-trail](features/INN-42-audit-trail/PLAN.md) | Read-only audit trail query + `/audit` UI | In review |
+| [INN-43-live-dashboards](features/INN-43-live-dashboards/PLAN.md) | Live role dashboards + `/facilities` | In review |
+| [INN-51-expire-allow-decisions](features/INN-51-expire-allow-decisions/PLAN.md) | ALLOW decisions expire after 24 hours (`AccessExpired` audit) | In review |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

@@ -1,5 +1,6 @@
 import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
+import { ALLOW_EXPIRED_REASON, allowedUntil, isAllowExpired } from "../accessWindow";
 import { DecisionOutcome, RecordType } from "../domain";
 import { isLiveGrant, listGrantsForRequest } from "./emergencyAccessService";
 
@@ -20,20 +21,23 @@ export type AuthorisedSections = {
 };
 
 export type ViewAuthorisation =
-  | { isAuthorised: true; grantedBy: "decision" }
+  | { isAuthorised: true; grantedBy: "decision"; allowedUntil: number }
   | { isAuthorised: true; grantedBy: "emergency"; emergencyExpiresAt: number }
   | {
       isAuthorised: false;
       outcome: DecisionOutcome | null;
       riskScore: number | null;
       reasons: string[];
+      /** Set when an ALLOW decision has passed its validity window (INN-51). */
+      expiredAt?: number;
     };
 
 /**
  * When a request has any emergency grant (INN-41), the grant alone governs
  * it: authorised only while a grant is live, refused after expiry or
- * revocation. Otherwise an ALLOW decision authorises the view. Anything else
- * is denied, with the decision's outcome and reasons for the UI.
+ * revocation. Otherwise an ALLOW decision authorises the view for
+ * `ALLOW_VALIDITY_MS` after it was made (INN-51). Anything else is denied,
+ * with the decision's outcome and reasons for the UI.
  */
 export async function resolveViewAuthorisation(
   db: DatabaseReader,
@@ -64,7 +68,20 @@ export async function resolveViewAuthorisation(
   }
 
   if (decision?.outcome === "ALLOW") {
-    return { isAuthorised: true, grantedBy: "decision" };
+    if (isAllowExpired(decision.decidedAt, now)) {
+      return {
+        isAuthorised: false,
+        outcome: decision.outcome,
+        riskScore: decision.riskScore,
+        reasons: [ALLOW_EXPIRED_REASON],
+        expiredAt: allowedUntil(decision.decidedAt),
+      };
+    }
+    return {
+      isAuthorised: true,
+      grantedBy: "decision",
+      allowedUntil: allowedUntil(decision.decidedAt),
+    };
   }
 
   return {

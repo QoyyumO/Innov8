@@ -6,6 +6,7 @@ import { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
 import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
@@ -27,7 +28,20 @@ type AuthorisedSummaryProps = {
   /** Own, single-patient, BLOCK or VERIFY request without a live grant. */
   canUseBreakGlass: boolean;
   hasEmergencyGrant: boolean;
+  /** ALLOW only: when the decision stops releasing records (INN-51). */
+  allowedUntil?: number;
 };
+
+function RequestAgainLink({ publicId }: { publicId: string }) {
+  return (
+    <Link
+      href={`/requests/new?publicId=${encodeURIComponent(publicId)}`}
+      className="inline-block text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+    >
+      Request access again
+    </Link>
+  );
+}
 
 function BreakGlassLink({ requestId, publicId }: { requestId: string; publicId: string }) {
   return (
@@ -82,8 +96,15 @@ export function AuthorisedSummary({
   outcome,
   canUseBreakGlass,
   hasEmergencyGrant,
+  allowedUntil,
 }: AuthorisedSummaryProps) {
   const { sessionToken } = useAuth();
+  const now = useNow();
+  const isAllowExpired =
+    outcome === "ALLOW" &&
+    !hasEmergencyGrant &&
+    allowedUntil !== undefined &&
+    allowedUntil <= now;
   const viewAuthorisedSummary = useMutation(api.records.viewAuthorisedSummary);
   const [result, setResult] = useState<ViewResult | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +127,19 @@ export function AuthorisedSummary({
     }
   };
 
+  if (result === undefined && isAllowExpired) {
+    return (
+      <div className="space-y-3">
+        <Alert
+          variant="warning"
+          title="Allowed access has expired"
+          message={`Access to ${publicId} ended ${formatRequestTime(allowedUntil)}. Request access again to open the records.`}
+        />
+        <RequestAgainLink publicId={publicId} />
+      </div>
+    );
+  }
+
   if (result === undefined) {
     return (
       <div className="space-y-4">
@@ -116,7 +150,9 @@ export function AuthorisedSummary({
           {hasEmergencyGrant
             ? "Break-glass access covers this request while the grant is active. Opening the records releases only the sections on the request and records the view in the audit trail."
             : outcome === "ALLOW"
-              ? "Access was allowed. Opening the records releases only the sections you requested, from the facility that holds them, and records the view in the audit trail."
+              ? `Access was allowed${
+                  allowedUntil !== undefined ? ` until ${formatRequestTime(allowedUntil)}` : ""
+                }. Opening the records releases only the sections you requested, from the facility that holds them, and records the view in the audit trail.`
               : "Access was not allowed. No clinical content is released unless an active emergency grant covers this request."}
         </p>
         <Button onClick={handleView} disabled={isLoading || !sessionToken}>
@@ -134,6 +170,19 @@ export function AuthorisedSummary({
         title="Not available"
         message="Only the clinician who made this request can open its records."
       />
+    );
+  }
+
+  if (result.status === "denied" && result.expiredAt !== undefined) {
+    return (
+      <div className="space-y-3">
+        <Alert
+          variant="warning"
+          title="Allowed access has expired"
+          message={`Access to ${publicId} ended ${formatRequestTime(result.expiredAt)}. No clinical content was released, and the attempt was recorded in the audit trail.`}
+        />
+        <RequestAgainLink publicId={publicId} />
+      </div>
     );
   }
 
@@ -176,9 +225,15 @@ export function AuthorisedSummary({
         />
       )}
 
+      {result.allowedUntil !== undefined && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Allowed until {formatRequestTime(result.allowedUntil)}. After that, request access again.
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <Badge color="info" size="sm">
-          Source: {result.facility.name}
+          Holding facility: {result.facility.name}
         </Badge>
         <Badge color="light" size="sm">
           {result.publicId}

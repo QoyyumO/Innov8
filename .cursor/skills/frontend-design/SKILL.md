@@ -35,4 +35,4 @@ Implement working UI that matches **this repo’s** healthcare access-layer look
 - Dump clinical fields on search; discovery is identity + existence only
 - Build SIMS/school UI or extra EMR screens outside the current ticket
 
-Match surrounding dashboards (`DoctorDashboard`, `SecurityDashboard`, account settings) so new screens feel like the same product.
+Match surrounding dashboards (`ClinicianDashboard`, `SecurityDashboard`, account settings) so new screens feel like the same product.

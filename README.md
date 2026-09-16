@@ -67,13 +67,13 @@ Track C demo steps (see `AGENTS.md`):
 | 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
 | 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW |
-| 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed` |
+| 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed`. Allowed access lasts **24 hours** from the decision; after that the request page shows **Request access again**, and any attempt to open the records is refused and audited as `AccessExpired` |
 | 6. Harvest BLOCK + alert | Done — **Simulate bulk harvest (500 records)** on `/requests` calls `simulateBulkHarvest` (the server fixes the count) → BLOCK 94; every BLOCK raises a high-severity alert (`SecurityAlertRaised` audit); security officers and admins review, acknowledge, and close alerts on `/security` |
 | 7. Break-glass | Done — `/emergency` (or **Use break-glass** on a blocked or challenged request): a clinician gives a written justification and confirms; the server grants 15 minutes of access (the client cannot choose the length), raises a medium alert, and audits `EmergencyGranted`. Records open on the request page while the grant is live; it ends by scheduled expiry (`EmergencyExpired`) or when the holder or a security officer ends it early (`EmergencyRevoked`) |
 | Audit trail | Done — `/audit` lists audit events newest first, 25 at a time, with an action filter. Clinicians and patients see only their own activity; security officers and admins see everyone's and can open one person's trail. Read-only: nothing edits or deletes audit rows |
-| Security dashboards | Partly — the security dashboard shows the live open-alert queue; its metric cards and the other dashboards are still dummy (INN-43) |
+| Live dashboards + facilities | Done — every role dashboard reads live, bounded data. Clinicians (doctor, nurse, pharmacist, laboratory) see their requests today by outcome, last decision, latest blocked harvest, active break-glass, and recent requests. Security officers see open alerts by severity, blocks today, active break-glass, audit volume today, the live alert queue, and the latest decisions; admins see the same summary plus facilities. `/facilities` lists the participating hospitals. "Today" means since midnight in Lagos |
 
-Role dashboards still show **dummy** numbers. The sidebar link for `/facilities` 404s until INN-43 lands.
+No dashboard uses dummy data. The patient dashboard's access history is still to come (INN-46).
 
 ## Seed synthetic data
 
@@ -131,7 +131,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 
 ## Repo map
 
-- `src/app/(authenticated)/` — dashboard, `patients/`, `requests/`, `emergency/`, `security/`, `audit/`, `account-settings/`; shared labels in `_components/accessLabels.ts`, `alertLabels.ts`, `emergencyLabels.ts`, and `auditLabels.ts`
+- `src/app/(authenticated)/` — dashboard, `patients/`, `requests/`, `emergency/`, `security/`, `audit/`, `facilities/`, `account-settings/`; shared labels in `_components/accessLabels.ts`, `alertLabels.ts`, `emergencyLabels.ts`, and `auditLabels.ts`
 - `src/app/(not-authenticated)/` — `login/`, `forgot-password/`, `reset-password/`, `unauthorized/`
 - `src/hooks/useAuth.ts` — how pages pass the session token to Convex
 - `convex/schema.ts` — access-layer tables
@@ -142,6 +142,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/emergency.ts` — break-glass grant, active-grant lookup, early revoke, scheduled expiry
 - `convex/alerts.ts` — security alert queue, acknowledge, close
 - `convex/audit.ts` — read-only, role-scoped audit trail
+- `convex/dashboards.ts` — bounded live dashboard summaries and the facility list
 - `convex/seed.ts` — internal §14 seed mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups

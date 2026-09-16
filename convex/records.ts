@@ -27,6 +27,8 @@ const viewResultValidator = v.union(
     status: v.literal("authorised"),
     grantedBy: v.union(v.literal("decision"), v.literal("emergency")),
     emergencyExpiresAt: v.optional(v.number()),
+    /** When an ALLOW decision stops releasing records (INN-51). */
+    allowedUntil: v.optional(v.number()),
     publicId: v.string(),
     facility: facilityRefValidator,
     recordTypes: v.array(recordType),
@@ -43,14 +45,17 @@ const viewResultValidator = v.union(
     outcome: v.union(v.null(), decisionOutcome),
     riskScore: v.union(v.null(), v.number()),
     reasons: v.array(v.string()),
+    /** Set when the request was allowed but its window has passed. */
+    expiredAt: v.optional(v.number()),
   }),
 );
 
 /**
  * Demo step 5: release only the requested record types from the target
- * facility, and only to the clinician who made an allowed request (or holds
- * a live emergency grant on it). A mutation, because every successful view
- * writes `RecordViewed`.
+ * facility, and only to the clinician who made an allowed request that is
+ * still inside its window (or holds a live emergency grant on it). A
+ * mutation, because every successful view writes `RecordViewed` and every
+ * attempt on an expired ALLOW writes `AccessExpired`.
  */
 export const viewAuthorisedSummary = mutation({
   args: {
@@ -69,20 +74,35 @@ export const viewAuthorisedSummary = mutation({
 
     const now = Date.now();
     const authorisation = await resolveViewAuthorisation(ctx.db, request, now);
+    const patient = await ctx.db.get(request.patientId);
+    const publicId = patient?.publicId ?? "Unknown patient";
+
     if (!authorisation.isAuthorised) {
+      if (authorisation.expiredAt !== undefined) {
+        await appendAuditEvent(ctx.db, {
+          actorId: user._id,
+          sessionId: session._id,
+          action: "AccessExpired",
+          entity: "accessRequests",
+          entityId: request._id,
+          details: {
+            patientPublicId: publicId,
+            recordTypes: request.recordTypes,
+            expiredAt: authorisation.expiredAt,
+          },
+          createdAt: now,
+        });
+      }
       return {
         status: "denied" as const,
         outcome: authorisation.outcome,
         riskScore: authorisation.riskScore,
         reasons: authorisation.reasons,
+        expiredAt: authorisation.expiredAt,
       };
     }
 
-    const [patient, facility] = await Promise.all([
-      ctx.db.get(request.patientId),
-      ctx.db.get(request.targetFacilityId),
-    ]);
-    const publicId = patient?.publicId ?? "Unknown patient";
+    const facility = await ctx.db.get(request.targetFacilityId);
     const facilityRef = facility
       ? { code: facility.code, name: facility.name }
       : { code: "UNKNOWN", name: "Unknown facility" };
@@ -119,6 +139,8 @@ export const viewAuthorisedSummary = mutation({
         authorisation.grantedBy === "emergency"
           ? authorisation.emergencyExpiresAt
           : undefined,
+      allowedUntil:
+        authorisation.grantedBy === "decision" ? authorisation.allowedUntil : undefined,
       publicId,
       facility: facilityRef,
       recordTypes: request.recordTypes,
