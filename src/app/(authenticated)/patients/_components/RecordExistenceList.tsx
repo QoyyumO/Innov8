@@ -1,17 +1,11 @@
 import Badge from "@/components/ui/badge/Badge";
-import { RecordType } from "../../../../../convex/lib/domain";
+import type { RecordType } from "../../../../../convex/lib/domain";
+import { RECORD_TYPE_LABELS } from "../../_components/accessLabels";
 
 export type FacilityRecordExistence = {
   code: string;
   name: string;
   recordTypes: RecordType[];
-};
-
-const RECORD_TYPE_LABELS: Record<RecordType, string> = {
-  medical_summary: "Medical summary",
-  allergies: "Allergies",
-  medications: "Medications",
-  diagnoses: "Diagnoses",
 };
 
 export function RecordExistenceList({

@@ -66,13 +66,13 @@ Track C demo steps (see `AGENTS.md`):
 | --- | --- |
 | 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
-| 3–4. Purpose request + risk decision | Partly — risk scoring is done (INN-38: `scoreAccessRequest`, 8 → ALLOW / 94 → BLOCK, reasons for every factor); the request API and UI that call it are INN-37 |
-| 5. Authorised summary | Not yet — INN-40 |
-| 6. Harvest BLOCK + alert | Not yet — INN-39 |
-| 7. Break-glass | Not yet — INN-41 |
-| Audit trail / security dashboards | Not yet — INN-42, INN-43 |
+| 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW |
+| 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed` |
+| 6. Harvest BLOCK + alert | Done — **Simulate bulk harvest (500 records)** on `/requests` calls `simulateBulkHarvest` (the server fixes the count) → BLOCK 94; every BLOCK raises a high-severity alert (`SecurityAlertRaised` audit); security officers and admins review, acknowledge, and close alerts on `/security` |
+| 7. Break-glass | Done — `/emergency` (or **Use break-glass** on a blocked or challenged request): a clinician gives a written justification and confirms; the server grants 15 minutes of access (the client cannot choose the length), raises a medium alert, and audits `EmergencyGranted`. Records open on the request page while the grant is live; it ends by scheduled expiry (`EmergencyExpired`) or when the holder or a security officer ends it early (`EmergencyRevoked`) |
+| Audit trail / security dashboards | Partly — the security dashboard shows the live open-alert queue; its metric cards and the other dashboards are still dummy (INN-43); audit trail UI is INN-42 |
 
-Role dashboards still show **dummy** numbers. Sidebar links for `/requests`, `/emergency`, `/audit`, `/security`, and `/facilities` 404 until their tickets land.
+Role dashboards still show **dummy** numbers. Sidebar links for `/audit` and `/facilities` 404 until their tickets land.
 
 ## Seed synthetic data
 
@@ -130,16 +130,20 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 
 ## Repo map
 
-- `src/app/(authenticated)/` — dashboard, `patients/`, `account-settings/`
+- `src/app/(authenticated)/` — dashboard, `patients/`, `requests/`, `emergency/`, `security/`, `account-settings/`; shared labels in `_components/accessLabels.ts`, `alertLabels.ts`, and `emergencyLabels.ts`
 - `src/app/(not-authenticated)/` — `login/`, `forgot-password/`, `reset-password/`, `unauthorized/`
 - `src/hooks/useAuth.ts` — how pages pass the session token to Convex
 - `convex/schema.ts` — access-layer tables
 - `convex/auth.ts` — login, session, password reset (`innov8_session_token`)
 - `convex/patients.ts` — patient search + existence-only discovery
+- `convex/accessRequests.ts` — create / list / view purpose-based access requests and decisions
+- `convex/records.ts` — release authorised clinical sections after ALLOW (or a live emergency grant)
+- `convex/emergency.ts` — break-glass grant, active-grant lookup, early revoke, scheduled expiry
+- `convex/alerts.ts` — security alert queue, acknowledge, close
 - `convex/seed.ts` — internal §14 seed mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
-- `convex/lib/services/` — domain services (`auditLogService`, `patientDiscoveryService`, `riskScoringService`)
+- `convex/lib/services/` — domain services (`accessControlService`, `alertService`, `auditLogService`, `emergencyAccessService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)
 - `convex/*.test.ts` — backend tests
 - `docs/features/` — one `PLAN.md` per ticket ([index](docs/README.md))
 - `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)

@@ -1,5 +1,7 @@
 import { v } from "convex/values";
+import { DatabaseReader } from "../_generated/server";
 import { PERMISSION_DENIED_MESSAGE } from "./authConstants";
+import { requireSession } from "./session";
 
 export const userRole = v.union(
   v.literal("doctor"),
@@ -45,4 +47,16 @@ export function requireRole(
   if (!isAllowed) {
     throw new Error(PERMISSION_DENIED_MESSAGE);
   }
+}
+
+/**
+ * Session plus clinician role. Used by patient search and access requests.
+ */
+export async function requireClinicianSession(
+  ctx: { db: DatabaseReader },
+  token: string | undefined,
+) {
+  const sessionContext = await requireSession(ctx, token);
+  requireRole(sessionContext.user, CLINICIAN_ROLES);
+  return sessionContext;
 }

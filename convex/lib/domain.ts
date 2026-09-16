@@ -98,6 +98,7 @@ export const auditAction = v.union(
   v.literal("RecordViewed"),
   v.literal("EmergencyGranted"),
   v.literal("EmergencyExpired"),
+  v.literal("EmergencyRevoked"),
   v.literal("SecurityAlertRaised"),
 );
 

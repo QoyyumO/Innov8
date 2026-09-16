@@ -153,7 +153,9 @@ export default defineSchema({
     revokedAt: v.optional(v.number()),
   })
     .index("by_actorId", ["actorId"])
+    .index("by_actorId_and_patientId", ["actorId", "patientId"])
     .index("by_patientId", ["patientId"])
+    .index("by_requestId", ["requestId"])
     .index("by_expiresAt", ["expiresAt"]),
 
   securityAlerts: defineTable({
