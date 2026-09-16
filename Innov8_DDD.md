@@ -22,10 +22,11 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-35** — `AuditLogService` (`convex/lib/services/auditLogService.ts`), `requireSession`, `requireRole`. Login audits `UserLoggedIn`.
 - **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched`; discovery returns identity + record existence only.
 - **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min; suspended accounts rejected on every call.
+- **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 
 ## Next (live demo path)
 
-Do not keep dummy dashboards as the only UI. Remaining path: purpose request (INN-37) → risk ALLOW/BLOCK (INN-38) → authorised view (INN-40) → harvest block + alert (INN-39) → break-glass (INN-41) → audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+Do not keep dummy dashboards as the only UI. Remaining path: purpose request using the INN-38 risk score (INN-37) → authorised view (INN-40) → harvest block + alert (INN-39) → break-glass (INN-41) → audit UI (INN-42) → live dashboards (INN-43). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
@@ -47,7 +48,7 @@ Do not keep dummy dashboards as the only UI. Remaining path: purpose request (IN
 - **FullName**: `{ firstName, middleName?, lastName }`
 - **Purpose**: `treatment` | `emergency` | `referral` | `follow-up` | `administrative`
 - **RecordType**: `medical_summary` | `allergies` | `medications` | `diagnoses`
-- **RiskBreakdown**: `{ score: 0-100, reasons: string[] }`
+- **RiskBreakdown**: `{ score: 0-100, outcome, reasons: string[], factors: { role, purpose, sameHospital, recordCount } }` — ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80
 - **DecisionOutcome**: `ALLOW` | `VERIFY` | `BLOCK`
 
 ## Aggregates
@@ -65,7 +66,7 @@ Do not keep dummy dashboards as the only UI. Remaining path: purpose request (IN
 
 - **PatientDiscoveryService** — identify patient; disclose existence, not contents — *implemented (INN-36)*
 - **AccessControlService** — RBAC + hospital, purpose, relationship — *`requireSession` / `requireRole` done (INN-35); request checks in INN-37*
-- **RiskScoringService** — explainable score; treatment + known relationship ≈ 8; 500-record harvest ≈ 94 — *INN-38*
+- **RiskScoringService** — explainable score; treatment + known relationship ≈ 8; 500-record harvest ≈ 94 — *implemented (INN-38); wired into requests by INN-37*
 - **RecordExchangeService** — fetch only permitted fields after ALLOW — *INN-40*
 - **EmergencyAccessService** — break-glass grant/revoke — *INN-41*
 - **AlertService** — notify security on BLOCK / emergency — *INN-39*

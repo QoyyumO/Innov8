@@ -66,7 +66,7 @@ Track C demo steps (see `AGENTS.md`):
 | --- | --- |
 | 1. Authenticate | Done — session login, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
-| 3–4. Purpose request + risk decision | Not yet — INN-37 (request) and INN-38 (risk scoring) |
+| 3–4. Purpose request + risk decision | Partly — risk scoring is done (INN-38: `scoreAccessRequest`, 8 → ALLOW / 94 → BLOCK, reasons for every factor); the request API and UI that call it are INN-37 |
 | 5. Authorised summary | Not yet — INN-40 |
 | 6. Harvest BLOCK + alert | Not yet — INN-39 |
 | 7. Break-glass | Not yet — INN-41 |
@@ -139,7 +139,7 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/seed.ts` — internal §14 seed mutations
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
-- `convex/lib/services/` — domain services (`auditLogService`, `patientDiscoveryService`)
+- `convex/lib/services/` — domain services (`auditLogService`, `patientDiscoveryService`, `riskScoringService`)
 - `convex/*.test.ts` — backend tests
 - `docs/features/` — one `PLAN.md` per ticket ([index](docs/README.md))
 - `Innov8_DDD.md` — domain map (do not invent SIMS/school entities)

@@ -25,6 +25,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 - `authConstants.ts`, `searchLimits.ts`, `password.ts`, `demoUsers.ts`, `demoIds.ts`, `synthetic.ts`
 - `services/auditLogService.ts` — `appendAuditEvent`, the only way to write `auditEvents`
 - `services/patientDiscoveryService.ts` — indexed patient lookup + record existence
+- `services/riskScoringService.ts` — pure `scoreAccessRequest` (no db access); returns `score`, `outcome`, `reasons`, `factors` for `accessDecisions`
 
 ## Writing a new domain function
 

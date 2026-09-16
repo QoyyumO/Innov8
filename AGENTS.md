@@ -88,6 +88,7 @@ On `main` (plans in `docs/features/`, index in `docs/README.md`):
 - **INN-36** patient discovery — `convex/patients.ts`, `/patients`, `/patients/[publicId]`. Demo step 2 works: identity + record existence only, audited.
 - **INN-47** password reset hardening — hashed single-use reset tokens (15 min), issued via `internal.auth.issuePasswordResetToken` (no email yet). Sessions last 30 minutes; suspended accounts are rejected everywhere.
 - **INN-48** clean-checkout build — no `prepare` script; `type-check` runs `next typegen` first.
+- **INN-38** risk scoring — pure `scoreAccessRequest` in `convex/lib/services/riskScoringService.ts`. Additive, explainable points (role, purpose, cross-facility, volume vs baseline, after-hours for non-clinical purposes) plus a harvest rule (≥ 500 records → at least 94). ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80. Ibrahim treatment → 8; harvest → 94. Returns `reasons` and an `accessDecisions.factors` snapshot; the caller persists the decision.
 
 Tests: `npm test` (vitest + convex-test, `convex/**/*.test.ts`). Run it with `npm run check` before every PR.
 
@@ -95,11 +96,10 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 
 **Next (demo steps 3–7), in dependency order:**
 
-1. [INN-38](https://linear.app/innov8-health/issue/INN-38) risk scoring service (ALLOW ~8 / harvest BLOCK ~94) — claimed, unblocked.
-2. [INN-37](https://linear.app/innov8-health/issue/INN-37) purpose-based access request — waits on INN-38.
-3. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
-4. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security`, [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — wait on INN-37.
-5. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass (waits on INN-40), [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (waits on INN-37, INN-39).
+1. [INN-37](https://linear.app/innov8-health/issue/INN-37) purpose-based access request — unblocked; call `scoreAccessRequest` and persist its result.
+2. [INN-42](https://linear.app/innov8-health/issue/INN-42) audit trail + `/audit` — unblocked.
+3. [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK + alerts + `/security`, [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised summary — wait on INN-37.
+4. [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass (waits on INN-40), [INN-43](https://linear.app/innov8-health/issue/INN-43) live dashboards (waits on INN-37, INN-39).
 
 Should-have after the demo works: INN-44 (VERIFY step-up), INN-45 (consent), INN-46 (patient portal). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 
