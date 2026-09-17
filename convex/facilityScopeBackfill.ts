@@ -7,14 +7,15 @@ import { linkAuditEventFacilities } from "./lib/services/auditFacilityService";
 /**
  * One-time backfill for facility-scoped admin views (INN-52).
  *
- * Alerts and audit events written before INN-52 have no rows in
- * `alertFacilities` / `auditEventFacilities`. Run once per deployment:
+ * Alerts, grants, and audit events written before INN-52 have no facility
+ * index. Run once per deployment:
  *
  *   npx convex run facilityScopeBackfill:start
  *
  * Each batch schedules the next; alerts are linked first because audit rows
- * about alerts take their facilities from `alertFacilities`. Re-running is
- * safe: items that already have rows are skipped.
+ * about alerts take their facilities from `alertFacilities`. Then grants get
+ * source/target copied from their request. Re-running is safe: items that
+ * already have rows or facility ids are skipped.
  */
 
 const ALERT_BATCH_SIZE = 100;
@@ -66,11 +67,49 @@ export const backfillAlertFacilities = internalMutation({
     }
 
     if (batch.isDone) {
-      await ctx.scheduler.runAfter(0, internal.facilityScopeBackfill.backfillAuditEventFacilities, {
+      await ctx.scheduler.runAfter(0, internal.facilityScopeBackfill.backfillGrantFacilities, {
         cursor: null,
       });
     } else {
       await ctx.scheduler.runAfter(0, internal.facilityScopeBackfill.backfillAlertFacilities, {
+        cursor: batch.continueCursor,
+      });
+    }
+    return { processed: batch.page.length, linked, isDone: batch.isDone };
+  },
+});
+
+export const backfillGrantFacilities = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: batchResult,
+  handler: async (ctx, args) => {
+    const batch = await ctx.db
+      .query("emergencyAccess")
+      .withIndex("by_expiresAt")
+      .paginate({ numItems: AUDIT_BATCH_SIZE, cursor: args.cursor });
+
+    let linked = 0;
+    for (const grant of batch.page) {
+      if (grant.sourceFacilityId !== undefined && grant.targetFacilityId !== undefined) {
+        continue;
+      }
+      const request = await ctx.db.get(grant.requestId);
+      if (!request) {
+        continue;
+      }
+      await ctx.db.patch(grant._id, {
+        sourceFacilityId: request.sourceFacilityId,
+        targetFacilityId: request.targetFacilityId,
+      });
+      linked += 1;
+    }
+
+    if (batch.isDone) {
+      await ctx.scheduler.runAfter(0, internal.facilityScopeBackfill.backfillAuditEventFacilities, {
+        cursor: null,
+      });
+    } else {
+      await ctx.scheduler.runAfter(0, internal.facilityScopeBackfill.backfillGrantFacilities, {
         cursor: batch.continueCursor,
       });
     }

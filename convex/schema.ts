@@ -158,12 +158,17 @@ export default defineSchema({
     grantedAt: v.number(),
     expiresAt: v.number(),
     revokedAt: v.optional(v.number()),
+    // INN-52: copied from the request so facility dashboards can index live grants.
+    sourceFacilityId: v.optional(v.id("facilities")),
+    targetFacilityId: v.optional(v.id("facilities")),
   })
     .index("by_actorId", ["actorId"])
     .index("by_actorId_and_patientId", ["actorId", "patientId"])
     .index("by_patientId", ["patientId"])
     .index("by_requestId", ["requestId"])
-    .index("by_expiresAt", ["expiresAt"]),
+    .index("by_expiresAt", ["expiresAt"])
+    .index("by_sourceFacilityId_expiresAt", ["sourceFacilityId", "expiresAt"])
+    .index("by_targetFacilityId_expiresAt", ["targetFacilityId", "expiresAt"]),
 
   securityAlerts: defineTable({
     decisionId: v.optional(v.id("accessDecisions")),

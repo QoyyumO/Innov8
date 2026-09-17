@@ -391,6 +391,29 @@ describe("hospital admin scope (INN-52)", () => {
     expect(orphanDetail).toBeNull();
   });
 
+  test("a colliding hospital name does not guess a facility", async () => {
+    const testBackend = createTest();
+    await seedWorld(testBackend);
+    await testBackend.run(async (ctx) => {
+      await ctx.db.insert("facilities", {
+        code: "FMC-ABJ-DUP",
+        name: "FMC Abuja",
+        city: "Abuja",
+        status: "active",
+      });
+    });
+    await addUser(testBackend, "admin-dup@fmc.abuja.ng", ["hospital_admin"], "FMC Abuja");
+    const duplicateToken = await loginUser(testBackend, "admin-dup@fmc.abuja.ng");
+
+    expect(await listAlertRequestIds(testBackend, duplicateToken)).toEqual([]);
+    const dashboard = await testBackend.query(api.dashboards.getSecurityDashboard, {
+      token: duplicateToken,
+      since: startOfLagosDay(Date.now()),
+    });
+    expect(dashboard?.activeGrants).toEqual([]);
+    expect(dashboard?.recentDecisions).toEqual([]);
+  });
+
   test("a linked facilityId wins over the hospital name", async () => {
     const testBackend = createTest();
     const facilityIds = await seedWorld(testBackend);

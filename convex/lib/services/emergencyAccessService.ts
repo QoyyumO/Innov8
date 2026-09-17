@@ -180,6 +180,8 @@ export async function grantBreakGlass(
     justification,
     grantedAt: now,
     expiresAt,
+    sourceFacilityId: target.sourceFacilityId,
+    targetFacilityId: target.targetFacility._id,
   });
 
   await appendAuditEvent(db, {

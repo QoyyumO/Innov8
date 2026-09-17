@@ -23,11 +23,14 @@ export async function resolveUserFacilityId(
   if (user.facilityId) {
     return user.facilityId;
   }
-  const facility = await db
+  const matches = await db
     .query("facilities")
     .withIndex("by_name", (query) => query.eq("name", user.hospital))
-    .first();
-  return facility?._id ?? null;
+    .take(2);
+  if (matches.length !== 1) {
+    return null;
+  }
+  return matches[0]._id;
 }
 
 export type ReviewerScope =

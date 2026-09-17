@@ -4,7 +4,7 @@
 
 ## Context
 
-Urgent security bug (Adebare / code review). `requestPasswordReset` used to return the hardcoded literal `"dev-reset-token"` in the mutation response, and `resetPassword` accepted that value for any email. Anyone could take over any account, including users added after the demo seed. Related gap: `requireSessionUser` and `getCurrentUser` never re-checked `accountStatus`, so a suspended user's session stayed valid until TTL. Session TTL is now **30 minutes**. There is no email provider; demo operators issue a token via the internal Convex mutation (CLI), not logs or the public API.
+Urgent security bug (Eno / code review). `requestPasswordReset` used to return the hardcoded literal `"dev-reset-token"` in the mutation response, and `resetPassword` accepted that value for any email. Anyone could take over any account, including users added after the demo seed. Related gap: `requireSessionUser` and `getCurrentUser` never re-checked `accountStatus`, so a suspended user's session stayed valid until TTL. Session TTL is now **30 minutes**. There is no email provider; demo operators issue a token via the internal Convex mutation (CLI), not logs or the public API.
 
 ---
 

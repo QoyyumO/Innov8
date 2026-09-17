@@ -4,7 +4,6 @@ import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage } from "./lib/authConstants";
 import {
   ACTIVE_GRANT_LIMIT,
-  ACTIVE_GRANT_SCAN_LIMIT,
   AUDIT_TODAY_COUNT_LIMIT,
   clampDashboardSince,
   FACILITY_LIST_LIMIT,
@@ -16,7 +15,7 @@ import {
 import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
-import { requestFacilityIds, resolveReviewerScope } from "./lib/facilityScope";
+import { resolveReviewerScope } from "./lib/facilityScope";
 import { requireSession } from "./lib/session";
 import { isLiveGrant } from "./lib/services/emergencyAccessService";
 
@@ -305,6 +304,40 @@ async function listFacilityRequests(
   };
 }
 
+/**
+ * Live grants to or from one facility (INN-52), via source/target indexes
+ * copied onto the grant at insert time.
+ */
+async function listFacilityLiveGrants(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities">,
+  now: number,
+): Promise<Doc<"emergencyAccess">[]> {
+  const [outgoing, incoming] = await Promise.all([
+    ctx.db
+      .query("emergencyAccess")
+      .withIndex("by_sourceFacilityId_expiresAt", (query) =>
+        query.eq("sourceFacilityId", facilityId).gt("expiresAt", now),
+      )
+      .take(ACTIVE_GRANT_LIMIT + 1),
+    ctx.db
+      .query("emergencyAccess")
+      .withIndex("by_targetFacilityId_expiresAt", (query) =>
+        query.eq("targetFacilityId", facilityId).gt("expiresAt", now),
+      )
+      .take(ACTIVE_GRANT_LIMIT + 1),
+  ]);
+  const byId = new Map<Id<"emergencyAccess">, Doc<"emergencyAccess">>();
+  for (const grant of [...outgoing, ...incoming]) {
+    if (isLiveGrant(grant, now)) {
+      byId.set(grant._id, grant);
+    }
+  }
+  return [...byId.values()]
+    .sort((left, right) => left.expiresAt - right.expiresAt)
+    .slice(0, ACTIVE_GRANT_LIMIT);
+}
+
 /** Hospital-admin dashboard: the same summary, limited to one facility (INN-52). */
 async function buildFacilitySecurityDashboard(
   ctx: QueryCtx,
@@ -324,7 +357,7 @@ async function buildFacilitySecurityDashboard(
   }
   const load = createLoader(ctx);
 
-  const [openLinks, auditToday, expiringGrants, todayRequests, newestRequests] =
+  const [openLinks, auditToday, liveGrants, todayRequests, newestRequests] =
     await Promise.all([
       ctx.db
         .query("alertFacilities")
@@ -339,10 +372,7 @@ async function buildFacilitySecurityDashboard(
           query.eq("facilityId", facilityId).gte("createdAt", since),
         )
         .take(AUDIT_TODAY_COUNT_LIMIT + 1),
-      ctx.db
-        .query("emergencyAccess")
-        .withIndex("by_expiresAt", (query) => query.gt("expiresAt", now))
-        .take(ACTIVE_GRANT_SCAN_LIMIT),
+      listFacilityLiveGrants(ctx, facilityId, now),
       listFacilityRequests(ctx, facilityId, { since, limit: TODAY_COUNT_LIMIT }),
       listFacilityRequests(ctx, facilityId, { limit: 2 * RECENT_REQUEST_LIMIT }),
     ]);
@@ -361,17 +391,6 @@ async function buildFacilitySecurityDashboard(
   const blockedCount = todayDecisions.filter(
     (decision) => decision?.outcome === "BLOCK",
   ).length;
-
-  const liveGrants = [];
-  for (const grant of expiringGrants) {
-    if (liveGrants.length >= ACTIVE_GRANT_LIMIT) {
-      break;
-    }
-    const request = isLiveGrant(grant, now) ? await ctx.db.get(grant.requestId) : null;
-    if (request && requestFacilityIds(request).includes(facilityId)) {
-      liveGrants.push(grant);
-    }
-  }
 
   const newestDecisions = await Promise.all(
     newestRequests.requests.map((request) => findDecision(ctx, request._id)),

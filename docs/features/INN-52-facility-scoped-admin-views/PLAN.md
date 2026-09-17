@@ -47,7 +47,7 @@ Filtering after an unscoped `.paginate()` would return short or empty pages. Wit
 
 Requests to or from the facility are read from the two new `accessRequests` indexes (each capped) and merged.
 - **Blocked today:** counts BLOCK decisions on today's requests.
-- **Active break-glass:** scans up to 100 soonest-expiring live grants and keeps the ones on in-scope requests.
+- **Active break-glass:** live grants to or from the facility, via `emergencyAccess` indexes `by_sourceFacilityId_expiresAt` / `by_targetFacilityId_expiresAt` (facility ids copied onto the grant at insert; backfill patches older rows).
 
 ---
 

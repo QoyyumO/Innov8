@@ -71,9 +71,13 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title="Facilities"
+            title="Exchange facilities"
             value={facilities ? String(facilities.length) : LOADING_VALUE}
-            description={facilities?.map((facility) => facility.city).join(" · ")}
+            description={
+              isFacilityScoped
+                ? "Participating hospitals (exchange-wide)"
+                : facilities?.map((facility) => facility.city).join(" · ")
+            }
             icon={<GroupIcon className="h-6 w-6 text-brand-500" />}
           />
           <MetricCard
@@ -117,8 +121,12 @@ export default function AdminDashboard() {
         </div>
 
         <ComponentCard
-          title="Participating facilities"
-          desc="Live exchange membership."
+          title="Exchange membership"
+          desc={
+            isFacilityScoped
+              ? `All participating hospitals. Alerts, blocks, audit volume, and decisions below are limited to ${scopeLabel}.`
+              : "Live exchange membership."
+          }
         >
           <FacilitiesTable facilities={facilities} />
         </ComponentCard>
