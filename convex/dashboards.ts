@@ -19,7 +19,10 @@ import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requirePatientSession, r
 import { resolveReviewerScope } from "./lib/facilityScope";
 import { FacilityTotals, getFacilityTotals } from "./lib/facilityStats";
 import { requireSession } from "./lib/session";
-import { isLiveGrant } from "./lib/services/emergencyAccessService";
+import {
+  findLatestGrantForRequest,
+  isLiveGrant,
+} from "./lib/services/emergencyAccessService";
 
 /**
  * Live dashboards (INN-43). Every read is bounded by an index range or a
@@ -176,10 +179,7 @@ async function toDashboardRow(
     load(request.patientId),
     load(request.actorId),
     load(request.targetFacilityId),
-    ctx.db
-      .query("emergencyAccess")
-      .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
-      .first(),
+    findLatestGrantForRequest(ctx.db, request._id),
   ]);
   return {
     requestId: request._id,

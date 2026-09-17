@@ -109,7 +109,9 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 - **INN-46** patient portal — `getPatientDashboard`: session user must have role `patient` and an explicit `users.patientId` (seeded Chioma → PAT-002391). Returns identity, home facility, and bounded `auditEvents` indexed by `patientId`. Clinician tokens get `null`. UI replaces the dummy patient dashboard. No patient-facing consent on this ticket.
 - **INN-57** login seed — public `login` looks up the user and verifies the password only. Demo accounts come from `internal.auth.ensureDemoUsers` (called by `seedHealthcareWorkers`). Suspended or deleted demo users are not recreated by login.
 
-**Next:** [INN-57](https://linear.app/innov8-health/issue/INN-57) public `login` must not re-seed demo users (this branch). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
+- **INN-62** newest grant — a request can carry several break-glass grants, because a clinician may break glass again once a 15-minute grant lapses. `findLatestGrantForRequest` (`convex/lib/services/emergencyAccessService.ts`) is the one lookup for "the grant that decides right now": `by_requestId`, `.order("desc")`, `.first()`. `.first()` without an order returns the **oldest** row, so `dashboards.ts` and `accessRequests.ts` both go through the helper rather than querying inline. The break-glass badge now shows on re-granted requests.
+
+**Next:** [INN-62](https://linear.app/innov8-health/issue/INN-62) dashboards must read the newest break-glass grant, not the oldest (this branch). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 
 When a ticket changes what works, update `README.md` ("What works today"), `docs/README.md`, this section, `Innov8_DDD.md`, and `.cursor/rules/innov8-next-tasks.mdc` in the same PR.
 
