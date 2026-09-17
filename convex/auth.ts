@@ -18,7 +18,7 @@ import {
   deleteSessionByToken,
   generateSessionToken,
   publicUser,
-  requireSessionUser,
+  requireSession,
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
@@ -293,6 +293,13 @@ export const resetPassword = mutation({
     });
     await ctx.db.patch(tokenRow._id, { usedAt: Date.now() });
     await deleteAllUserSessions(ctx, user._id);
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      action: "PasswordReset",
+      entity: "users",
+      entityId: user._id,
+      details: {},
+    });
     return { success: true as const };
   },
 });
@@ -302,6 +309,15 @@ export const logout = mutation({
     token: v.string(),
   },
   handler: async (ctx, args) => {
+    const { user, session } = await requireSession(ctx, args.token);
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      sessionId: session._id,
+      action: "UserLoggedOut",
+      entity: "sessions",
+      entityId: session._id,
+      details: {},
+    });
     await deleteSessionByToken(ctx.db, args.token);
     return { success: true };
   },
@@ -328,7 +344,7 @@ export const updateProfile = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const user = await requireSessionUser(ctx.db, args.token);
+    const { user, session } = await requireSession(ctx, args.token);
     const middleName = args.profile.middleName?.trim();
 
     const profile = {
@@ -338,6 +354,14 @@ export const updateProfile = mutation({
     };
 
     await ctx.db.patch(user._id, { profile });
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      sessionId: session._id,
+      action: "ProfileUpdated",
+      entity: "users",
+      entityId: user._id,
+      details: {},
+    });
     return { success: true, profile };
   },
 });
@@ -349,7 +373,7 @@ export const changePassword = mutation({
     newPassword: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireSessionUser(ctx.db, args.token);
+    const { user, session } = await requireSession(ctx, args.token);
 
     if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
       throw new Error(
@@ -373,6 +397,14 @@ export const changePassword = mutation({
       hashedPassword: await hashPassword(args.newPassword),
     });
     await deleteOtherUserSessions(ctx, user._id, args.token);
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      sessionId: session._id,
+      action: "PasswordChanged",
+      entity: "users",
+      entityId: user._id,
+      details: {},
+    });
     return { success: true };
   },
 });

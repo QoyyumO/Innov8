@@ -235,3 +235,54 @@ describe("session account status", () => {
     expect(currentUser).toBeNull();
   });
 });
+
+describe("account mutation audit events", () => {
+  test("audits logout, profile update, password change, and password reset", async () => {
+    const testBackend = createTest();
+    const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
+
+    await testBackend.mutation(api.auth.updateProfile, {
+      token: loginResult.token,
+      profile: { firstName: "Ibrahim", lastName: "Updated" },
+    });
+    await testBackend.mutation(api.auth.changePassword, {
+      token: loginResult.token,
+      currentPassword: DEMO_PASSWORD,
+      newPassword: "changedpass1",
+    });
+    await testBackend.mutation(api.auth.logout, { token: loginResult.token });
+
+    const resetBackend = createTest();
+    await loginDemoSession(resetBackend, IBRAHIM_EMAIL);
+    const issued = await resetBackend.mutation(
+      internal.auth.issuePasswordResetToken,
+      { email: IBRAHIM_EMAIL },
+    );
+    const resetToken = issued?.resetToken ?? "";
+    await resetBackend.mutation(api.auth.resetPassword, {
+      email: IBRAHIM_EMAIL,
+      resetToken,
+      newPassword: "resetpass1",
+    });
+
+    const events = await testBackend.run((ctx) => ctx.db.query("auditEvents").collect());
+    expect(events.map((event) => event.action)).toEqual([
+      "UserLoggedIn",
+      "ProfileUpdated",
+      "PasswordChanged",
+      "UserLoggedOut",
+    ]);
+    expect(events.filter((event) => event.action === "ProfileUpdated")).toHaveLength(1);
+    expect(events.filter((event) => event.action === "PasswordChanged")).toHaveLength(1);
+    expect(events.filter((event) => event.action === "UserLoggedOut")).toHaveLength(1);
+    expect(JSON.stringify(events)).not.toContain("changedpass1");
+    expect(JSON.stringify(events)).not.toContain(loginResult.token);
+
+    const resetEvents = await resetBackend.run((ctx) => ctx.db.query("auditEvents").collect());
+    expect(resetEvents.filter((event) => event.action === "PasswordReset")).toHaveLength(1);
+    expect(JSON.stringify(resetEvents)).not.toContain(resetToken);
+    expect(
+      await resetBackend.run((ctx) => ctx.db.query("sessions").collect()),
+    ).toHaveLength(0);
+  });
+});
