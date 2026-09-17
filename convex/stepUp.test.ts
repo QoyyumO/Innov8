@@ -254,6 +254,37 @@ describe("completeVerification", () => {
     );
   });
 
+  // INN-66. This is the regression the hardening exists to prevent: when
+  // verifyPassword threw on a corrupt stored hash, the throw rolled the whole
+  // mutation back and took the failure count and its audit row with it, so a
+  // user with an unparseable hash could retry forever without accounting.
+  test("a corrupt stored password hash counts as a failure instead of rolling back", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const requestId = await createChallengedRequest(testBackend, token);
+
+    // An empty salt segment - the shape that used to throw a TypeError.
+    const ibrahim = await testBackend.query(api.auth.getCurrentUser, { token });
+    await testBackend.run(async (ctx) => {
+      const user = await ctx.db.get(ibrahim!._id);
+      const [, , iterations, , hashHex] = user!.hashedPassword.split("$");
+      await ctx.db.patch(ibrahim!._id, {
+        hashedPassword: `$pbkdf2$${iterations}$$${hashHex}`,
+      });
+    });
+
+    expect(await verify(testBackend, token, requestId, DEMO_PASSWORD)).toEqual({
+      status: "failed",
+      attemptsLeft: STEP_UP_MAX_FAILURES - 1,
+    });
+
+    // The point: both of these survived the mutation.
+    const decision = await storedDecision(testBackend, requestId);
+    expect(decision).toMatchObject({ outcome: "VERIFY", stepUpFailures: 1 });
+    expect(countOf(await auditActions(testBackend), "StepUpFailed")).toBe(1);
+  });
+
   test(`${STEP_UP_MAX_FAILURES} wrong passwords block the request and alert security`, async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
