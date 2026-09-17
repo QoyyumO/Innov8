@@ -8,6 +8,7 @@ import {
   findPatientsByQuery,
   getPatientDiscoveryByPublicId,
 } from "./lib/services/patientDiscoveryService";
+import { isSearchableQuery } from "./lib/searchLimits";
 
 const facilityRefValidator = v.object({
   code: v.string(),
@@ -45,7 +46,11 @@ export const searchPatients = mutation({
     const { user, session } = await requireClinicianSession(ctx, args.token);
     const results = await findPatientsByQuery(ctx.db, args.query);
     const trimmedQuery = args.query.trim();
-    if (trimmedQuery !== "") {
+
+    // Audit every query that reached an index, hit or miss: walking
+    // PAT-000001, PAT-000002, ... is the enumeration the trail exists to
+    // catch. Queries rejected before any lookup are not searches.
+    if (isSearchableQuery(trimmedQuery)) {
       await appendAuditEvent(ctx.db, {
         actorId: user._id,
         sessionId: session._id,

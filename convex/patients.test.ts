@@ -115,31 +115,48 @@ describe("patient discovery", () => {
     });
   });
 
-  test("name prefixes shorter than 3 characters return nothing and still audit", async () => {
+  test("name prefixes below the minimum never reach an index and do not audit", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
-    const oneLetter = await testBackend.mutation(api.patients.searchPatients, {
-      token,
-      query: "c",
-    });
-    const twoLetters = await testBackend.mutation(api.patients.searchPatients, {
-      token,
-      query: "ch",
-    });
-
-    expect(oneLetter).toHaveLength(0);
-    expect(twoLetters).toHaveLength(0);
+    for (const query of ["c", "ch"]) {
+      const results = await testBackend.mutation(api.patients.searchPatients, {
+        token,
+        query,
+      });
+      expect(results).toHaveLength(0);
+    }
 
     const searchAudits = await testBackend.run(async (ctx) => {
       const events = await ctx.db.query("auditEvents").take(50);
       return events.filter((event) => event.action === "PatientSearched");
     });
-    expect(searchAudits).toHaveLength(2);
-    expect(searchAudits.map((event) => event.details.query).sort()).toEqual(["c", "ch"]);
-    expect(searchAudits.every((event) => event.details.resultCount === 0)).toBe(true);
-    expect(searchAudits.every((event) => event.entityId === undefined)).toBe(true);
+    expect(searchAudits).toHaveLength(0);
+  });
+
+  test("a name search long enough to run, that matches nothing, still audits", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+
+    const results = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "  zzzzzz  ",
+    });
+    expect(results).toHaveLength(0);
+
+    const searchAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientSearched");
+    });
+    expect(searchAudits).toHaveLength(1);
+    expect(searchAudits[0]?.entityId).toBeUndefined();
+    expect(searchAudits[0]?.details).toEqual({
+      query: "zzzzzz",
+      resultCount: 0,
+      publicIds: [],
+    });
   });
 
   test("full searchName is an exact B-tree equality lookup", async () => {

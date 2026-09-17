@@ -4,7 +4,9 @@
 
 ## Context
 
-Found in the 2026-09-17 full-codebase review. `searchPatients` only writes `PatientSearched` when there is at least one hit, so probing unknown public IDs or names leaves no trail. Enumeration is the reconnaissance the audit log is meant to catch. No blockers. Assignee is Oyinlola.
+Found in the 2026-09-17 full-codebase review. `searchPatients` only writes `PatientSearched` when there is at least one hit, so probing unknown public IDs or names leaves no trail. Enumeration is the reconnaissance the audit log is meant to catch. No blockers.
+
+The first pass (PR #24) read this as "audit every non-empty query". That over-reached: a 1-2 character name prefix is rejected by `findPatientsByQuery` before it touches an index, so nothing was searched and there is nothing to record. PR #24 also rewrote the test that asserted this to bless the new behaviour. This pass narrows the gate to "a lookup actually ran", per the refinement on the ticket. Assignee is Adebare.
 
 ---
 
@@ -21,18 +23,30 @@ Found in the 2026-09-17 full-codebase review. `searchPatients` only writes `Pati
 
 ## Implementation
 
-### Part A — `convex/patients.ts`
+### Part A — `convex/lib/searchLimits.ts`
 
-Drop the `results.length > 0` guard. After `findPatientsByQuery`, always `appendAuditEvent` when the trimmed query is non-empty (empty/whitespace is not a search). Details: `query` trimmed, `resultCount`, `publicIds` from hits (empty array on miss). `entityId`: first hit’s `publicId` when present, otherwise omit.
+The "did a lookup run?" test was hand-rolled in three places — the service, the mutation, and `PatientSearchForm` — and had already drifted. Make it one exported predicate:
 
-Keep the existing skip for 1–2 character **name** prefixes that never query the index? Ticket says always append. Treat any non-empty `searchPatients` call as a search, including short prefixes and unknown `PAT-000001`, so enumeration is visible. Empty string still does not audit.
+- `normalizeSearchQuery` moves here from `patientDiscoveryService` (pure, client-safe, and the length check must run on the *normalised* string).
+- `isSearchableQuery(query)`: false for empty/whitespace; true for a public ID; otherwise true only when the normalised name is at least `NAME_PREFIX_MIN_LENGTH`.
 
-### Part B — Tests
+`findPatientsByQuery` and `PatientSearchForm` both consume it, so the three copies become one. The form keeps its two distinct messages — empty is still "enter something", short is still "at least 3 letters".
 
-`convex/patients.test.ts`: Ibrahim searches a public ID / name that does not exist → one `PatientSearched` with `resultCount: 0`, `publicIds: []`, `details.query` trimmed, no `entityId`. Update the short-prefix test if those calls now audit. Hits still audit as today (`entityId` = PAT-002391). Discovery of an unknown id still does not write `PatientSearched`.
+### Part B — `convex/patients.ts`
+
+Gate `appendAuditEvent` on `isSearchableQuery`, not on `trimmedQuery !== ""`. A query that reached an index is audited hit or miss; one rejected before any lookup is not. `entityId` is `results[0]?.publicId`, so it is unset on a miss. Details keep `query` (trimmed), `resultCount`, and `publicIds` (`[]` on a miss).
+
+### Part C — Tests
+
+`convex/patients.test.ts`:
+
+- Restore the assertion PR #24 inverted: `"c"` and `"ch"` return nothing and write **no** audit row.
+- Add the name-prefix miss (`"  zzzzzz  "`) — a query long enough to walk the index and find nothing → one row, `resultCount: 0`, `publicIds: []`, no `entityId`.
+- The public-ID miss (`PAT-000001`) and whitespace-only cases from PR #24 already cover their paths and stay as they are.
 
 ---
 
 ## Open questions
 
-- [ ] Empty/whitespace-only query: not audited (not a search that was run).
+- [x] Empty/whitespace-only query: not audited (not a search that was run).
+- [x] Sub-minimum name prefix: not audited either — same reason, no lookup ran.

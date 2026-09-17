@@ -12,7 +12,7 @@ import Alert from "@/components/ui/alert/Alert";
 import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
 import {
   NAME_PREFIX_MIN_LENGTH,
-  isPatientPublicIdQuery,
+  isSearchableQuery,
 } from "../../../../../convex/lib/searchLimits";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import { toUserFacingError } from "@/lib/userFacingError";
@@ -47,8 +47,7 @@ export function PatientSearchForm({ onResults }: PatientSearchFormProps) {
       return;
     }
 
-    const isPublicId = isPatientPublicIdQuery(trimmedQuery);
-    if (!isPublicId && trimmedQuery.length < NAME_PREFIX_MIN_LENGTH) {
+    if (!isSearchableQuery(trimmedQuery)) {
       setErrorMessage(
         `Enter a patient ID or at least ${NAME_PREFIX_MIN_LENGTH} letters of the name.`,
       );
