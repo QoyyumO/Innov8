@@ -1,4 +1,5 @@
-import { DecisionOutcome, Purpose, RecordType } from "../domain";
+import { CONSENT_ACTIVE_REASON, CONSENT_MISSING_REASON } from "../consentConstants";
+import { ConsentCheck, DecisionOutcome, Purpose, RecordType } from "../domain";
 import { HARVEST_RECORD_COUNT, HARVEST_SCORE } from "../riskConstants";
 import { assertDecisionReasons, assertRiskScore } from "../invariants";
 import { ADMIN_ROLES, CLINICIAN_ROLES, SECURITY_ROLES, UserRole } from "../roles";
@@ -18,6 +19,9 @@ import { ADMIN_ROLES, CLINICIAN_ROLES, SECURITY_ROLES, UserRole } from "../roles
  * - Ibrahim (doctor, FMC Abuja) → PAT-002391 (FMC Lagos), treatment,
  *   1 record = 5 base + 0 role + 0 purpose + 3 cross-facility = 8 → ALLOW.
  * - Any request covering >= 500 records → at least 94 → BLOCK.
+ * - INN-45: a single-patient cross-facility request without active patient
+ *   consent gets CONSENT_MISSING_POINTS and at least VERIFY_THRESHOLD.
+ *   The caller decides whether consent applies (`consentService`).
  */
 
 /** Scores below this are ALLOW. */
@@ -30,6 +34,7 @@ export const CROSS_FACILITY_POINTS = 3;
 export const WITHIN_BASELINE_POINTS = 5;
 export const ABOVE_BASELINE_POINTS = 35;
 export const AFTER_HOURS_POINTS = 15;
+export const CONSENT_MISSING_POINTS = 35;
 
 export { HARVEST_RECORD_COUNT, HARVEST_SCORE };
 
@@ -73,6 +78,8 @@ export type RiskInput = {
   requestedAt: number;
   normalAccessHours?: AccessHours;
   normalPatientVolume?: number;
+  /** INN-45: whether patient consent applies and was found. Defaults to `not_required`. */
+  consent?: ConsentCheck;
 };
 
 export type RiskFactors = {
@@ -80,6 +87,7 @@ export type RiskFactors = {
   purpose: Purpose;
   sameHospital: boolean;
   recordCount: number;
+  consent: ConsentCheck;
 };
 
 /** Domain value object (`Innov8_DDD.md` RiskBreakdown). */
@@ -251,6 +259,14 @@ export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
     reasons.push("Outside the requester's normal access hours");
   }
 
+  const consent = input.consent ?? "not_required";
+  if (consent === "active") {
+    reasons.push(CONSENT_ACTIVE_REASON);
+  } else if (consent === "missing") {
+    score = Math.max(score + CONSENT_MISSING_POINTS, VERIFY_THRESHOLD);
+    reasons.push(CONSENT_MISSING_REASON);
+  }
+
   score = Math.min(100, Math.max(0, score));
 
   if (input.recordCount >= HARVEST_RECORD_COUNT) {
@@ -270,6 +286,7 @@ export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
       purpose: input.purpose,
       sameHospital: input.sameHospital,
       recordCount: input.recordCount,
+      consent,
     },
   };
 }

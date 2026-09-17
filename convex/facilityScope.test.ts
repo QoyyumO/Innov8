@@ -383,6 +383,7 @@ describe("hospital admin scope (INN-52)", () => {
       auditEventsToday: { count: 0, isCapped: false },
       activeGrants: [],
       recentDecisions: [],
+      population: { workerCount: 0, patientCount: 0 },
     });
     const orphanDetail = await testBackend.query(api.accessRequests.getAccessRequest, {
       token: orphanToken,

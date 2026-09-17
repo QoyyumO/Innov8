@@ -4,6 +4,14 @@ import { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 import { hashPassword } from "./lib/password";
 import { linkAlertFacilities } from "./lib/facilityScope";
+import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
+import { findActiveConsent } from "./lib/services/consentService";
+import {
+  insertCountedPatient,
+  insertCountedUser,
+  patchCountedPatient,
+  patchCountedUser,
+} from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   DEMO_PASSWORD,
@@ -151,12 +159,12 @@ export const seedHealthcareWorkers = internalMutation({
       }
 
       if (existing) {
-        await ctx.db.patch(existing._id, workerFields);
+        await patchCountedUser(ctx.db, existing, workerFields);
         updated += 1;
         continue;
       }
 
-      await ctx.db.insert("users", {
+      await insertCountedUser(ctx.db, {
         email: demoUser.email,
         hashedPassword,
         roles: demoUser.roles,
@@ -195,7 +203,7 @@ export const seedHealthcareWorkers = internalMutation({
         .withIndex("by_email", (q) => q.eq("email", email))
         .first();
       if (existingByEmail) {
-        await ctx.db.patch(existingByEmail._id, {
+        await patchCountedUser(ctx.db, existingByEmail, {
           facilityId: facility._id,
           workerId,
           department,
@@ -206,7 +214,7 @@ export const seedHealthcareWorkers = internalMutation({
         continue;
       }
 
-      await ctx.db.insert("users", {
+      await insertCountedUser(ctx.db, {
         email,
         hashedPassword,
         roles: [role],
@@ -225,6 +233,31 @@ export const seedHealthcareWorkers = internalMutation({
     return { inserted, updated, skipped };
   },
 });
+
+/**
+ * INN-45: PAT-002391 consents to FMC Abuja, so Ibrahim's treatment request
+ * stays ALLOW 8. No other synthetic patient has consent.
+ */
+async function ensureDemoConsent(
+  ctx: MutationCtx,
+  patientId: Id<"patients">,
+  abujaId: Id<"facilities">,
+  lagosId: Id<"facilities">,
+) {
+  const now = Date.now();
+  if (await findActiveConsent(ctx.db, patientId, abujaId, now)) {
+    return;
+  }
+  await ctx.db.insert("consents", {
+    patientId,
+    facilityId: abujaId,
+    patientFacilityId: lagosId,
+    status: "active",
+    note: "Seeded demo consent: patient agreed to share records with FMC Abuja",
+    grantedAt: now,
+    expiresAt: now + DEMO_CONSENT_DURATION_MS,
+  });
+}
 
 async function upsertRecordIndexAndSummary(
   ctx: MutationCtx,
@@ -316,7 +349,7 @@ async function upsertSyntheticPatient(
 
   const patientId = existing
     ? existing._id
-    : await ctx.db.insert("patients", {
+    : await insertCountedPatient(ctx.db, {
         publicId,
         homeFacilityId: facility._id,
         profile: { firstName, lastName },
@@ -327,7 +360,7 @@ async function upsertSyntheticPatient(
       });
 
   if (existing && isDemoPatient) {
-    await ctx.db.patch(existing._id, {
+    await patchCountedPatient(ctx.db, existing, {
       homeFacilityId: lagos._id,
       profile: { firstName: "Chioma", lastName: "Okonkwo" },
       dateOfBirth: DEMO_PATIENT_DOB_MS,
@@ -335,6 +368,11 @@ async function upsertSyntheticPatient(
       bloodGroup: "O+",
       searchName: "chioma okonkwo",
     });
+  }
+
+  if (isDemoPatient) {
+    const abuja = requireFacility(facilities, "FMC-ABJ");
+    await ensureDemoConsent(ctx, patientId, abuja._id, lagos._id);
   }
 
   const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);
@@ -384,6 +422,9 @@ export const seedPatientsBatch = internalMutation({
       patientIndex += 1
     ) {
       if (patientIndex === DEMO_PATIENT_INDEX) {
+        if (cursor !== 0) {
+          await upsertSyntheticPatient(ctx, facilities, DEMO_PATIENT_INDEX);
+        }
         continue;
       }
       await upsertSyntheticPatient(ctx, facilities, patientIndex);
@@ -397,14 +438,19 @@ export const seedPatientsBatch = internalMutation({
         total,
         continueToEvents,
       });
-    } else if (continueToEvents) {
-      await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
-        cursor: 0,
-        batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
-        total: SEED_ACCESS_EVENT_COUNT,
-        patientCount: total,
-        workerCount: SEED_WORKER_COUNT,
-      });
+    } else {
+      // Rebuild stored totals after the last patient write, not during wipe
+      // or mid-seed (a concurrent recount would overwrite incremental counts).
+      await ctx.scheduler.runAfter(0, internal.facilityStatsRecount.start, {});
+      if (continueToEvents) {
+        await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
+          cursor: 0,
+          batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
+          total: SEED_ACCESS_EVENT_COUNT,
+          patientCount: total,
+          workerCount: SEED_WORKER_COUNT,
+        });
+      }
     }
     return { cursor: end, done };
   },
@@ -700,6 +746,8 @@ export const seedAccessEventsBatch = internalMutation({
 });
 
 const CLEAR_TABLES = [
+  "auditEventFacilities",
+  "alertFacilities",
   "auditEvents",
   "securityAlerts",
   "emergencyAccess",
@@ -707,7 +755,9 @@ const CLEAR_TABLES = [
   "accessRequests",
   "clinicalSummaries",
   "recordIndexes",
+  "consents",
   "patients",
+  "facilityStats",
   "passwordResetTokens",
   "sessions",
 ] as const;

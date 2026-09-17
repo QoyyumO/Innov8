@@ -66,12 +66,12 @@ Track C demo steps (see `AGENTS.md`):
 | --- | --- |
 | 1. Authenticate | Done — session login (failed passwords return a form error, not an overlay), 30-minute sessions or 7 days with Keep me logged in, role-aware sidebar, `UserLoggedIn` audit |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit |
-| 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW. A VERIFY request opens a **Complete verification** dialog: re-entering your password turns it into ALLOW; three wrong passwords block it and alert security (all audited) |
+| 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW (the seed gives PAT-002391 consent for FMC Abuja). Cross-facility single-patient requests need **patient consent** (except purpose emergency): without it they are VERIFY with a "no active patient consent" reason; clinicians record consent on the patient page (30 days, audited) and security officers / admins can revoke it on `/security`. A VERIFY request opens a **Complete verification** dialog: re-entering your password turns it into ALLOW; three wrong passwords block it and alert security (all audited) |
 | 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed`. Allowed access lasts **24 hours** from the decision; after that the request page shows **Request access again**, and any attempt to open the records is refused and audited as `AccessExpired` |
 | 6. Harvest BLOCK + alert | Done — **Simulate bulk harvest (500 records)** on `/requests` calls `simulateBulkHarvest` (the server fixes the count) → BLOCK 94; every BLOCK raises a high-severity alert (`SecurityAlertRaised` audit); security officers and admins review, acknowledge, and close alerts on `/security`; each acknowledge / close is audited with the officer's name |
 | 7. Break-glass | Done — `/emergency` (or **Use break-glass** on a blocked or challenged request): a clinician gives a written justification and confirms; the server grants 15 minutes of access (the client cannot choose the length), raises a medium alert, and audits `EmergencyGranted`. Records open on the request page while the grant is live; it ends by scheduled expiry (`EmergencyExpired`) or when the holder or a security officer ends it early (`EmergencyRevoked`) |
 | Audit trail | Done — `/audit` lists audit events newest first, 25 at a time, with an action filter. Clinicians and patients see only their own activity; security officers and system admins see everyone's; hospital admins see their own staff plus every request to or from their facility. Reviewers can open one person's trail. Read-only: nothing edits or deletes audit rows |
-| Live dashboards + facilities | Done — every role dashboard reads live, bounded data. Clinicians (doctor, nurse, pharmacist, laboratory) see their requests today by outcome, last decision, latest blocked harvest, active break-glass, and recent requests. Security officers and system admins see open alerts by severity, blocks today, active break-glass, audit volume today, the live alert queue, and the latest decisions; hospital admins see the same summary for their facility plus the facility list. `/facilities` lists the participating hospitals. "Today" means since midnight in Lagos |
+| Live dashboards + facilities | Done — every role dashboard reads live, bounded data. Clinicians (doctor, nurse, pharmacist, laboratory) see their requests today by outcome, last decision, latest blocked harvest, active break-glass, and recent requests. Security officers and system admins see open alerts by severity, blocks today, active break-glass, audit volume today, the live alert queue, and the latest decisions; hospital admins see the same summary for their facility plus the facility list. `/facilities` lists the participating hospitals with their stored worker and patient totals. "Today" means since midnight in Lagos |
 
 No dashboard uses dummy data. The patient dashboard's access history is still to come (INN-46).
 
@@ -97,18 +97,19 @@ npx convex run internal.seed.verifyDemoSeed
 ```
 
 `seedDemoDataset` inserts 3 facilities, 24 workers, 200 patients **plus PAT-002391**, and 200 access events including Ibrahim ALLOW 8 / BLOCK 94. Equivalent step-by-step:
-
 ```bash
 npx convex run internal.seed.seedFacilities
 npx convex run internal.seed.seedHealthcareWorkers
 npx convex run internal.seed.seedPatientsBatch '{"continueToEvents": true}'
 ```
 
-Wait until scheduled patient and event batches finish (`done: true`), then `verifyDemoSeed`. It should show 3 facilities, Ibrahim `WRK-00001`, PAT-002391 at FMC-LOS, allow risk `8`, block risk `94`. Then sign in as Ibrahim.
+Wait until scheduled patient and event batches finish (`done: true`), then `verifyDemoSeed`. It should show 3 facilities, Ibrahim `WRK-00001`, PAT-002391 at FMC-LOS, allow risk `8`, block risk `94`. `seedPatientsBatch` also records PAT-002391's consent for FMC Abuja (INN-45), which keeps the live treatment request at 8. Then sign in as Ibrahim.
 
 PAT-002391 is always upserted on the first patient batch; `total` no longer needs to be 2391.
 
 **Existing deployments (seeded before INN-52):** run `npx convex run facilityScopeBackfill:start` once so hospital admins can see older alerts and audit events. It runs in scheduled batches and is safe to re-run.
+
+**Existing deployments (seeded before INN-53):** run `npx convex run facilityStatsRecount:start` once (while no seed is running) to fill in per-facility worker and patient totals. It is batched and safe to re-run.
 
 More detail (indexes, demo rows, files): [`convex/README-seeding.md`](convex/README-seeding.md).
 
@@ -137,6 +138,8 @@ Both run on a clean clone (`npm ci` works; no Husky or `prepare` script). Run th
 - `convex/dashboards.ts` — bounded live dashboard summaries and the facility list
 - `convex/seed.ts` — internal demo-scale seed and wipe mutations
 - `convex/lib/facilityScope.ts` — hospital-admin facility scope (INN-52); `convex/facilityScopeBackfill.ts` — one-time backfill
+- `convex/consents.ts` + `convex/lib/services/consentService.ts` — patient consent for cross-facility requests (INN-45)
+- `convex/lib/facilityStats.ts` — stored per-facility worker / patient totals (INN-53); `convex/facilityStatsRecount.ts` — rebuild
 - `convex/lib/session.ts` — `requireSession`, `publicUser`
 - `convex/lib/roles.ts` — `requireRole` and role groups
 - `convex/lib/services/` — domain services (`accessControlService`, `alertService`, `auditLogService`, `emergencyAccessService`, `patientDiscoveryService`, `recordExchangeService`, `riskScoringService`)

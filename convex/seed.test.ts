@@ -92,6 +92,8 @@ describe("demo-scale seed", () => {
 
     const leftover = await testBackend.run(async (ctx) => {
       const audits = await ctx.db.query("auditEvents").take(1);
+      const auditLinks = await ctx.db.query("auditEventFacilities").take(1);
+      const alertLinks = await ctx.db.query("alertFacilities").take(1);
       const requests = await ctx.db.query("accessRequests").take(1);
       const patients = await ctx.db.query("patients").take(1);
       const extraWorker = await ctx.db
@@ -107,6 +109,8 @@ describe("demo-scale seed", () => {
       const facilities = await ctx.db.query("facilities").collect();
       return {
         audits: audits.length,
+        auditLinks: auditLinks.length,
+        alertLinks: alertLinks.length,
         requests: requests.length,
         patients: patients.length,
         extraWorker: extraWorker?.workerId ?? null,
@@ -116,6 +120,8 @@ describe("demo-scale seed", () => {
     });
 
     expect(leftover.audits).toBe(0);
+    expect(leftover.auditLinks).toBe(0);
+    expect(leftover.alertLinks).toBe(0);
     expect(leftover.requests).toBe(0);
     expect(leftover.patients).toBe(0);
     expect(leftover.extraWorker).toBeNull();

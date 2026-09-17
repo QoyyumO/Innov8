@@ -11,7 +11,7 @@ import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
 import Alert from "@/components/ui/alert/Alert";
 import Button from "@/components/ui/button/Button";
-import { AlertIcon, DocsIcon, GroupIcon, LockIcon } from "@/icons";
+import { AlertIcon, DocsIcon, GroupIcon, LockIcon, UserIcon } from "@/icons";
 import { formatBoundedCount } from "../../../../convex/lib/dashboardConstants";
 import { LOADING_VALUE, WelcomeCard } from "./DashboardWidgets";
 import { RecentDecisionsCard } from "./RecentDecisionsCard";
@@ -68,6 +68,27 @@ export default function AdminDashboard() {
               : "Facilities keep their own records — Lagos and Abuja do not talk point-to-point. The exchange brokers each request and records it in the audit trail."
           }
         />
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <MetricCard
+            title="Healthcare workers"
+            value={dashboard ? dashboard.population.workerCount.toLocaleString() : LOADING_VALUE}
+            description={
+              isFacilityScoped ? `Staff linked to ${scopeLabel}` : "Staff linked to a participating facility"
+            }
+            icon={<UserIcon className="h-6 w-6 text-brand-500" />}
+          />
+          <MetricCard
+            title="Patients"
+            value={dashboard ? dashboard.population.patientCount.toLocaleString() : LOADING_VALUE}
+            description={
+              isFacilityScoped
+                ? `Synthetic patients whose home facility is ${scopeLabel}`
+                : "Synthetic patients across participating facilities"
+            }
+            icon={<GroupIcon className="h-6 w-6 text-brand-500" />}
+          />
+        </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard

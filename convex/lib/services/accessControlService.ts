@@ -72,6 +72,14 @@ async function resolveSourceFacilityId(
   return facilityByName._id;
 }
 
+/** Where a patient's records are held: the home facility's index, else the first index. */
+export async function resolvePatientRecordFacilityId(
+  db: DatabaseReader,
+  patient: Doc<"patients">,
+): Promise<Id<"facilities">> {
+  return (await resolveTargetIndex(db, patient)).facilityId;
+}
+
 async function resolveTargetIndex(
   db: DatabaseReader,
   patient: Doc<"patients">,
