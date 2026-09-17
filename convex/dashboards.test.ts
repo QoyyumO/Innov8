@@ -326,6 +326,80 @@ describe("getClinicianDashboard", () => {
     expect(dashboard?.recentRequests[0]?.isBreakGlass).toBe(false);
   });
 
+  test("a re-granted request reports the newest grant, not the first (INN-62)", async () => {
+    const testBackend = createTest();
+    const world = await seedDemoWorld(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
+    // A BLOCK decision, so the request also reaches the security dashboard's
+    // recent decisions - break glass is only reachable from BLOCK or VERIFY.
+    const requestId = await insertRequest(
+      testBackend,
+      world,
+      ibrahimId,
+      Date.now(),
+      { outcome: "BLOCK", riskScore: 94 },
+    );
+
+    // Break glass once, let it lapse, then break glass again on the same
+    // request. The oldest row is expired; the newest is live.
+    await testBackend.run(async (ctx) => {
+      const base = {
+        requestId,
+        actorId: ibrahimId,
+        patientId: world.patientId,
+        justification: "Emergency in resus bay",
+      };
+      await ctx.db.insert("emergencyAccess", {
+        ...base,
+        grantedAt: Date.now() - 3_600_000,
+        expiresAt: Date.now() - 2_700_000,
+      });
+      await ctx.db.insert("emergencyAccess", {
+        ...base,
+        grantedAt: Date.now() - 60_000,
+        expiresAt: Date.now() + 60_000,
+      });
+    });
+
+    // The grant the dashboards must resolve to. Asserting the id as well as
+    // the flag catches a lookup that returns the right liveness from the
+    // wrong row.
+    const liveGrantId = await testBackend.run(async (ctx) => {
+      const grants = await ctx.db
+        .query("emergencyAccess")
+        .withIndex("by_requestId", (query) => query.eq("requestId", requestId))
+        .order("desc")
+        .take(10);
+      return grants[0]?._id;
+    });
+    expect(liveGrantId).toBeDefined();
+
+    const clinician = await testBackend.query(
+      api.dashboards.getClinicianDashboard,
+      { token, since: today() },
+    );
+    expect(clinician?.recentRequests[0]?.requestId).toBe(requestId);
+    expect(clinician?.recentRequests[0]?.isBreakGlass).toBe(true);
+
+    // The request view reads the same grant through the same helper.
+    const view = await testBackend.query(api.accessRequests.getAccessRequest, {
+      token,
+      requestId,
+    });
+    expect(view?.emergency?.grantId).toBe(liveGrantId);
+
+    const security = await testBackend.query(
+      api.dashboards.getSecurityDashboard,
+      { token: securityToken, since: today() },
+    );
+    const securityRow = security?.recentDecisions.find(
+      (row) => row.requestId === requestId,
+    );
+    expect(securityRow?.isBreakGlass).toBe(true);
+  });
+
   test("returns null for non-clinicians and anonymous callers", async () => {
     const testBackend = createTest();
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL, CHIOMA_EMAIL]) {

@@ -72,6 +72,29 @@ export async function listGrantsForRequest(
     .take(GRANT_LOOKUP_LIMIT);
 }
 
+/**
+ * The newest grant on a request, or null. A request can carry several: once a
+ * 15-minute grant lapses the clinician may break glass on it again, and only
+ * the latest one says whether emergency access is live right now. `.first()`
+ * without an order returns the OLDEST row, so every caller must share this.
+ *
+ * "Newest" here is insertion order (`by_requestId` tiebreaks on
+ * `_creationTime`), not the largest `grantedAt`. They agree because
+ * `grantBreakGlass` is the only writer and stamps `grantedAt: now` as it
+ * inserts. A back-dated grant would break that, so if one is ever written,
+ * this needs a `by_requestId_grantedAt` index rather than a sort here.
+ */
+export async function findLatestGrantForRequest(
+  db: DatabaseReader,
+  requestId: Id<"accessRequests">,
+): Promise<Doc<"emergencyAccess"> | null> {
+  return await db
+    .query("emergencyAccess")
+    .withIndex("by_requestId", (query) => query.eq("requestId", requestId))
+    .order("desc")
+    .first();
+}
+
 /** The caller's live grant for a patient, newest first, or null. */
 export async function findLiveGrantForPatient(
   db: DatabaseReader,

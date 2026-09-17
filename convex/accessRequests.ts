@@ -23,7 +23,10 @@ import { evaluateConsent } from "./lib/services/consentService";
 import { resolveReviewerScope, scopeIncludesRequest } from "./lib/facilityScope";
 import { stepUpAttemptsLeft } from "./lib/services/stepUpService";
 import { raiseBlockAlert } from "./lib/services/alertService";
-import { toGrantView } from "./lib/services/emergencyAccessService";
+import {
+  findLatestGrantForRequest,
+  toGrantView,
+} from "./lib/services/emergencyAccessService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import { scoreAccessRequest } from "./lib/services/riskScoringService";
 
@@ -145,11 +148,7 @@ async function toRequestView(
       ctx.db.get(request.patientId),
       loadFacilityRef(ctx, request.sourceFacilityId, facilityCache),
       loadFacilityRef(ctx, request.targetFacilityId, facilityCache),
-      ctx.db
-        .query("emergencyAccess")
-        .withIndex("by_requestId", (query) => query.eq("requestId", request._id))
-        .order("desc")
-        .first(),
+      findLatestGrantForRequest(ctx.db, request._id),
     ]);
 
   return {
