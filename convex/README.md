@@ -7,7 +7,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | File | Functions | Notes |
 | --- | --- | --- |
 | `auth.ts` | `login`, `logout`, `getCurrentUser`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword` | Session token `innov8_session_token`; 30-minute sessions |
-| `patients.ts` | `searchPatients` (mutation, audited), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
+| `patients.ts` | `searchPatients` (mutation, audited including zero hits), `getPatientDiscovery` (query) | Clinicians only; identity + record existence, never clinical contents |
 | `accessRequests.ts` | `createAccessRequest` (mutation, audited, one patient), `simulateBulkHarvest` (demo mutation, server-fixed 500 records), `listMyAccessRequests` (paginated query), `getAccessRequest` (query) | Clinicians create/list their own; security officers and admins can view any request; no clinical contents |
 | `records.ts` | `viewAuthorisedSummary` (mutation, audited `RecordViewed`; expired ALLOW attempts audited `AccessExpired`) | Requester only; ALLOW within 24 hours of the decision, or a live emergency grant; requested sections from the target facility only |
 | `alerts.ts` | `listSecurityAlerts` (paginated query), `acknowledgeAlert`, `closeAlert` (mutations, audited) | Security officers and admins; status transitions only |

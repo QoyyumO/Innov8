@@ -26,9 +26,10 @@ async function loginUser(
     email,
     password: DEMO_PASSWORD,
   });
-  expect(loginResult.success).toBe(true);
-  expect(loginResult.token).toBeDefined();
-  return loginResult.token as string;
+  if (!("token" in loginResult) || !loginResult.token) {
+    throw new Error(`Login failed for ${email}`);
+  }
+  return loginResult.token;
 }
 
 async function seedDemoPatient(testBackend: ReturnType<typeof createTest>) {
@@ -121,9 +122,14 @@ describe("patient discovery", () => {
     expect(searchAudits).toHaveLength(1);
     expect(searchAudits[0]?.entity).toBe("patients");
     expect(searchAudits[0]?.entityId).toBe("PAT-002391");
+    expect(searchAudits[0]?.details).toMatchObject({
+      query: "chioma",
+      resultCount: 1,
+      publicIds: ["PAT-002391"],
+    });
   });
 
-  test("name prefixes shorter than 3 characters return nothing and do not audit", async () => {
+  test("name prefixes shorter than 3 characters return nothing and still audit", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
     const token = await loginUser(testBackend, IBRAHIM_EMAIL);
@@ -144,7 +150,10 @@ describe("patient discovery", () => {
       const events = await ctx.db.query("auditEvents").take(50);
       return events.filter((event) => event.action === "PatientSearched");
     });
-    expect(searchAudits).toHaveLength(0);
+    expect(searchAudits).toHaveLength(2);
+    expect(searchAudits.map((event) => event.details.query).sort()).toEqual(["c", "ch"]);
+    expect(searchAudits.every((event) => event.details.resultCount === 0)).toBe(true);
+    expect(searchAudits.every((event) => event.entityId === undefined)).toBe(true);
   });
 
   test("full searchName is an exact B-tree equality lookup", async () => {
@@ -185,6 +194,49 @@ describe("patient discovery", () => {
       },
     ]);
     assertNoClinicalLeak(discovery);
+  });
+
+  test("a search with zero results still writes PatientSearched", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+
+    const results = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "  PAT-000001  ",
+    });
+    expect(results).toHaveLength(0);
+
+    const searchAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientSearched");
+    });
+    expect(searchAudits).toHaveLength(1);
+    expect(searchAudits[0]?.entity).toBe("patients");
+    expect(searchAudits[0]?.entityId).toBeUndefined();
+    expect(searchAudits[0]?.details).toEqual({
+      query: "PAT-000001",
+      resultCount: 0,
+      publicIds: [],
+    });
+  });
+
+  test("whitespace-only query returns nothing and does not audit", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+
+    const results = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "   ",
+    });
+    expect(results).toHaveLength(0);
+
+    const searchAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientSearched");
+    });
+    expect(searchAudits).toHaveLength(0);
   });
 
   test("unknown publicId returns null and does not audit", async () => {
