@@ -2,15 +2,12 @@ import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
 import { RecordType } from "../domain";
 import {
-  NAME_PREFIX_MIN_LENGTH,
   NAME_SEARCH_LIMIT,
   RECORD_INDEX_LIMIT,
   isPatientPublicIdQuery,
   isSearchableQuery,
   normalizeSearchQuery,
 } from "../searchLimits";
-
-export { NAME_PREFIX_MIN_LENGTH, NAME_SEARCH_LIMIT, RECORD_INDEX_LIMIT };
 
 export type FacilityRef = {
   code: string;
@@ -153,6 +150,9 @@ export async function findPatientsByQuery(
   db: DatabaseReader,
   rawQuery: string,
 ): Promise<PatientSearchHit[]> {
+  // searchPatients audits iff this predicate is true, so any future early
+  // return here must be folded into isSearchableQuery rather than added
+  // below it - otherwise a query that never ran gets an audit row again.
   if (!isSearchableQuery(rawQuery)) {
     return [];
   }
