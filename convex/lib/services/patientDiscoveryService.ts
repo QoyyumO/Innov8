@@ -6,6 +6,8 @@ import {
   NAME_SEARCH_LIMIT,
   RECORD_INDEX_LIMIT,
   isPatientPublicIdQuery,
+  isSearchableQuery,
+  normalizeSearchQuery,
 } from "../searchLimits";
 
 export { NAME_PREFIX_MIN_LENGTH, NAME_SEARCH_LIMIT, RECORD_INDEX_LIMIT };
@@ -28,10 +30,6 @@ export type PatientSearchHit = {
 export type PatientDiscovery = PatientSearchHit & {
   recordsByFacility: FacilityExistence[];
 };
-
-function normalizeQuery(query: string): string {
-  return query.trim().replace(/\s+/g, " ").toLowerCase();
-}
 
 /**
  * Exclusive upper bound for a Convex B-tree prefix range: [prefix, end).
@@ -155,11 +153,11 @@ export async function findPatientsByQuery(
   db: DatabaseReader,
   rawQuery: string,
 ): Promise<PatientSearchHit[]> {
-  const trimmed = rawQuery.trim();
-  if (trimmed === "") {
+  if (!isSearchableQuery(rawQuery)) {
     return [];
   }
 
+  const trimmed = rawQuery.trim();
   if (isPatientPublicIdQuery(trimmed)) {
     const patient = await findPatientByPublicId(db, trimmed);
     if (!patient) {
@@ -168,10 +166,7 @@ export async function findPatientsByQuery(
     return await toSearchHits(db, [patient]);
   }
 
-  const searchPrefix = normalizeQuery(trimmed);
-  if (searchPrefix.length < NAME_PREFIX_MIN_LENGTH) {
-    return [];
-  }
+  const searchPrefix = normalizeSearchQuery(trimmed);
 
   const exactNameMatches = await findPatientsBySearchNameEq(db, searchPrefix);
   if (exactNameMatches.length > 0) {
