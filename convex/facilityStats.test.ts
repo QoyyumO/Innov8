@@ -108,7 +108,9 @@ describe("stored facility totals (INN-53)", () => {
     const direct = await countDirectly(testBackend);
     expect(await storedTotals(testBackend)).toEqual(direct);
     const overall = sum(direct);
-    expect(overall.patientCount).toBe(PATIENT_COUNT);
+    const expectedPatients =
+      PATIENT_COUNT + (DEMO_PATIENT_INDEX > PATIENT_COUNT ? 1 : 0);
+    expect(overall.patientCount).toBe(expectedPatients);
     // Every user linked to a facility counts except the patient login (Chioma).
     const linked = await testBackend.run(async (ctx) => {
       const users = await ctx.db.query("users").take(1000);
@@ -236,7 +238,8 @@ describe("stored facility totals (INN-53)", () => {
     expect(facilityCount).toBe(3);
     await testBackend.finishAllScheduledFunctions(vi.runAllTimers);
     expect(await storedTotals(testBackend)).toEqual(direct);
-    expect(sum(direct).patientCount).toBe(120);
+    const expectedPatients = 120 + (DEMO_PATIENT_INDEX > 120 ? 1 : 0);
+    expect(sum(direct).patientCount).toBe(expectedPatients);
 
     await testBackend.mutation(internal.facilityStatsRecount.start, {});
     await testBackend.finishAllScheduledFunctions(vi.runAllTimers);

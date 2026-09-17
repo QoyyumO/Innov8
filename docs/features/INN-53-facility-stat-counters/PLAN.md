@@ -30,11 +30,11 @@ Users and patients are only created or moved by the seed (and by demo-user creat
 
 ### Recount
 
-`start` schedules one chain per facility. Each chain pages through workers (`users.by_facilityId`), then patients (`patients.by_homeFacilityId`), carrying the running count between batches, and sets each total at the end of its pass. Run it while no seeding is in progress; a concurrent seed could be counted twice.
+`start` schedules one chain per facility. Each chain pages through workers (`users.by_facilityId`), then patients (`patients.by_homeFacilityId`), carrying the running count between batches, and sets each total at the end of its pass. Run it while no seeding is in progress; a concurrent seed could be counted twice. Wipe does not recount. `seedPatientsBatch` schedules a recount only after the last patient write.
 
 ### Bounded reads
 
-`listFacilities` reads at most 50 facilities plus one stats row each. The exchange-wide `population` reads at most 50 stats rows.
+`listFacilities` and the exchange-wide `population` share one indexed `facilityStats` page (at most 50 rows).
 
 ---
 

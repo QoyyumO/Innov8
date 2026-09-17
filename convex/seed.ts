@@ -390,6 +390,9 @@ export const seedPatientsBatch = internalMutation({
       patientIndex += 1
     ) {
       if (patientIndex === DEMO_PATIENT_INDEX) {
+        if (cursor !== 0) {
+          await upsertSyntheticPatient(ctx, facilities, DEMO_PATIENT_INDEX);
+        }
         continue;
       }
       await upsertSyntheticPatient(ctx, facilities, patientIndex);
@@ -403,14 +406,19 @@ export const seedPatientsBatch = internalMutation({
         total,
         continueToEvents,
       });
-    } else if (continueToEvents) {
-      await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
-        cursor: 0,
-        batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
-        total: SEED_ACCESS_EVENT_COUNT,
-        patientCount: total,
-        workerCount: SEED_WORKER_COUNT,
-      });
+    } else {
+      // Rebuild stored totals after the last patient write, not during wipe
+      // or mid-seed (a concurrent recount would overwrite incremental counts).
+      await ctx.scheduler.runAfter(0, internal.facilityStatsRecount.start, {});
+      if (continueToEvents) {
+        await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
+          cursor: 0,
+          batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
+          total: SEED_ACCESS_EVENT_COUNT,
+          patientCount: total,
+          workerCount: SEED_WORKER_COUNT,
+        });
+      }
     }
     return { cursor: end, done };
   },
@@ -706,6 +714,8 @@ export const seedAccessEventsBatch = internalMutation({
 });
 
 const CLEAR_TABLES = [
+  "auditEventFacilities",
+  "alertFacilities",
   "auditEvents",
   "securityAlerts",
   "emergencyAccess",
@@ -810,8 +820,6 @@ export const clearSeedDataBatch = internalMutation({
         tableIndex,
         batchSize,
       });
-    } else {
-      await ctx.scheduler.runAfter(0, internal.facilityStatsRecount.start, {});
     }
     return { table: "users", deleted, done: scannedAll };
   },

@@ -8,7 +8,7 @@ import { Doc, Id } from "../_generated/dataModel";
  * hold at least one non-patient role; `patientCount` counts patients whose
  * home facility it is. Every insert or facility change for users and
  * patients goes through the helpers below so the totals stay exact without
- * counting rows on read. `recountFacilityStats` (see
+ * counting rows on read. `facilityStatsRecount.start` (see
  * `convex/facilityStatsRecount.ts`) rebuilds them from scratch.
  */
 

@@ -429,16 +429,36 @@ async function buildFacilitySecurityDashboard(
   };
 }
 
+const EMPTY_FACILITY_TOTALS: FacilityTotals = { workerCount: 0, patientCount: 0 };
+
+/** One indexed page of stored totals (INN-53); at most FACILITY_LIST_LIMIT rows. */
+async function loadFacilityStatsByFacilityId(
+  ctx: QueryCtx,
+): Promise<Map<Id<"facilities">, FacilityTotals>> {
+  const rows = await ctx.db
+    .query("facilityStats")
+    .withIndex("by_facilityId")
+    .take(FACILITY_LIST_LIMIT);
+  const byFacilityId = new Map<Id<"facilities">, FacilityTotals>();
+  for (const row of rows) {
+    byFacilityId.set(row.facilityId, {
+      workerCount: row.workerCount,
+      patientCount: row.patientCount,
+    });
+  }
+  return byFacilityId;
+}
+
 /** Sum of stored facility totals across the exchange (INN-53). */
 async function getExchangeTotals(ctx: QueryCtx): Promise<FacilityTotals> {
-  const rows = await ctx.db.query("facilityStats").take(FACILITY_LIST_LIMIT);
-  return rows.reduce(
-    (totals, row) => ({
-      workerCount: totals.workerCount + row.workerCount,
-      patientCount: totals.patientCount + row.patientCount,
-    }),
-    { workerCount: 0, patientCount: 0 },
-  );
+  const byFacilityId = await loadFacilityStatsByFacilityId(ctx);
+  let workerCount = 0;
+  let patientCount = 0;
+  for (const totals of byFacilityId.values()) {
+    workerCount += totals.workerCount;
+    patientCount += totals.patientCount;
+  }
+  return { workerCount, patientCount };
 }
 
 /**
@@ -546,19 +566,17 @@ export const listFacilities = query({
       }
       throw error;
     }
-    const facilities = await ctx.db
-      .query("facilities")
-      .withIndex("by_code")
-      .take(FACILITY_LIST_LIMIT);
-    return await Promise.all(
-      facilities.map(async (facility) => ({
-        facilityId: facility._id,
-        code: facility.code,
-        name: facility.name,
-        city: facility.city,
-        status: facility.status,
-        ...(await getFacilityTotals(ctx.db, facility._id)),
-      })),
-    );
+    const [facilities, statsByFacilityId] = await Promise.all([
+      ctx.db.query("facilities").withIndex("by_code").take(FACILITY_LIST_LIMIT),
+      loadFacilityStatsByFacilityId(ctx),
+    ]);
+    return facilities.map((facility) => ({
+      facilityId: facility._id,
+      code: facility.code,
+      name: facility.name,
+      city: facility.city,
+      status: facility.status,
+      ...(statsByFacilityId.get(facility._id) ?? EMPTY_FACILITY_TOTALS),
+    }));
   },
 });
