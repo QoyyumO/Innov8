@@ -13,7 +13,7 @@ import {
   RECENT_REQUEST_LIMIT,
   TODAY_COUNT_LIMIT,
 } from "./lib/dashboardConstants";
-import { auditAction, decisionOutcome, facilityStatus, purpose } from "./lib/domain";
+import { auditAction, decisionOutcome, facilityStatus, purpose, type Purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requirePatientSession, requireRole } from "./lib/roles";
 import { resolveReviewerScope } from "./lib/facilityScope";
@@ -113,6 +113,26 @@ const facilityViewValidator = v.object({
 
 function isAuthError(error: unknown): boolean {
   return error instanceof Error && isAuthErrorMessage(error.message);
+}
+
+const ACCESS_PURPOSES: readonly Purpose[] = [
+  "treatment",
+  "emergency",
+  "referral",
+  "follow-up",
+  "administrative",
+];
+
+function purposeFromDetails(value: unknown): Purpose | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  for (const accessPurpose of ACCESS_PURPOSES) {
+    if (accessPurpose === value) {
+      return accessPurpose;
+    }
+  }
+  return null;
 }
 
 function toBoundedCount(rows: unknown[], limit: number) {
@@ -612,20 +632,12 @@ export const getPatientDashboard = query({
     const recentEvents = await Promise.all(
       events.map(async (event) => {
         const actor = event.actorId ? await load(event.actorId) : null;
-        const purposeValue = event.details.purpose;
         return {
           eventId: event._id,
           createdAt: event.createdAt,
           action: event.action,
           actor: actor ? { name: fullName(actor), hospital: actor.hospital } : null,
-          purpose:
-            purposeValue === "treatment" ||
-            purposeValue === "emergency" ||
-            purposeValue === "referral" ||
-            purposeValue === "follow-up" ||
-            purposeValue === "administrative"
-              ? purposeValue
-              : null,
+          purpose: purposeFromDetails(event.details.purpose),
         };
       }),
     );
