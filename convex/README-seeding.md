@@ -40,7 +40,7 @@ because the team is over quota, create a new empty Convex project, point
 
 ## Run order (demo-scale)
 
-CLI names are either `internal.seed.<fn>` or `seed:<fn>`.
+CLI names are either `internal.seed.<fn>` or `seed:<fn>`. `seedHealthcareWorkers` calls `internal.auth.ensureDemoUsers` first (skip-if-exists), then attaches `facilityId`, `workerId`, and hour/volume baselines. Public `login` does not create demo accounts.
 
 ```bash
 npx convex dev

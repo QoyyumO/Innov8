@@ -7,6 +7,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 import {
   STEP_UP_ESCALATED_REASON,
@@ -34,11 +35,8 @@ afterEach(() => {
 });
 
 async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
+  const loginResult = await loginDemoUser(testBackend, email);
+  return loginResult.token;
 }
 
 async function seedDemoWorld(testBackend: TestBackend) {

@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import {
   PERMISSION_DENIED_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
@@ -22,13 +22,7 @@ async function loginUser(
   testBackend: ReturnType<typeof createTest>,
   email: string,
 ) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  if (!("token" in loginResult) || !loginResult.token) {
-    throw new Error(`Login failed for ${email}`);
-  }
+  const loginResult = await loginDemoUser(testBackend, email);
   return loginResult.token;
 }
 

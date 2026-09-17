@@ -5,7 +5,7 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import { AuditAction } from "./lib/domain";
 import { appendAuditEvent } from "./lib/services/auditLogService";
@@ -31,11 +31,8 @@ function createTest() {
 }
 
 async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
+  const loginResult = await loginDemoUser(testBackend, email);
+  return loginResult.token;
 }
 
 async function userIdFor(testBackend: TestBackend, email: string) {

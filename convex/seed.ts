@@ -123,6 +123,7 @@ export const seedHealthcareWorkers = internalMutation({
   args: { count: v.optional(v.number()) },
   returns: v.object({ inserted: v.number(), updated: v.number(), skipped: v.number() }),
   handler: async (ctx, args) => {
+    await ctx.runMutation(internal.auth.ensureDemoUsers, {});
     const total = args.count ?? SEED_WORKER_COUNT;
     const facilities = await loadFacilities(ctx);
     const rand = mulberry32(42);
