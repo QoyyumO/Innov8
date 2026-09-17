@@ -44,7 +44,7 @@ Password for all demo accounts: `password123`
 | `security@innov8.ng` | Security officer |
 | `chioma@patient.innov8.ng` | Patient (not a healthcare worker) |
 
-Demo users are created on first login (`ensureDemoUsers` in `convex/auth.ts`). Seed (below) attaches `facilityId`, `workerId`, and hour/volume baselines without changing the password.
+Demo users are created by **seed** (`internal.auth.ensureDemoUsers`, called from `seedHealthcareWorkers`). Public `login` only looks up the email and checks the password; it will not recreate a deleted or suspended demo account. Seed also attaches `facilityId`, `workerId`, and hour/volume baselines without changing the password.
 
 Sessions last **30 minutes**. Suspended accounts are rejected on every authenticated call, not just at login.
 
@@ -64,7 +64,7 @@ Track C demo steps (see `AGENTS.md`):
 
 | Step | Status |
 | --- | --- |
-| 1. Authenticate | Done — session login (failed passwords return a form error, not an overlay), 30-minute sessions or 7 days with Keep me logged in, role-aware sidebar, `UserLoggedIn` audit |
+| 1. Authenticate | Done — session login (failed passwords return a form error, not an overlay), 30-minute sessions or 7 days with Keep me logged in, role-aware sidebar, `UserLoggedIn` audit. Demo accounts exist only after seed; login does not insert users. |
 | 2. Search PAT-002391 | Done — `/patients` and `/patients/[publicId]` (clinicians only); identity + record existence, no clinical contents; `PatientSearched` audit (including zero-result searches) |
 | 3–4. Purpose request + risk decision | Done — `/requests/new` (or **Request access** on a patient page): purpose + record types → stored request, risk score (INN-38), ALLOW / VERIFY / BLOCK with every reason; `/requests` lists your requests; `AccessRequested` + outcome audit. Ibrahim → PAT-002391 treatment = 8 ALLOW (the seed gives PAT-002391 consent for FMC Abuja). Cross-facility single-patient requests need **patient consent** (except purpose emergency): without it they are VERIFY with a "no active patient consent" reason; clinicians record consent on the patient page (30 days, audited) and security officers / admins can revoke it on `/security`. A VERIFY request opens a **Complete verification** dialog: re-entering your password turns it into ALLOW; three wrong passwords block it and alert security (all audited) |
 | 5. Authorised summary | Done — on an allowed request, **View authorised records** releases only the requested sections from the facility that holds them (e.g. FMC Lagos for PAT-002391); BLOCK / VERIFY release nothing; each view is audited as `RecordViewed`. Allowed access lasts **24 hours** from the decision; after that the request page shows **Request access again**, and any attempt to open the records is refused and audited as `AccessExpired` |

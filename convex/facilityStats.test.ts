@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { startOfLagosDay } from "./lib/dashboardConstants";
 import {
   getFacilityTotals,
@@ -29,17 +29,6 @@ function createTest() {
 afterEach(() => {
   vi.useRealTimers();
 });
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  if (!("token" in loginResult) || !loginResult.token) {
-    throw new Error(`Login failed for ${email}`);
-  }
-  return loginResult.token;
-}
 
 async function seed(testBackend: TestBackend, patientTotal = PATIENT_COUNT) {
   await testBackend.mutation(internal.seed.seedFacilities, {});
@@ -102,7 +91,7 @@ describe("stored facility totals (INN-53)", () => {
     const testBackend = createTest();
     // Logging in first creates the demo users unlinked (as in real use), so
     // the seed links them through the "existing user" path.
-    await loginUser(testBackend, SECURITY_EMAIL);
+    await loginDemoUser(testBackend, SECURITY_EMAIL);
     await seed(testBackend);
 
     const direct = await countDirectly(testBackend);
@@ -254,9 +243,9 @@ describe("stored facility totals (INN-53)", () => {
     await seed(testBackend);
     vi.useRealTimers();
     const direct = await countDirectly(testBackend);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     const facilities = await testBackend.query(api.dashboards.listFacilities, {
       token: chiomaToken,

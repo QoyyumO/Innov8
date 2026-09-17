@@ -6,7 +6,7 @@ import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import {
   BLOCK_ALERT_TITLE,
@@ -32,14 +32,6 @@ type TestBackend = ReturnType<typeof createTest>;
 
 function createTest() {
   return convexTest(schema, modules);
-}
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
 }
 
 async function seedDemoWorld(testBackend: TestBackend) {
@@ -131,7 +123,7 @@ describe("alerts raised by blocked requests", () => {
   test("a 500-record harvest is BLOCK 94 with one open high alert and both audits", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const harvest = await simulateHarvest(testBackend, token);
 
@@ -176,7 +168,7 @@ describe("alerts raised by blocked requests", () => {
   test("ALLOW and VERIFY decisions raise no alert", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     expect((await requestOnePatient(testBackend, token)).outcome).toBe("ALLOW");
 
@@ -190,7 +182,7 @@ describe("alerts raised by blocked requests", () => {
     try {
       // 22:00 West Africa Time: administrative + cross-facility + after hours = 43.
       vi.setSystemTime(Date.UTC(2026, 8, 16, 21, 0));
-      const nightToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+      const nightToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
       const verify = await testBackend.mutation(api.accessRequests.createAccessRequest, {
         token: nightToken,
         publicId: "PAT-002391",
@@ -208,7 +200,7 @@ describe("alerts raised by blocked requests", () => {
   test("a non-harvest BLOCK uses the generic title and singular wording", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const allowed = await requestOnePatient(testBackend, token);
 
     await testBackend.run(async (ctx) => {
@@ -240,9 +232,9 @@ describe("alerts raised by blocked requests", () => {
   test("alert text never contains clinical content", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await simulateHarvest(testBackend, token);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     const listed = await listAlerts(testBackend, securityToken);
     const serialized = JSON.stringify([listed, await storedAlerts(testBackend)]);
@@ -256,7 +248,7 @@ describe("simulateBulkHarvest", () => {
   test("the server fixes the harvest volume and stores one request row", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const harvest = await simulateHarvest(testBackend, token);
 
@@ -277,7 +269,7 @@ describe("simulateBulkHarvest", () => {
   test("rejects a client-supplied record count", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(
       testBackend.mutation(api.accessRequests.simulateBulkHarvest, {
@@ -292,8 +284,8 @@ describe("simulateBulkHarvest", () => {
   test("is limited to clinicians with a live session", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const patientToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     for (const token of [securityToken, patientToken]) {
       await expect(simulateHarvest(testBackend, token)).rejects.toThrow(
@@ -309,7 +301,7 @@ describe("simulateBulkHarvest", () => {
   test("createAccessRequest still refuses a record count", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(
       testBackend.mutation(api.accessRequests.createAccessRequest, {
@@ -328,11 +320,11 @@ describe("listSecurityAlerts", () => {
   test("security officers and admins see the harvest alert with its context", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const harvest = await simulateHarvest(testBackend, ibrahimToken);
 
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL]) {
-      const reviewerToken = await loginUser(testBackend, email);
+      const reviewerToken = await loginDemoUser(testBackend, email);
       const listed = await listAlerts(testBackend, reviewerToken, "open");
       expect(listed.page).toHaveLength(1);
       expect(listed.page[0]).toMatchObject({
@@ -357,8 +349,8 @@ describe("listSecurityAlerts", () => {
   test("clinicians, patients, and anonymous callers get an empty finished page", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const patientToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
     await simulateHarvest(testBackend, ibrahimToken);
 
     for (const token of [ibrahimToken, patientToken, undefined, "not-a-token"]) {
@@ -373,8 +365,8 @@ describe("listSecurityAlerts", () => {
   test("filters by status and pages newest first", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const oldest = await simulateHarvest(testBackend, ibrahimToken);
     const middle = await simulateHarvest(testBackend, ibrahimToken);
     const newest = await simulateHarvest(testBackend, ibrahimToken);
@@ -410,7 +402,7 @@ describe("listSecurityAlerts", () => {
 
   test("seed-style alerts without a decision still list", async () => {
     const testBackend = createTest();
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     await testBackend.run((ctx) =>
       ctx.db.insert("securityAlerts", {
         severity: "medium",
@@ -435,8 +427,8 @@ describe("listSecurityAlerts", () => {
 describe("acknowledgeAlert and closeAlert", () => {
   async function openHarvestAlert(testBackend: TestBackend) {
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     await simulateHarvest(testBackend, ibrahimToken);
     const [alert] = await storedAlerts(testBackend);
     return { ibrahimToken, securityToken, alertId: alert._id };
@@ -545,7 +537,7 @@ describe("acknowledgeAlert and closeAlert", () => {
   test("clinicians cannot change alert status", async () => {
     const testBackend = createTest();
     const { ibrahimToken, alertId } = await openHarvestAlert(testBackend);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
 
     for (const token of [ibrahimToken, fatimaToken]) {
       await expect(

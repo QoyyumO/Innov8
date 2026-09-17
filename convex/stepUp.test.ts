@@ -7,6 +7,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 import {
   STEP_UP_ESCALATED_REASON,
@@ -32,14 +33,6 @@ function createTest() {
 afterEach(() => {
   vi.useRealTimers();
 });
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
-}
 
 async function seedDemoWorld(testBackend: TestBackend) {
   await testBackend.run(async (ctx) => {
@@ -159,7 +152,7 @@ describe("the risk engine challenges mid-risk requests", () => {
   test("administrative access after hours is VERIFY with reasons and releases nothing", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const setupToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const setupToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const ibrahim = await testBackend.query(api.auth.getCurrentUser, { token: setupToken });
     await testBackend.run((ctx) =>
       ctx.db.patch(ibrahim!._id, { normalAccessHours: { start: "08:00", end: "18:00" } }),
@@ -167,7 +160,7 @@ describe("the risk engine challenges mid-risk requests", () => {
 
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.UTC(2026, 8, 16, 21, 0));
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const challenged = await testBackend.mutation(api.accessRequests.createAccessRequest, {
       token,
       publicId: "PAT-002391",
@@ -197,7 +190,7 @@ describe("completeVerification", () => {
   test("the right password turns VERIFY into ALLOW, audited, with the window from verification", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const requestId = await createChallengedRequest(testBackend, token, {
       decidedAt: Date.now() - 2 * DAY_MS,
     });
@@ -264,7 +257,7 @@ describe("completeVerification", () => {
   test(`${STEP_UP_MAX_FAILURES} wrong passwords block the request and alert security`, async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const requestId = await createChallengedRequest(testBackend, token);
 
     expect(await verify(testBackend, token, requestId, WRONG_PASSWORD)).toEqual({
@@ -319,7 +312,7 @@ describe("completeVerification", () => {
   test("an empty password is rejected without counting as a failure", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const requestId = await createChallengedRequest(testBackend, token);
 
     await expect(verify(testBackend, token, requestId, "")).rejects.toThrow(
@@ -336,8 +329,8 @@ describe("completeVerification", () => {
   test("only the requester's own single-patient VERIFY request is eligible", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
 
     const allowed = await testBackend.mutation(api.accessRequests.createAccessRequest, {
       token: ibrahimToken,
@@ -374,9 +367,9 @@ describe("completeVerification", () => {
   test("security officers and anonymous callers cannot verify", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const requestId = await createChallengedRequest(testBackend, ibrahimToken);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     await expect(verify(testBackend, securityToken, requestId, DEMO_PASSWORD)).rejects.toThrow();
     await expect(verify(testBackend, undefined, requestId, DEMO_PASSWORD)).rejects.toThrow();

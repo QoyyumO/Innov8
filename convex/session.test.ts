@@ -5,6 +5,10 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
+import {
+  ensureDemoUsersForTests,
+  loginDemoSession,
+} from "./lib/loginForTests";
 import type { AuditAction } from "./lib/domain";
 import {
   ADMIN_ROLES,
@@ -24,10 +28,7 @@ function createTest() {
 
 async function loginIbrahim() {
   const testBackend = createTest();
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email: IBRAHIM_EMAIL,
-    password: DEMO_PASSWORD,
-  });
+  const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
   return { testBackend, loginResult };
 }
 
@@ -72,6 +73,7 @@ describe("login audit (INN-35)", () => {
 
   test("failed login writes no audit row", async () => {
     const testBackend = createTest();
+    await ensureDemoUsersForTests(testBackend);
     const loginResult = await testBackend.mutation(api.auth.login, {
       email: IBRAHIM_EMAIL,
       password: "wrong-password",
@@ -89,6 +91,7 @@ describe("login audit (INN-35)", () => {
 
   test("keep me logged in lasts seven days", async () => {
     const testBackend = createTest();
+    await ensureDemoUsersForTests(testBackend);
     const startedAt = Date.now();
     const loginResult = await testBackend.mutation(api.auth.login, {
       email: IBRAHIM_EMAIL,

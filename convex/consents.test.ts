@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
+import { loginDemoUser } from "./lib/loginForTests";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import {
@@ -38,17 +39,6 @@ function createTest() {
 afterEach(() => {
   vi.useRealTimers();
 });
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  if (!("token" in loginResult) || !loginResult.token) {
-    throw new Error(`Login failed for ${email}`);
-  }
-  return loginResult.token;
-}
 
 async function addUser(testBackend: TestBackend, email: string, roles: UserRole[], hospital: string) {
   const hashedPassword = await hashPassword(DEMO_PASSWORD);
@@ -147,7 +137,7 @@ describe("consent in access decisions (INN-45)", () => {
   test("without consent a cross-facility request is VERIFY; recording consent makes it ALLOW 8", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const before = await testBackend.query(api.consents.getConsentStatus, {
       token,
@@ -207,8 +197,8 @@ describe("consent in access decisions (INN-45)", () => {
   test("every cross-facility purpose needs consent; same-facility, bulk, and break-glass do not", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const aishaToken = await loginUser(testBackend, AISHA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const aishaToken = await loginDemoUser(testBackend, AISHA_EMAIL);
 
     for (const purpose of ["follow-up", "referral", "administrative"] as const) {
       const result = await requestAccess(testBackend, ibrahimToken, purpose);
@@ -260,7 +250,7 @@ describe("consent in access decisions (INN-45)", () => {
   test("step-up cannot stand in for consent, but works once consent is recorded", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const challenged = await requestAccess(testBackend, token);
 
     await expect(
@@ -288,8 +278,8 @@ describe("consent in access decisions (INN-45)", () => {
   test("recording is validated and limited to one live consent per facility", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     await expect(recordConsent(testBackend, token, "   ok   ")).rejects.toThrow(
       CONSENT_NOTE_TOO_SHORT_MESSAGE,
@@ -323,7 +313,7 @@ describe("consent in access decisions (INN-45)", () => {
   test("unknown patients return no consent status; a live consent is found past a page of expired rows", async () => {
     const testBackend = createTest();
     const ids = await seedWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     expect(
       await testBackend.query(api.consents.getConsentStatus, {
         token,
@@ -360,15 +350,15 @@ describe("consent in access decisions (INN-45)", () => {
     vi.setSystemTime(startedAt);
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await recordConsent(testBackend, token);
 
     vi.setSystemTime(startedAt + CONSENT_DURATION_MS - 1);
-    const lateToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const lateToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     expect((await requestAccess(testBackend, lateToken)).outcome).toBe("ALLOW");
 
     vi.setSystemTime(startedAt + CONSENT_DURATION_MS);
-    const expiredToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const expiredToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     expect((await requestAccess(testBackend, expiredToken)).outcome).toBe("VERIFY");
     const status = await testBackend.query(api.consents.getConsentStatus, {
       token: expiredToken,
@@ -384,11 +374,11 @@ describe("revoking and reviewing consents", () => {
   test("security officers and in-scope admins revoke; others cannot", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const abujaAdminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const lagosAdminToken = await loginUser(testBackend, LAGOS_ADMIN_EMAIL);
-    const abeokutaAdminToken = await loginUser(testBackend, ABEOKUTA_ADMIN_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const abujaAdminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const lagosAdminToken = await loginDemoUser(testBackend, LAGOS_ADMIN_EMAIL);
+    const abeokutaAdminToken = await loginDemoUser(testBackend, ABEOKUTA_ADMIN_EMAIL);
 
     const revoke = (token: string, consentId: string) =>
       testBackend.mutation(api.consents.revokePatientConsent, { token, consentId });
@@ -434,11 +424,11 @@ describe("revoking and reviewing consents", () => {
   test("the consent list and audit trail follow reviewer scope", async () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const abujaAdminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const lagosAdminToken = await loginUser(testBackend, LAGOS_ADMIN_EMAIL);
-    const abeokutaAdminToken = await loginUser(testBackend, ABEOKUTA_ADMIN_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const abujaAdminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const lagosAdminToken = await loginDemoUser(testBackend, LAGOS_ADMIN_EMAIL);
+    const abeokutaAdminToken = await loginDemoUser(testBackend, ABEOKUTA_ADMIN_EMAIL);
     const recorded = await recordConsent(testBackend, ibrahimToken);
 
     for (const token of [securityToken, abujaAdminToken, lagosAdminToken]) {
@@ -490,7 +480,7 @@ describe("demo seed", () => {
     );
     expect(consents[0]).toMatchObject({ facilityId: abuja!._id, status: "active" });
 
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     expect(await requestAccess(testBackend, token)).toMatchObject({
       outcome: "ALLOW",
       riskScore: 8,

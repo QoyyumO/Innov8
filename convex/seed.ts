@@ -123,6 +123,7 @@ export const seedHealthcareWorkers = internalMutation({
   args: { count: v.optional(v.number()) },
   returns: v.object({ inserted: v.number(), updated: v.number(), skipped: v.number() }),
   handler: async (ctx, args) => {
+    await ctx.runMutation(internal.auth.ensureDemoUsers, {});
     const total = args.count ?? SEED_WORKER_COUNT;
     const facilities = await loadFacilities(ctx);
     const rand = mulberry32(42);
@@ -159,23 +160,14 @@ export const seedHealthcareWorkers = internalMutation({
         workerFields.normalPatientVolume = workerSeed.normalPatientVolume;
       }
 
-      if (existing) {
-        await patchCountedUser(ctx.db, existing, workerFields);
-        updated += 1;
-        continue;
+      if (!existing) {
+        throw new Error(
+          `Demo user ${demoUser.email} missing after ensureDemoUsers`,
+        );
       }
 
-      await insertCountedUser(ctx.db, {
-        email: demoUser.email,
-        hashedPassword,
-        roles: demoUser.roles,
-        hospital: demoUser.hospital,
-        department: demoUser.department,
-        accountStatus: "active",
-        profile: demoUser.profile,
-        ...workerFields,
-      });
-      inserted += 1;
+      await patchCountedUser(ctx.db, existing, workerFields);
+      updated += 1;
     }
 
     for (let workerIndex = 1; workerIndex <= total; workerIndex += 1) {

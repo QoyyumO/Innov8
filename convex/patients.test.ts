@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import {
   PERMISSION_DENIED_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
@@ -16,20 +16,6 @@ const SECRET_SUMMARY = "SECRET clinical summary must never leak";
 
 function createTest() {
   return convexTest(schema, modules);
-}
-
-async function loginUser(
-  testBackend: ReturnType<typeof createTest>,
-  email: string,
-) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  if (!("token" in loginResult) || !loginResult.token) {
-    throw new Error(`Login failed for ${email}`);
-  }
-  return loginResult.token;
 }
 
 async function seedDemoPatient(testBackend: ReturnType<typeof createTest>) {
@@ -88,7 +74,7 @@ describe("patient discovery", () => {
   test("Ibrahim finds PAT-002391 by publicId without clinical fields", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const results = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -106,7 +92,7 @@ describe("patient discovery", () => {
   test("name prefix search is bounded and audited", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const results = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -132,7 +118,7 @@ describe("patient discovery", () => {
   test("name prefixes shorter than 3 characters return nothing and still audit", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const oneLetter = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -159,7 +145,7 @@ describe("patient discovery", () => {
   test("full searchName is an exact B-tree equality lookup", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const results = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -173,7 +159,7 @@ describe("patient discovery", () => {
   test("discovery returns record existence at Lagos, not summary text", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const discovery = await testBackend.query(
       api.patients.getPatientDiscovery,
@@ -199,7 +185,7 @@ describe("patient discovery", () => {
   test("a search with zero results still writes PatientSearched", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const results = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -224,7 +210,7 @@ describe("patient discovery", () => {
   test("whitespace-only query returns nothing and does not audit", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const results = await testBackend.mutation(api.patients.searchPatients, {
       token,
@@ -241,7 +227,7 @@ describe("patient discovery", () => {
 
   test("unknown publicId returns null and does not audit", async () => {
     const testBackend = createTest();
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const discovery = await testBackend.query(
       api.patients.getPatientDiscovery,
@@ -283,7 +269,7 @@ describe("patient discovery", () => {
   test("patient role cannot search or discover records", async () => {
     const testBackend = createTest();
     await seedDemoPatient(testBackend);
-    const token = await loginUser(testBackend, CHIOMA_EMAIL);
+    const token = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     await expect(
       testBackend.mutation(api.patients.searchPatients, {

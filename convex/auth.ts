@@ -25,31 +25,37 @@ import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
 import { insertCountedUser } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 
-async function ensureDemoUsers(ctx: MutationCtx) {
-  let hashedPassword: string | null = null;
+export const ensureDemoUsers = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    let hashedPassword: string | null = null;
 
-  for (const user of DEMO_USERS) {
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", user.email))
-      .first();
+    for (const user of DEMO_USERS) {
+      const existing = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", user.email))
+        .first();
 
-    if (existing) {
-      continue;
+      if (existing) {
+        continue;
+      }
+
+      hashedPassword ??= await hashPassword(DEMO_PASSWORD);
+      await insertCountedUser(ctx.db, {
+        email: user.email,
+        hashedPassword,
+        roles: user.roles,
+        hospital: user.hospital,
+        department: user.department,
+        accountStatus: "active",
+        profile: user.profile,
+      });
     }
 
-    hashedPassword ??= await hashPassword(DEMO_PASSWORD);
-    await insertCountedUser(ctx.db, {
-      email: user.email,
-      hashedPassword,
-      roles: user.roles,
-      hospital: user.hospital,
-      department: user.department,
-      accountStatus: "active",
-      profile: user.profile,
-    });
-  }
-}
+    return null;
+  },
+});
 
 export const login = mutation({
   args: {
@@ -68,8 +74,6 @@ export const login = mutation({
     }),
   ),
   handler: async (ctx, args) => {
-    await ensureDemoUsers(ctx);
-
     const emailLower = args.email.toLowerCase().trim();
     const user = await ctx.db
       .query("users")

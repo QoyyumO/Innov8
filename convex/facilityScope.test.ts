@@ -6,6 +6,7 @@ import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import { startOfLagosDay } from "./lib/dashboardConstants";
 import { hashPassword } from "./lib/password";
@@ -25,14 +26,6 @@ type TestBackend = ReturnType<typeof createTest>;
 
 function createTest() {
   return convexTest(schema, modules);
-}
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
 }
 
 async function addUser(
@@ -103,9 +96,9 @@ async function seedWorld(testBackend: TestBackend) {
  * - Yusuf (Abeokuta) → PAT-000900 (Abuja): treatment ALLOW — incoming to Abuja.
  */
 async function runFlows(testBackend: TestBackend) {
-  const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-  const aishaToken = await loginUser(testBackend, AISHA_EMAIL);
-  const yusufToken = await loginUser(testBackend, YUSUF_EMAIL);
+  const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+  const aishaToken = await loginDemoUser(testBackend, AISHA_EMAIL);
+  const yusufToken = await loginDemoUser(testBackend, YUSUF_EMAIL);
 
   const ibrahimHarvest = await testBackend.mutation(api.accessRequests.simulateBulkHarvest, {
     token: ibrahimToken,
@@ -168,8 +161,8 @@ describe("hospital admin scope (INN-52)", () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
     const flows = await runFlows(testBackend);
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     // The exchange officer (no hospital) ends Abuja's outgoing grant: the admin
     // must still see it, via the request's source facility.
     await testBackend.mutation(api.emergency.revokeEmergencyAccess, {
@@ -226,8 +219,8 @@ describe("hospital admin scope (INN-52)", () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
     const flows = await runFlows(testBackend);
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     const adminAlerts = await listAlertRequestIds(testBackend, adminToken);
     expect(new Set(adminAlerts)).toEqual(
@@ -280,8 +273,8 @@ describe("hospital admin scope (INN-52)", () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
     const flows = await runFlows(testBackend);
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     for (const [requestId, isVisible] of [
       [flows.ibrahimHarvest.requestId, true],
@@ -321,8 +314,8 @@ describe("hospital admin scope (INN-52)", () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
     const flows = await runFlows(testBackend);
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const since = startOfLagosDay(Date.now());
 
     const admin = await testBackend.query(api.dashboards.getSecurityDashboard, {
@@ -357,8 +350,8 @@ describe("hospital admin scope (INN-52)", () => {
     const testBackend = createTest();
     await seedWorld(testBackend);
     const flows = await runFlows(testBackend);
-    const systemToken = await loginUser(testBackend, SYSTEM_ADMIN_EMAIL);
-    const orphanToken = await loginUser(testBackend, ORPHAN_ADMIN_EMAIL);
+    const systemToken = await loginDemoUser(testBackend, SYSTEM_ADMIN_EMAIL);
+    const orphanToken = await loginDemoUser(testBackend, ORPHAN_ADMIN_EMAIL);
 
     expect(await listAlertRequestIds(testBackend, systemToken)).toHaveLength(4);
     const systemDetail = await testBackend.query(api.accessRequests.getAccessRequest, {
@@ -404,7 +397,7 @@ describe("hospital admin scope (INN-52)", () => {
       });
     });
     await addUser(testBackend, "admin-dup@fmc.abuja.ng", ["hospital_admin"], "FMC Abuja");
-    const duplicateToken = await loginUser(testBackend, "admin-dup@fmc.abuja.ng");
+    const duplicateToken = await loginDemoUser(testBackend, "admin-dup@fmc.abuja.ng");
 
     expect(await listAlertRequestIds(testBackend, duplicateToken)).toEqual([]);
     const dashboard = await testBackend.query(api.dashboards.getSecurityDashboard, {
@@ -426,7 +419,7 @@ describe("hospital admin scope (INN-52)", () => {
         .unique();
       await ctx.db.patch(admin!._id, { facilityId: facilityIds.Lagos });
     });
-    const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
 
     expect(new Set(await listAlertRequestIds(testBackend, adminToken))).toEqual(
       new Set([
@@ -446,7 +439,7 @@ describe("facilityScopeBackfill", () => {
       const testBackend = createTest();
       const facilityIds = await seedWorld(testBackend);
       const flows = await runFlows(testBackend);
-      const adminToken = await loginUser(testBackend, ABUJA_ADMIN_EMAIL);
+      const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
       // Simulate data written before INN-52: no facility links at all.
       await testBackend.run(async (ctx) => {
         for (const link of await ctx.db.query("alertFacilities").take(100)) {

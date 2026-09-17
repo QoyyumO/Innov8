@@ -6,7 +6,7 @@ import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import {
   AUDIT_TODAY_COUNT_LIMIT,
   clampDashboardSince,
@@ -43,14 +43,6 @@ function createTest() {
 
 function today() {
   return startOfLagosDay(Date.now());
-}
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
 }
 
 async function userIdFor(testBackend: TestBackend, email: string) {
@@ -186,7 +178,7 @@ describe("getClinicianDashboard", () => {
   test("reflects Ibrahim's own demo walk", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, token);
 
     const dashboard = await testBackend.query(api.dashboards.getClinicianDashboard, {
@@ -232,7 +224,7 @@ describe("getClinicianDashboard", () => {
   test("counts only today and only the caller, capped at the limit", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
     const fatimaId = await userIdFor(testBackend, FATIMA_EMAIL);
     const since = today();
@@ -279,7 +271,7 @@ describe("getClinicianDashboard", () => {
   test("latest blocked harvest skips newer harvest-sized requests that were not blocked", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
     const blockedId = await insertRequest(testBackend, world, ibrahimId, Date.now() - 2000, {
       outcome: "BLOCK",
@@ -307,7 +299,7 @@ describe("getClinicianDashboard", () => {
   test("leaves out expired and revoked grants", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
     const requestId = await insertRequest(testBackend, world, ibrahimId, Date.now());
     await testBackend.run(async (ctx) => {
@@ -337,7 +329,7 @@ describe("getClinicianDashboard", () => {
   test("returns null for non-clinicians and anonymous callers", async () => {
     const testBackend = createTest();
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL, CHIOMA_EMAIL]) {
-      const token = await loginUser(testBackend, email);
+      const token = await loginDemoUser(testBackend, email);
       const dashboard = await testBackend.query(api.dashboards.getClinicianDashboard, {
         token,
         since: today(),
@@ -355,7 +347,7 @@ describe("getSecurityDashboard", () => {
   test("summarises open alerts, blocks, break-glass, audit volume, and latest decisions", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, ibrahimToken);
     const fatimaId = await userIdFor(testBackend, FATIMA_EMAIL);
     const since = today();
@@ -374,7 +366,7 @@ describe("getSecurityDashboard", () => {
     });
 
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL]) {
-      const token = await loginUser(testBackend, email);
+      const token = await loginDemoUser(testBackend, email);
       const dashboard = await testBackend.query(api.dashboards.getSecurityDashboard, {
         token,
         since,
@@ -404,7 +396,7 @@ describe("getSecurityDashboard", () => {
 
   test("caps open alerts and today's audit events", async () => {
     const testBackend = createTest();
-    const token = await loginUser(testBackend, SECURITY_EMAIL);
+    const token = await loginDemoUser(testBackend, SECURITY_EMAIL);
     await testBackend.run(async (ctx) => {
       for (let index = 0; index <= OPEN_ALERT_COUNT_LIMIT; index += 1) {
         await ctx.db.insert("securityAlerts", {
@@ -454,7 +446,7 @@ describe("getSecurityDashboard", () => {
   test("returns null for clinicians, patients, and anonymous callers", async () => {
     const testBackend = createTest();
     for (const email of [IBRAHIM_EMAIL, CHIOMA_EMAIL]) {
-      const token = await loginUser(testBackend, email);
+      const token = await loginDemoUser(testBackend, email);
       const dashboard = await testBackend.query(api.dashboards.getSecurityDashboard, {
         token,
         since: today(),
@@ -474,7 +466,7 @@ describe("listFacilities", () => {
     await seedDemoWorld(testBackend);
 
     for (const email of [IBRAHIM_EMAIL, SECURITY_EMAIL, CHIOMA_EMAIL]) {
-      const token = await loginUser(testBackend, email);
+      const token = await loginDemoUser(testBackend, email);
       const facilities = await testBackend.query(api.dashboards.listFacilities, { token });
       expect(facilities.map((facility) => facility.code)).toEqual([
         "FMC-ABJ",
@@ -506,8 +498,8 @@ describe("getPatientDashboard", () => {
   test("Chioma sees PAT-002391 and events that name her, not another patient", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
     await linkChioma(testBackend, world.patientId);
     await walkDemo(testBackend, ibrahimToken);
 
@@ -565,8 +557,8 @@ describe("getPatientDashboard", () => {
   test("returns null for clinicians, unlinked patients, and anonymous callers", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     expect(
       await testBackend.query(api.dashboards.getPatientDashboard, { token: ibrahimToken }),

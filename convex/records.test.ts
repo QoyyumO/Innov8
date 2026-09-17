@@ -6,7 +6,7 @@ import { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
-import { DEMO_PASSWORD } from "./lib/demoUsers";
+import { loginDemoUser } from "./lib/loginForTests";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import type { RecordType } from "./lib/domain";
 import { ALLOW_EXPIRED_REASON, ALLOW_VALIDITY_MS } from "./lib/accessWindow";
@@ -28,14 +28,6 @@ type TestBackend = ReturnType<typeof createTest>;
 
 function createTest() {
   return convexTest(schema, modules);
-}
-
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await testBackend.mutation(api.auth.login, {
-    email,
-    password: DEMO_PASSWORD,
-  });
-  return loginResult.token as string;
 }
 
 async function seedDemoWorld(
@@ -185,7 +177,7 @@ describe("viewAuthorisedSummary after ALLOW", () => {
   test("Ibrahim sees every requested Lagos section, and only Lagos", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token);
     expect(request.outcome).toBe("ALLOW");
 
@@ -221,7 +213,7 @@ describe("viewAuthorisedSummary after ALLOW", () => {
   test("only the requested record types are returned", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const allergiesOnly = await createRequest(testBackend, token, ["allergies"]);
     const allergiesView = await viewSummary(testBackend, token, allergiesOnly.requestId);
@@ -247,7 +239,7 @@ describe("viewAuthorisedSummary after ALLOW", () => {
   test("each successful view is audited as RecordViewed with the session", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token, ["allergies", "diagnoses"]);
 
     await viewSummary(testBackend, token, request.requestId);
@@ -278,7 +270,7 @@ describe("viewAuthorisedSummary after ALLOW", () => {
   test("authorised but no summary at the target facility is unavailable and not audited", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend, { withLagosSummary: false });
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token);
 
     const view = await viewSummary(testBackend, token, request.requestId);
@@ -297,7 +289,7 @@ describe("viewAuthorisedSummary refusals", () => {
   test("BLOCK is denied with reasons and no clinical content", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const harvest = await createDecidedRequest(testBackend, token, HARVEST_DECISION);
 
     const view = await viewSummary(testBackend, token, harvest.requestId);
@@ -313,7 +305,7 @@ describe("viewAuthorisedSummary refusals", () => {
   test("VERIFY is denied", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const aboveBaseline = await createDecidedRequest(testBackend, token, VERIFY_DECISION);
 
     const view = await viewSummary(testBackend, token, aboveBaseline.requestId);
@@ -325,8 +317,8 @@ describe("viewAuthorisedSummary refusals", () => {
   test("another clinician gets null for someone else's allowed request", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
     const request = await createRequest(testBackend, ibrahimToken);
 
     expect(await viewSummary(testBackend, fatimaToken, request.requestId)).toBeNull();
@@ -336,8 +328,8 @@ describe("viewAuthorisedSummary refusals", () => {
   test("security officers and anonymous callers cannot read clinical content", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const request = await createRequest(testBackend, ibrahimToken);
 
     await expect(viewSummary(testBackend, securityToken, request.requestId)).rejects.toThrow(
@@ -351,7 +343,7 @@ describe("viewAuthorisedSummary refusals", () => {
   test("suspended requester is rejected", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token);
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     await testBackend.run((ctx) => ctx.db.patch(user!._id, { accountStatus: "suspended" }));
@@ -362,7 +354,7 @@ describe("viewAuthorisedSummary refusals", () => {
   test("malformed and unknown request ids return null", async () => {
     const testBackend = createTest();
     const { patientId } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     for (const requestId of ["", "nope", patientId as Id<"patients"> as string]) {
       expect(await viewSummary(testBackend, token, requestId)).toBeNull();
@@ -376,7 +368,7 @@ describe("emergency grants", () => {
     grant: { expiresInMs: number; revoked?: boolean; forOtherRequest?: boolean },
   ) {
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const blocked = await createDecidedRequest(testBackend, token, HARVEST_DECISION, ["allergies"]);
     const other = await createDecidedRequest(testBackend, token, HARVEST_DECISION, ["medications"]);
     await testBackend.run(async (ctx) => {
@@ -450,12 +442,12 @@ describe("ALLOW validity window (INN-51)", () => {
     vi.setSystemTime(startedAt);
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token, ["allergies"]);
     expect(request.outcome).toBe("ALLOW");
 
     vi.setSystemTime(startedAt + ALLOW_VALIDITY_MS - 1);
-    const lateToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const lateToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const lastView = await viewSummary(testBackend, lateToken, request.requestId);
     expect(lastView).toMatchObject({
       status: "authorised",
@@ -464,7 +456,7 @@ describe("ALLOW validity window (INN-51)", () => {
     });
 
     vi.setSystemTime(startedAt + ALLOW_VALIDITY_MS);
-    const expiredToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const expiredToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const refused = await viewSummary(testBackend, expiredToken, request.requestId);
     expect(refused).toEqual({
       status: "denied",
@@ -493,7 +485,7 @@ describe("ALLOW validity window (INN-51)", () => {
   test("an ALLOW from 25 hours ago (e.g. seeded) no longer releases records", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token);
     await testBackend.run(async (ctx) => {
       const stored = await ctx.db
@@ -518,7 +510,7 @@ describe("ALLOW validity window (INN-51)", () => {
   test("a live emergency grant still decides, even on an expired ALLOW", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await createRequest(testBackend, token, ["allergies"]);
     await testBackend.run(async (ctx) => {
       const stored = await ctx.db
@@ -546,7 +538,7 @@ describe("ALLOW validity window (INN-51)", () => {
   test("BLOCK and VERIFY refusals are not expiry and write no AccessExpired", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     for (const decision of [HARVEST_DECISION, VERIFY_DECISION]) {
       const request = await createDecidedRequest(testBackend, token, decision);
       const view = await viewSummary(testBackend, token, request.requestId);
