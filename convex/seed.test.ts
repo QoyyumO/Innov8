@@ -129,4 +129,34 @@ describe("demo-scale seed", () => {
     expect(leftover.facilities).toBe(3);
     vi.useRealTimers();
   });
+
+  test("links the Chioma login to PAT-002391", async () => {
+    vi.useFakeTimers();
+    const testBackend = createTest();
+    await testBackend.mutation(internal.seed.seedFacilities, {});
+    await testBackend.mutation(internal.seed.seedHealthcareWorkers, {
+      count: SEED_WORKER_COUNT,
+    });
+    await testBackend.mutation(internal.seed.seedPatientsBatch, {
+      cursor: 0,
+      batchSize: 10,
+      total: 5,
+    });
+    await testBackend.finishAllScheduledFunctions(vi.runAllTimers);
+
+    const linked = await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", "chioma@patient.innov8.ng"))
+        .unique();
+      const demoPatient = await ctx.db
+        .query("patients")
+        .withIndex("by_publicId", (query) => query.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
+        .unique();
+      return { patientId: chioma?.patientId ?? null, demoId: demoPatient?._id ?? null };
+    });
+    expect(linked.patientId).toBe(linked.demoId);
+    expect(linked.patientId).not.toBeNull();
+    vi.useRealTimers();
+  });
 });

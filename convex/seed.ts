@@ -17,6 +17,7 @@ import {
   DEMO_PASSWORD,
   DEMO_USERS,
   DEMO_WORKER_SEEDS,
+  CHIOMA_EMAIL,
 } from "./lib/demoUsers";
 import {
   ALLERGIES,
@@ -230,9 +231,54 @@ export const seedHealthcareWorkers = internalMutation({
       inserted += 1;
     }
 
+    const demoPatient = await ctx.db
+      .query("patients")
+      .withIndex("by_publicId", (query) => query.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
+      .first();
+    if (demoPatient) {
+      await linkChiomaPatientAccount(ctx, demoPatient._id);
+    }
+
     return { inserted, updated, skipped };
   },
 });
+
+async function linkChiomaPatientAccount(
+  ctx: MutationCtx,
+  patientId: Id<"patients">,
+) {
+  const chioma = await ctx.db
+    .query("users")
+    .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+    .unique();
+  if (!chioma || chioma.patientId === patientId) {
+    return;
+  }
+  await patchCountedUser(ctx.db, chioma, { patientId });
+}
+
+async function unlinkChiomaPatientAccount(ctx: MutationCtx) {
+  const chioma = await ctx.db
+    .query("users")
+    .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+    .unique();
+  if (!chioma?.patientId) {
+    return;
+  }
+  await ctx.db.replace(chioma._id, {
+    email: chioma.email,
+    hashedPassword: chioma.hashedPassword,
+    roles: chioma.roles,
+    hospital: chioma.hospital,
+    department: chioma.department,
+    accountStatus: chioma.accountStatus,
+    profile: chioma.profile,
+    facilityId: chioma.facilityId,
+    workerId: chioma.workerId,
+    normalAccessHours: chioma.normalAccessHours,
+    normalPatientVolume: chioma.normalPatientVolume,
+  });
+}
 
 /**
  * INN-45: PAT-002391 consents to FMC Abuja, so Ibrahim's treatment request
@@ -373,6 +419,7 @@ async function upsertSyntheticPatient(
   if (isDemoPatient) {
     const abuja = requireFacility(facilities, "FMC-ABJ");
     await ensureDemoConsent(ctx, patientId, abuja._id, lagos._id);
+    await linkChiomaPatientAccount(ctx, patientId);
   }
 
   const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);
@@ -818,6 +865,10 @@ export const clearSeedDataBatch = internalMutation({
   handler: async (ctx, args) => {
     const tableIndex = args.tableIndex ?? 0;
     const batchSize = args.batchSize ?? SEED_CLEAR_BATCH_SIZE;
+
+    if (tableIndex === 0) {
+      await unlinkChiomaPatientAccount(ctx);
+    }
 
     if (tableIndex < CLEAR_TABLES.length) {
       const table = CLEAR_TABLES[tableIndex];

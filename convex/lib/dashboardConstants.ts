@@ -21,6 +21,8 @@ export const AUDIT_TODAY_COUNT_LIMIT = 200;
 export const ACTIVE_GRANT_LIMIT = 20;
 /** Facilities listed on `/facilities`. */
 export const FACILITY_LIST_LIMIT = 50;
+/** Access-history rows on the patient portal (INN-46). */
+export const PATIENT_HISTORY_LIMIT = 20;
 
 /** Midnight in Lagos for the day containing `timestamp`, as epoch ms. */
 export function startOfLagosDay(timestamp: number): number {

@@ -45,7 +45,7 @@ Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `READM
 
 ### Next
 
-The MVP demo path is complete. Should-have: INN-46 (patient access history). No follow-ups open.
+[INN-46](https://linear.app/innov8-health/issue/INN-46) patient portal (this PR). INN-45 consent is in review. No follow-ups open.
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

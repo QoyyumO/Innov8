@@ -37,15 +37,16 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-52** — Facility scope for hospital admins: AuditEvents and SecurityAlerts are indexed by the facilities they involve (actor's facility, request source/target), so a hospital admin reviews only their facility's activity. Security officers and system admins keep the exchange-wide view.
 - **INN-45** — ConsentService: a Consent lets one Facility request a Patient's records held at another; missing consent makes a single-patient, non-emergency cross-facility Decision VERIFY. Recorded by clinicians, revoked by reviewers, audited as `ConsentRecorded` / `ConsentRevoked`.
 - **INN-53** — FacilityStats: stored worker and patient totals per Facility, updated whenever a user or patient is created or changes facility.
+- **INN-46** — Patient portal: a User with role `patient` is linked to one Patient via `users.patientId` (seeded Chioma → PAT-002391). `getPatientDashboard` returns that identity, home Facility, and a bounded list of AuditEvents that name them. Clinician sessions cannot read it as the patient.
 
 ## Next (live demo path)
 
-The MVP demo path is live end to end. Next: should-have patient access history (INN-46). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. Should-have INN-46 is in progress. INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
 - **Facility**: code, name, city (FMC Lagos, FMC Abuja, optional Abeokuta)
-- **User**: existing users table (email, roles, hospital, department, profile, accountStatus)
+- **User**: existing users table (email, roles, hospital, department, profile, accountStatus, optional `patientId` for the patient portal)
 - **Session**: existing sessions table (30-minute TTL, or 7 days when Keep me logged in is checked)
 - **PasswordResetToken**: userId, tokenHash, expiresAt, usedAt (INN-47)
 - **Patient**: publicId (`PAT-002391`), homeFacilityId, demographics (synthetic), identifiers for search
@@ -56,7 +57,7 @@ The MVP demo path is live end to end. Next: should-have patient access history (
 - **EmergencyAccess**: requestId, justification, expiresAt, grantedBy
 - **Consent**: patientId, facilityId (granted to), patientFacilityId (records held at), status, note, recordedBy, grantedAt, expiresAt (INN-45)
 - **SecurityAlert**: decisionId, severity, status, message
-- **AuditEvent**: actor, action, entity, details, session, timestamp
+- **AuditEvent**: actor, action, entity, details, session, timestamp, optional `patientId` when the event names a patient
 
 ## Value objects
 

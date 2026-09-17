@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@/lib/convex";
+import { api, type Id } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
 import { useNow } from "@/hooks/useNow";
 import Alert from "@/components/ui/alert/Alert";
@@ -34,10 +34,10 @@ export function ConsentsTable() {
     sessionToken ? { token: sessionToken } : "skip",
   );
   const revokePatientConsent = useMutation(api.consents.revokePatientConsent);
-  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<Id<"consents"> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const revoke = async (consentId: string) => {
+  const revoke = async (consentId: Id<"consents">) => {
     if (!sessionToken) {
       return;
     }

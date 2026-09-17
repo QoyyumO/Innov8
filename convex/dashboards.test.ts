@@ -488,3 +488,92 @@ describe("listFacilities", () => {
     expect(anonymous).toEqual([]);
   });
 });
+
+describe("getPatientDashboard", () => {
+  async function linkChioma(testBackend: TestBackend, patientId: Id<"patients">) {
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Missing Chioma demo user");
+      }
+      await ctx.db.patch(chioma._id, { patientId });
+    });
+  }
+
+  test("Chioma sees PAT-002391 and events that name her, not another patient", async () => {
+    const testBackend = createTest();
+    const world = await seedDemoWorld(testBackend);
+    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    await linkChioma(testBackend, world.patientId);
+    await walkDemo(testBackend, ibrahimToken);
+
+    const otherPatientId = await testBackend.run(async (ctx) => {
+      return await ctx.db.insert("patients", {
+        publicId: "PAT-000001",
+        homeFacilityId: world.lagosId,
+        profile: { firstName: "Other", lastName: "Patient" },
+        dateOfBirth: Date.UTC(1990, 0, 1),
+        gender: "male",
+        bloodGroup: "A+",
+        searchName: "other patient",
+      });
+    });
+    await testBackend.run(async (ctx) => {
+      await appendAuditEvent(ctx.db, {
+        action: "PatientSearched",
+        entity: "patients",
+        entityId: "PAT-000001",
+        details: { publicId: "PAT-000001" },
+      });
+    });
+
+    const dashboard = await testBackend.query(api.dashboards.getPatientDashboard, {
+      token: chiomaToken,
+    });
+
+    expect(dashboard).toMatchObject({
+      publicId: "PAT-002391",
+      profile: { firstName: "Chioma", lastName: "Okonkwo" },
+      homeFacility: { code: "FMC-LOS", name: "FMC Lagos", city: "Lagos" },
+      isHistoryCapped: false,
+    });
+    expect(dashboard?.recentEvents.length).toBeGreaterThan(0);
+    expect(dashboard?.recentEvents.some((event) => event.action === "AccessRequested")).toBe(
+      true,
+    );
+    expect(
+      dashboard?.recentEvents.some((event) => event.actor?.name === "Ibrahim Abdullahi"),
+    ).toBe(true);
+    expect(dashboard?.recentEvents.every((event) => event.eventId)).toBe(true);
+
+    const otherEvents = await testBackend.run(async (ctx) => {
+      return await ctx.db
+        .query("auditEvents")
+        .withIndex("by_patientId_createdAt", (query) => query.eq("patientId", otherPatientId))
+        .collect();
+    });
+    expect(otherEvents).toHaveLength(1);
+    expect(dashboard?.recentEvents.map((event) => event.eventId)).not.toContain(
+      otherEvents[0]?._id,
+    );
+  });
+
+  test("returns null for clinicians, unlinked patients, and anonymous callers", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+
+    expect(
+      await testBackend.query(api.dashboards.getPatientDashboard, { token: ibrahimToken }),
+    ).toBeNull();
+    expect(
+      await testBackend.query(api.dashboards.getPatientDashboard, { token: chiomaToken }),
+    ).toBeNull();
+    expect(await testBackend.query(api.dashboards.getPatientDashboard, {})).toBeNull();
+  });
+});
