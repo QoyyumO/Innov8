@@ -29,7 +29,8 @@ import { appendAuditEvent } from "./auditLogService";
  * can revoke it. Every change is audited.
  */
 
-const CONSENT_LOOKUP_LIMIT = 20;
+/** Newest live consent: `active` rows only, walked with `.take()` (Convex allows `.paginate()` once per function). */
+const CONSENT_LOOKUP_PAGE_SIZE = 20;
 
 type SessionContext = { user: Doc<"users">; session: Doc<"sessions"> };
 
@@ -52,14 +53,31 @@ export async function findActiveConsent(
   facilityId: Id<"facilities">,
   now: number,
 ): Promise<Doc<"consents"> | null> {
-  const consents = await db
-    .query("consents")
-    .withIndex("by_patientId_facilityId", (query) =>
-      query.eq("patientId", patientId).eq("facilityId", facilityId),
-    )
-    .order("desc")
-    .take(CONSENT_LOOKUP_LIMIT);
-  return consents.find((consent) => isConsentLive(consent, now)) ?? null;
+  let beforeCreationTime: number | undefined;
+  for (;;) {
+    const page = await db
+      .query("consents")
+      .withIndex("by_patientId_facilityId_status", (query) => {
+        const activeForPair = query
+          .eq("patientId", patientId)
+          .eq("facilityId", facilityId)
+          .eq("status", "active");
+        return beforeCreationTime === undefined
+          ? activeForPair
+          : activeForPair.lt("_creationTime", beforeCreationTime);
+      })
+      .order("desc")
+      .take(CONSENT_LOOKUP_PAGE_SIZE);
+    const live = page.find((consent) => isConsentLive(consent, now));
+    if (live) {
+      return live;
+    }
+    const oldestOnPage = page[page.length - 1];
+    if (page.length < CONSENT_LOOKUP_PAGE_SIZE || oldestOnPage === undefined) {
+      return null;
+    }
+    beforeCreationTime = oldestOnPage._creationTime;
+  }
 }
 
 /** How consent bears on a request, for the risk engine and the decision snapshot. */

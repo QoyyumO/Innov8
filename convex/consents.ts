@@ -2,7 +2,12 @@ import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage } from "./lib/authConstants";
-import { CONSENT_LIST_LIMIT, CONSENT_NOT_FOUND_MESSAGE } from "./lib/consentConstants";
+import {
+  NO_INDEXED_RECORDS_MESSAGE,
+  NO_SOURCE_FACILITY_MESSAGE,
+  PATIENT_NOT_FOUND_MESSAGE,
+} from "./lib/accessRequestMessages";
+import { CONSENT_LIST_LIMIT } from "./lib/consentConstants";
 import { consentStatus } from "./lib/domain";
 import { resolveReviewerScope } from "./lib/facilityScope";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
@@ -35,12 +40,56 @@ function isAuthError(error: unknown): boolean {
   return error instanceof Error && isAuthErrorMessage(error.message);
 }
 
-async function toConsentView(ctx: QueryCtx, consent: Doc<"consents">, now: number) {
+function isConsentContextError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    error.message.includes(PATIENT_NOT_FOUND_MESSAGE) ||
+    error.message.includes(NO_SOURCE_FACILITY_MESSAGE) ||
+    error.message.includes(NO_INDEXED_RECORDS_MESSAGE)
+  );
+}
+
+type ConsentViewCache = {
+  patients: Map<Id<"patients">, Promise<Doc<"patients"> | null>>;
+  facilities: Map<Id<"facilities">, Promise<Doc<"facilities"> | null>>;
+  users: Map<Id<"users">, Promise<Doc<"users"> | null>>;
+};
+
+function createConsentViewCache(): ConsentViewCache {
+  return {
+    patients: new Map(),
+    facilities: new Map(),
+    users: new Map(),
+  };
+}
+
+function loadCached<TableName extends "patients" | "facilities" | "users">(
+  ctx: QueryCtx,
+  cache: Map<Id<TableName>, Promise<Doc<TableName> | null>>,
+  documentId: Id<TableName>,
+): Promise<Doc<TableName> | null> {
+  const existing = cache.get(documentId);
+  if (existing) {
+    return existing;
+  }
+  const loaded = ctx.db.get(documentId);
+  cache.set(documentId, loaded);
+  return loaded;
+}
+
+async function toConsentView(
+  ctx: QueryCtx,
+  consent: Doc<"consents">,
+  now: number,
+  cache: ConsentViewCache,
+) {
   const [patient, facility, patientFacility, recorder] = await Promise.all([
-    ctx.db.get(consent.patientId),
-    ctx.db.get(consent.facilityId),
-    ctx.db.get(consent.patientFacilityId),
-    consent.recordedBy ? ctx.db.get(consent.recordedBy) : null,
+    loadCached(ctx, cache.patients, consent.patientId),
+    loadCached(ctx, cache.facilities, consent.facilityId),
+    loadCached(ctx, cache.facilities, consent.patientFacilityId),
+    consent.recordedBy ? loadCached(ctx, cache.users, consent.recordedBy) : null,
   ]);
   return {
     consentId: consent._id,
@@ -87,8 +136,11 @@ export const getConsentStatus = query({
     let context;
     try {
       context = await resolveConsentContext(ctx.db, user, args.publicId);
-    } catch {
-      return null;
+    } catch (error) {
+      if (isConsentContextError(error)) {
+        return null;
+      }
+      throw error;
     }
     const now = Date.now();
     const [facility, patientFacility, consent] = await Promise.all([
@@ -102,7 +154,9 @@ export const getConsentStatus = query({
       isRequired: context.isRequired,
       facility: facility?.name ?? "Unknown facility",
       patientFacility: patientFacility?.name ?? "Unknown facility",
-      consent: consent ? await toConsentView(ctx, consent, now) : null,
+      consent: consent
+        ? await toConsentView(ctx, consent, now, createConsentViewCache())
+        : null,
     };
   },
 });
@@ -131,18 +185,14 @@ export const recordPatientConsent = mutation({
 export const revokePatientConsent = mutation({
   args: {
     token: v.optional(v.string()),
-    consentId: v.string(),
+    consentId: v.id("consents"),
   },
   returns: v.object({ consentId: v.id("consents"), revokedAt: v.number() }),
   handler: async (ctx, args) => {
     const sessionContext = await requireSession(ctx, args.token);
     requireRole(sessionContext.user, AUDIT_REVIEWER_ROLES);
-    const consentId = ctx.db.normalizeId("consents", args.consentId);
-    if (!consentId) {
-      throw new Error(CONSENT_NOT_FOUND_MESSAGE);
-    }
-    const consent = await revokeConsent(ctx.db, sessionContext, consentId, Date.now());
-    return { consentId, revokedAt: consent.revokedAt ?? Date.now() };
+    const consent = await revokeConsent(ctx.db, sessionContext, args.consentId, Date.now());
+    return { consentId: args.consentId, revokedAt: consent.revokedAt ?? Date.now() };
   },
 });
 
@@ -173,7 +223,7 @@ export const listConsents = query({
         .take(CONSENT_LIST_LIMIT);
     } else if (scope.kind === "facility" && scope.facilityId) {
       const facilityId: Id<"facilities"> = scope.facilityId;
-      const [held, granted] = await Promise.all([
+      const [grantedToFacility, recordsHeldAt] = await Promise.all([
         ctx.db
           .query("consents")
           .withIndex("by_facilityId_grantedAt", (query) => query.eq("facilityId", facilityId))
@@ -188,7 +238,7 @@ export const listConsents = query({
           .take(CONSENT_LIST_LIMIT),
       ]);
       const byId = new Map<Id<"consents">, Doc<"consents">>();
-      for (const consent of [...held, ...granted]) {
+      for (const consent of [...grantedToFacility, ...recordsHeldAt]) {
         byId.set(consent._id, consent);
       }
       consents = [...byId.values()]
@@ -198,6 +248,9 @@ export const listConsents = query({
       consents = [];
     }
     const now = Date.now();
-    return await Promise.all(consents.map((consent) => toConsentView(ctx, consent, now)));
+    const cache = createConsentViewCache();
+    return await Promise.all(
+      consents.map((consent) => toConsentView(ctx, consent, now, cache)),
+    );
   },
 });

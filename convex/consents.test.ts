@@ -320,6 +320,40 @@ describe("consent in access decisions (INN-45)", () => {
     expect(await auditActions(testBackend)).toContain("ConsentRecorded");
   });
 
+  test("unknown patients return no consent status; a live consent is found past a page of expired rows", async () => {
+    const testBackend = createTest();
+    const ids = await seedWorld(testBackend);
+    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    expect(
+      await testBackend.query(api.consents.getConsentStatus, {
+        token,
+        publicId: "PAT-999999",
+      }),
+    ).toBeNull();
+
+    const live = await recordConsent(testBackend, token);
+    const now = Date.now();
+    await testBackend.run(async (ctx) => {
+      for (let index = 0; index < 25; index += 1) {
+        await ctx.db.insert("consents", {
+          patientId: ids.patientId,
+          facilityId: ids.abujaId,
+          patientFacilityId: ids.lagosId,
+          status: "active",
+          note: "Expired consent row for lookup paging",
+          grantedAt: now + index + 1,
+          expiresAt: now - 1,
+        });
+      }
+    });
+    const status = await testBackend.query(api.consents.getConsentStatus, {
+      token,
+      publicId: "PAT-002391",
+    });
+    expect(status?.consent?.consentId).toBe(live.consentId);
+    expect((await requestAccess(testBackend, token)).outcome).toBe("ALLOW");
+  });
+
   test("consent expires after 30 days", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const startedAt = Date.UTC(2026, 8, 16, 9, 0);
@@ -366,10 +400,16 @@ describe("revoking and reviewing consents", () => {
     await expect(revoke(abeokutaAdminToken, first.consentId)).rejects.toThrow(
       PERMISSION_DENIED_MESSAGE,
     );
-    await expect(revoke(securityToken, "nope")).rejects.toThrow(CONSENT_NOT_FOUND_MESSAGE);
-
-    await revoke(securityToken, first.consentId);
+    await testBackend.run(async (ctx) => {
+      await ctx.db.delete(first.consentId);
+    });
     await expect(revoke(securityToken, first.consentId)).rejects.toThrow(
+      CONSENT_NOT_FOUND_MESSAGE,
+    );
+
+    const stillLive = await recordConsent(testBackend, ibrahimToken);
+    await revoke(securityToken, stillLive.consentId);
+    await expect(revoke(securityToken, stillLive.consentId)).rejects.toThrow(
       CONSENT_ALREADY_ENDED_MESSAGE,
     );
     expect((await requestAccess(testBackend, ibrahimToken)).outcome).toBe("VERIFY");
@@ -387,7 +427,7 @@ describe("revoking and reviewing consents", () => {
     expect(revoked).toHaveLength(3);
     const securityUser = await testBackend.query(api.auth.getCurrentUser, { token: securityToken });
     expect(revoked[0]?.actorId).toBe(securityUser!._id);
-    const stored = await testBackend.run((ctx) => ctx.db.get(first.consentId));
+    const stored = await testBackend.run((ctx) => ctx.db.get(stillLive.consentId));
     expect(stored).toMatchObject({ status: "revoked", revokedBy: securityUser!._id });
   });
 
