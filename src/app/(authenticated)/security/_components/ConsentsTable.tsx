@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { DocsIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { findConsentInputError } from "../../../../../convex/lib/consentConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 
@@ -34,10 +35,10 @@ export function ConsentsTable() {
     sessionToken ? { token: sessionToken } : "skip",
   );
   const revokePatientConsent = useMutation(api.consents.revokePatientConsent);
-  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<Id<"consents"> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const revoke = async (consentId: string) => {
+  const revoke = async (consentId: Id<"consents">) => {
     if (!sessionToken) {
       return;
     }

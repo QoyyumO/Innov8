@@ -2,6 +2,9 @@ import { UserRole } from "./roles";
 
 export const DEMO_PASSWORD = "password123";
 
+/** Chioma's patient-role demo login (linked to PAT-002391 by seed, INN-46). */
+export const CHIOMA_EMAIL = "chioma@patient.innov8.ng";
+
 export const DEMO_USERS: Array<{
   email: string;
   roles: UserRole[];
@@ -59,7 +62,7 @@ export const DEMO_USERS: Array<{
     profile: { firstName: "Halima", lastName: "Danjuma" },
   },
   {
-    email: "chioma@patient.innov8.ng",
+    email: CHIOMA_EMAIL,
     roles: ["patient"],
     hospital: "FMC Lagos",
     department: "Cardiology",

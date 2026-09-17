@@ -2,7 +2,7 @@ import { DatabaseWriter } from "../../_generated/server";
 import { Id } from "../../_generated/dataModel";
 import { AuditAction, AuditDetails } from "../domain";
 import { assertNonEmptyString } from "../invariants";
-import { linkAuditEventFacilities } from "./auditFacilityService";
+import { linkAuditEventFacilities, resolveAuditPatientId } from "./auditFacilityService";
 
 export type AuditEventInput = {
   actorId?: Id<"users">;
@@ -25,20 +25,28 @@ export type AuditEventInput = {
  *
  * Every event is also indexed under the facilities it involves
  * (`auditEventFacilities`, INN-52) so hospital admins can page through
- * their facility's trail.
+ * their facility's trail, and under `patientId` when the event names a
+ * patient (INN-46 portal history).
  */
 export async function appendAuditEvent(
   db: DatabaseWriter,
   event: AuditEventInput,
 ): Promise<Id<"auditEvents">> {
+  const entity = assertNonEmptyString("entity", event.entity);
+  const patientId = await resolveAuditPatientId(db, {
+    entity,
+    entityId: event.entityId,
+    details: event.details,
+  });
   const row = {
     actorId: event.actorId,
     sessionId: event.sessionId,
     action: event.action,
-    entity: assertNonEmptyString("entity", event.entity),
+    entity,
     entityId: event.entityId,
     details: event.details,
     createdAt: event.createdAt ?? Date.now(),
+    patientId,
   };
   const eventId = await db.insert("auditEvents", row);
   await linkAuditEventFacilities(db, { _id: eventId, ...row });

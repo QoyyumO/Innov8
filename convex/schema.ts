@@ -31,6 +31,8 @@ export default defineSchema({
     // optional so ibrahim@fmc.abuja.ng and other demo logins keep working.
     facilityId: v.optional(v.id("facilities")),
     workerId: v.optional(v.string()),
+    /** Explicit portal link (INN-46). Seeded for Chioma → PAT-002391; never inferred. */
+    patientId: v.optional(v.id("patients")),
     normalAccessHours: v.optional(
       v.object({
         start: v.string(),
@@ -41,7 +43,8 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_workerId", ["workerId"])
-    .index("by_facilityId", ["facilityId"]),
+    .index("by_facilityId", ["facilityId"])
+    .index("by_patientId", ["patientId"]),
 
   sessions: defineTable({
     userId: v.id("users"),
@@ -194,11 +197,14 @@ export default defineSchema({
     entityId: v.optional(v.string()),
     details: auditDetails,
     createdAt: v.number(),
+    /** Set when the event names a patient (INN-46 portal history). */
+    patientId: v.optional(v.id("patients")),
   })
     .index("by_actorId_createdAt", ["actorId", "createdAt"])
     .index("by_action_createdAt", ["action", "createdAt"])
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_createdAt", ["createdAt"])
+    .index("by_patientId_createdAt", ["patientId", "createdAt"]),
 
   // INN-45: a patient's consent for one facility to request their records.
   // `patientFacilityId` is where the patient's records are held, so hospital

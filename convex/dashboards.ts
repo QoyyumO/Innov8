@@ -9,12 +9,13 @@ import {
   FACILITY_LIST_LIMIT,
   HARVEST_LOOKBACK_LIMIT,
   OPEN_ALERT_COUNT_LIMIT,
+  PATIENT_HISTORY_LIMIT,
   RECENT_REQUEST_LIMIT,
   TODAY_COUNT_LIMIT,
 } from "./lib/dashboardConstants";
-import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
+import { auditAction, decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
-import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
+import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requirePatientSession, requireRole } from "./lib/roles";
 import { resolveReviewerScope } from "./lib/facilityScope";
 import { FacilityTotals, getFacilityTotals } from "./lib/facilityStats";
 import { requireSession } from "./lib/session";
@@ -78,6 +79,25 @@ const securityDashboardValidator = v.object({
   recentDecisions: v.array(dashboardRowValidator),
   /** Stored totals (INN-53): the exchange, or the hospital admin's facility. */
   population: v.object({ workerCount: v.number(), patientCount: v.number() }),
+});
+
+const patientHistoryEventValidator = v.object({
+  eventId: v.id("auditEvents"),
+  createdAt: v.number(),
+  action: auditAction,
+  actor: v.union(v.null(), v.object({ name: v.string(), hospital: v.string() })),
+  purpose: v.union(v.null(), v.string()),
+});
+
+const patientDashboardValidator = v.object({
+  publicId: v.string(),
+  profile: v.object({ firstName: v.string(), lastName: v.string() }),
+  homeFacility: v.object({
+    code: v.string(),
+    name: v.string(),
+    city: v.string(),
+  }),
+  recentEvents: v.array(patientHistoryEventValidator),
 });
 
 const facilityViewValidator = v.object({
@@ -547,6 +567,71 @@ export const getSecurityDashboard = query({
       ),
       recentDecisions,
       population: await getExchangeTotals(ctx),
+    };
+  },
+});
+
+/** Signed-in patient's identity, home facility, and recent events that name them (INN-46). */
+export const getPatientDashboard = query({
+  args: {
+    token: v.optional(v.string()),
+  },
+  returns: v.union(v.null(), patientDashboardValidator),
+  handler: async (ctx, args) => {
+    let user: Doc<"users">;
+    try {
+      user = (await requirePatientSession(ctx, args.token)).user;
+    } catch (error) {
+      if (isAuthError(error)) {
+        return null;
+      }
+      throw error;
+    }
+    if (!user.patientId) {
+      return null;
+    }
+    const patient = await ctx.db.get(user.patientId);
+    if (!patient) {
+      return null;
+    }
+    const homeFacility = await ctx.db.get(patient.homeFacilityId);
+    if (!homeFacility) {
+      return null;
+    }
+
+    const events = await ctx.db
+      .query("auditEvents")
+      .withIndex("by_patientId_createdAt", (query) => query.eq("patientId", patient._id))
+      .order("desc")
+      .take(PATIENT_HISTORY_LIMIT);
+
+    const load = createLoader(ctx);
+    const recentEvents = await Promise.all(
+      events.map(async (event) => {
+        const actor = event.actorId ? await load(event.actorId) : null;
+        const purposeValue = event.details.purpose;
+        return {
+          eventId: event._id,
+          createdAt: event.createdAt,
+          action: event.action,
+          actor: actor ? { name: fullName(actor), hospital: actor.hospital } : null,
+          purpose: typeof purposeValue === "string" ? purposeValue : null,
+        };
+      }),
+    );
+
+    return {
+      publicId: patient.publicId,
+      profile: {
+        firstName: patient.profile.firstName,
+        lastName: patient.profile.lastName,
+      },
+      homeFacility: {
+        code: homeFacility.code,
+        name: homeFacility.name,
+        city: homeFacility.city,
+      },
+      recentEvents,
     };
   },
 });

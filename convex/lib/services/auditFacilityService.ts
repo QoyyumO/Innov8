@@ -17,10 +17,22 @@ export type AuditEventRow = Pick<
   "_id" | "actorId" | "action" | "entity" | "entityId" | "details" | "createdAt"
 >;
 
+type AuditEventRef = Pick<Doc<"auditEvents">, "entity" | "entityId" | "details">;
+
+async function findPatientByPublicId(
+  db: DatabaseReader,
+  publicId: string,
+): Promise<Doc<"patients"> | null> {
+  return await db
+    .query("patients")
+    .withIndex("by_publicId", (query) => query.eq("publicId", publicId))
+    .unique();
+}
+
 /** The access request an audit event is about, if it names one. */
 async function findEventRequest(
   db: DatabaseReader,
-  event: AuditEventRow,
+  event: AuditEventRef,
 ): Promise<Doc<"accessRequests"> | null> {
   const detailsRequestId =
     typeof event.details.requestId === "string"
@@ -84,6 +96,50 @@ export async function resolveEventFacilityIds(
     facilityIds.add(facilityId);
   }
   return [...facilityIds];
+}
+
+/**
+ * Patient this audit event is about (INN-46). Looks up a public id in
+ * details, then the related request / consent / grant.
+ */
+export async function resolveAuditPatientId(
+  db: DatabaseReader,
+  event: AuditEventRef,
+): Promise<Id<"patients"> | undefined> {
+  const publicIdCandidates = [event.details.patientPublicId, event.details.publicId];
+  if (event.entity === "patients" && event.entityId) {
+    publicIdCandidates.push(event.entityId);
+  }
+  for (const candidate of publicIdCandidates) {
+    if (typeof candidate !== "string" || !candidate.startsWith("PAT-")) {
+      continue;
+    }
+    const patient = await findPatientByPublicId(db, candidate);
+    if (patient) {
+      return patient._id;
+    }
+  }
+
+  const request = await findEventRequest(db, event);
+  if (request) {
+    return request.patientId;
+  }
+
+  const consentId =
+    event.entity === "consents" && event.entityId
+      ? db.normalizeId("consents", event.entityId)
+      : null;
+  const consent = consentId ? await db.get(consentId) : null;
+  if (consent) {
+    return consent.patientId;
+  }
+
+  const grantId =
+    event.entity === "emergencyAccess" && event.entityId
+      ? db.normalizeId("emergencyAccess", event.entityId)
+      : null;
+  const grant = grantId ? await db.get(grantId) : null;
+  return grant?.patientId;
 }
 
 export async function linkAuditEventFacilities(

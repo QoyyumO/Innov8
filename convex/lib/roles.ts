@@ -88,3 +88,13 @@ export async function requireClinicianSession(
   requireRole(sessionContext.user, CLINICIAN_ROLES);
   return sessionContext;
 }
+
+/** Session plus patient role. Used by the patient portal (INN-46). */
+export async function requirePatientSession(
+  ctx: { db: DatabaseReader },
+  token: string | undefined,
+) {
+  const sessionContext = await requireSession(ctx, token);
+  requireRole(sessionContext.user, ["patient"]);
+  return sessionContext;
+}
