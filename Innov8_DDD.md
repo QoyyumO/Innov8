@@ -20,7 +20,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 ## Done (live demo path so far)
 
 - **INN-35** — `AuditLogService` (`convex/lib/services/auditLogService.ts`), `requireSession`, `requireRole`. Login audits `UserLoggedIn`.
-- **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched`; discovery returns identity + record existence only.
+- **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched` even when there are no hits (INN-56); discovery returns identity + record existence only.
 - **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min by default, 7 days with Keep me logged in (INN-54); suspended accounts rejected on every call.
 - **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` (`scoreAccessRequest` return type) with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 - **INN-37** — `AccessControlService` (`convex/lib/services/accessControlService.ts`) + `convex/accessRequests.ts`: AccessRequest and Decision aggregates are live; `AccessRequested` and outcome events are audited.

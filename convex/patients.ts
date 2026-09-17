@@ -44,16 +44,16 @@ export const searchPatients = mutation({
   handler: async (ctx, args) => {
     const { user, session } = await requireClinicianSession(ctx, args.token);
     const results = await findPatientsByQuery(ctx.db, args.query);
-
-    if (results.length > 0) {
+    const trimmedQuery = args.query.trim();
+    if (trimmedQuery !== "") {
       await appendAuditEvent(ctx.db, {
         actorId: user._id,
         sessionId: session._id,
         action: "PatientSearched",
         entity: "patients",
-        entityId: results[0].publicId,
+        entityId: results[0]?.publicId,
         details: {
-          query: args.query.trim(),
+          query: trimmedQuery,
           resultCount: results.length,
           publicIds: results.map((hit) => hit.publicId),
         },

@@ -26,6 +26,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-52-facility-scoped-admin-views](features/INN-52-facility-scoped-admin-views/PLAN.md) | Hospital admins see only their facility's activity | In review ([#19](https://github.com/QoyyumO/Innov8/pull/19)) |
 | [INN-53-facility-stat-counters](features/INN-53-facility-stat-counters/PLAN.md) | Stored per-facility worker / patient totals | In review ([#20](https://github.com/QoyyumO/Innov8/pull/20)) |
 | [INN-45-consent-service](features/INN-45-consent-service/PLAN.md) | Patient consent for cross-facility requests | In review ([#21](https://github.com/QoyyumO/Innov8/pull/21)) |
-| [INN-46-patient-portal-access-history](features/INN-46-patient-portal-access-history/PLAN.md) | Patient portal: own identity + access history | In progress |
+| [INN-46-patient-portal-access-history](features/INN-46-patient-portal-access-history/PLAN.md) | Patient portal: own identity + access history | In review ([#23](https://github.com/QoyyumO/Innov8/pull/23)) |
+| [INN-56-audit-patient-searches-no-results](features/INN-56-audit-patient-searches-no-results/PLAN.md) | Audit patient searches with zero results | In progress |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
