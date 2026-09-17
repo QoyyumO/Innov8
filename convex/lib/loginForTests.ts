@@ -2,20 +2,35 @@ import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { DEMO_PASSWORD } from "./demoUsers";
 
-type LoginTestBackend = {
-  mutation: (functionReference: unknown, args: unknown) => Promise<unknown>;
+type DemoAuthMutation =
+  | typeof internal.auth.ensureDemoUsers
+  | typeof api.auth.login;
+
+type DemoAuthCaller = {
+  mutation: (
+    functionReference: DemoAuthMutation,
+    args: object,
+  ) => Promise<unknown>;
 };
 
-export async function ensureDemoUsersForTests(testBackend: LoginTestBackend) {
-  await testBackend.mutation(internal.auth.ensureDemoUsers, {});
+function asDemoAuthCaller(testBackend: unknown): DemoAuthCaller {
+  return testBackend as DemoAuthCaller;
 }
 
-export async function loginDemoSession(
-  testBackend: LoginTestBackend,
+export async function ensureDemoUsersForTests<TBackend>(testBackend: TBackend) {
+  await asDemoAuthCaller(testBackend).mutation(
+    internal.auth.ensureDemoUsers,
+    {},
+  );
+}
+
+export async function loginDemoSession<TBackend>(
+  testBackend: TBackend,
   email: string,
 ) {
-  await ensureDemoUsersForTests(testBackend);
-  const loginResult = await testBackend.mutation(api.auth.login, {
+  const backend = asDemoAuthCaller(testBackend);
+  await backend.mutation(internal.auth.ensureDemoUsers, {});
+  const loginResult = await backend.mutation(api.auth.login, {
     email,
     password: DEMO_PASSWORD,
   });
@@ -35,8 +50,8 @@ export async function loginDemoSession(
   };
 }
 
-export async function loginDemoUser(
-  testBackend: LoginTestBackend,
+export async function loginDemoUser<TBackend>(
+  testBackend: TBackend,
   email: string,
 ) {
   const loginResult = await loginDemoSession(testBackend, email);
