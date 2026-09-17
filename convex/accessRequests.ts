@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage } from "./lib/authConstants";
 import {
+  consentCheck,
   decisionOutcome,
   purpose,
   Purpose,
@@ -18,6 +19,7 @@ import {
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { allowWindowStart, allowedUntil } from "./lib/accessWindow";
+import { evaluateConsent } from "./lib/services/consentService";
 import { resolveReviewerScope, scopeIncludesRequest } from "./lib/facilityScope";
 import { stepUpAttemptsLeft } from "./lib/services/stepUpService";
 import { raiseBlockAlert } from "./lib/services/alertService";
@@ -35,6 +37,7 @@ const factorsValidator = v.object({
   purpose,
   sameHospital: v.boolean(),
   recordCount: v.number(),
+  consent: v.optional(consentCheck),
 });
 
 const decisionValidator = v.object({
@@ -219,6 +222,18 @@ async function recordAccessRequest(
     requestedAt,
   });
 
+  const consent = await evaluateConsent(
+    ctx.db,
+    {
+      patientId: target.patient._id,
+      facilityId: target.sourceFacilityId,
+      purpose: input.purpose,
+      sameHospital: target.sameHospital,
+      recordCount,
+    },
+    requestedAt,
+  );
+
   const risk = scoreAccessRequest({
     actorRoles: user.roles,
     purpose: input.purpose,
@@ -228,6 +243,7 @@ async function recordAccessRequest(
     requestedAt,
     normalAccessHours: user.normalAccessHours,
     normalPatientVolume: user.normalPatientVolume,
+    consent,
   });
 
   const decisionId = await ctx.db.insert("accessDecisions", {

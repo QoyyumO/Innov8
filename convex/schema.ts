@@ -7,6 +7,8 @@ import {
   auditAction,
   auditDetails,
   bloodGroup,
+  consentCheck,
+  consentStatus,
   decisionOutcome,
   facilityStatus,
   gender,
@@ -139,6 +141,7 @@ export default defineSchema({
         purpose,
         sameHospital: v.boolean(),
         recordCount: v.number(),
+        consent: v.optional(consentCheck),
       }),
     ),
     // Step-up (INN-44): set when a VERIFY decision is completed or escalated.
@@ -196,6 +199,27 @@ export default defineSchema({
     .index("by_action_createdAt", ["action", "createdAt"])
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
+
+  // INN-45: a patient's consent for one facility to request their records.
+  // `patientFacilityId` is where the patient's records are held, so hospital
+  // admins on either side can review it (INN-52).
+  consents: defineTable({
+    patientId: v.id("patients"),
+    facilityId: v.id("facilities"),
+    patientFacilityId: v.id("facilities"),
+    status: consentStatus,
+    note: v.string(),
+    recordedBy: v.optional(v.id("users")),
+    grantedAt: v.number(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    revokedBy: v.optional(v.id("users")),
+  })
+    .index("by_patientId_facilityId", ["patientId", "facilityId"])
+    .index("by_patientId_facilityId_status", ["patientId", "facilityId", "status"])
+    .index("by_grantedAt", ["grantedAt"])
+    .index("by_facilityId_grantedAt", ["facilityId", "grantedAt"])
+    .index("by_patientFacilityId_grantedAt", ["patientFacilityId", "grantedAt"]),
 
   // INN-53: stored per-facility totals, so dashboards never count users or
   // patients live. Maintained by `convex/lib/facilityStats.ts`.

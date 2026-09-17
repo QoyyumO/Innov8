@@ -116,6 +116,7 @@ export default function AccessRequestDetailPage() {
                 stepUpAttemptsLeft={
                   request.recordCount === 1 ? request.decision?.stepUpAttemptsLeft : undefined
                 }
+                isMissingConsent={request.decision?.factors?.consent === "missing"}
               />
             </ComponentCard>
           )}

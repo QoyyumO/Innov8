@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { hasFacilityReviewScope, isAdmin, isSecurityOfficer } from "@/services/permissions";
 import { LockIcon } from "@/icons";
 import { AlertsTable } from "./_components/AlertsTable";
+import { ConsentsTable } from "./_components/ConsentsTable";
 
 export default function SecurityPage() {
   const { user } = useAuth();
@@ -55,6 +56,19 @@ export default function SecurityPage() {
           </TabPane>
         </Tabs>
       </ComponentCard>
+
+      <div className="mt-6">
+        <ComponentCard
+          title="Patient consents"
+          desc={
+            isFacilityScoped
+              ? `Consents held by or granted to ${user?.hospital ?? "your facility"}, newest first. Revoke one if it was recorded in error or the patient withdraws it.`
+              : "Newest recorded patient consents across the exchange. Revoke one if it was recorded in error or the patient withdraws it."
+          }
+        >
+          <ConsentsTable />
+        </ComponentCard>
+      </div>
     </div>
   );
 }

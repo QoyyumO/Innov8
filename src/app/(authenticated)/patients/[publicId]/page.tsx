@@ -13,6 +13,7 @@ import Loading from "@/components/loading/Loading";
 import { UserIcon } from "@/icons";
 import { formatPatientName } from "../_components/formatPatientName";
 import { RecordExistenceList } from "../_components/RecordExistenceList";
+import { ConsentPanel } from "../_components/ConsentPanel";
 
 export default function PatientDiscoveryPage() {
   const params = useParams<{ publicId: string }>();
@@ -84,6 +85,13 @@ export default function PatientDiscoveryPage() {
             desc="Where records live — not what they contain."
           >
             <RecordExistenceList facilities={discovery.recordsByFacility} />
+          </ComponentCard>
+
+          <ComponentCard
+            title="Patient consent"
+            desc="Needed before another facility's records can be requested (except in an emergency)."
+          >
+            <ConsentPanel publicId={discovery.publicId} />
           </ComponentCard>
 
           <ComponentCard title="Request access">
