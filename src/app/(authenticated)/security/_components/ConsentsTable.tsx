@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@/lib/convex";
+import { api, type Id } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
 import { useNow } from "@/hooks/useNow";
 import Alert from "@/components/ui/alert/Alert";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/table";
 import { DocsIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
-import { Id } from "../../../../../convex/_generated/dataModel";
 import { findConsentInputError } from "../../../../../convex/lib/consentConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 

@@ -86,7 +86,7 @@ const patientHistoryEventValidator = v.object({
   createdAt: v.number(),
   action: auditAction,
   actor: v.union(v.null(), v.object({ name: v.string(), hospital: v.string() })),
-  purpose: v.union(v.null(), v.string()),
+  purpose: v.union(v.null(), purpose),
 });
 
 const patientDashboardValidator = v.object({
@@ -98,6 +98,7 @@ const patientDashboardValidator = v.object({
     city: v.string(),
   }),
   recentEvents: v.array(patientHistoryEventValidator),
+  isHistoryCapped: v.boolean(),
 });
 
 const facilityViewValidator = v.object({
@@ -599,11 +600,13 @@ export const getPatientDashboard = query({
       return null;
     }
 
-    const events = await ctx.db
+    const eventRows = await ctx.db
       .query("auditEvents")
       .withIndex("by_patientId_createdAt", (query) => query.eq("patientId", patient._id))
       .order("desc")
-      .take(PATIENT_HISTORY_LIMIT);
+      .take(PATIENT_HISTORY_LIMIT + 1);
+    const isHistoryCapped = eventRows.length > PATIENT_HISTORY_LIMIT;
+    const events = eventRows.slice(0, PATIENT_HISTORY_LIMIT);
 
     const load = createLoader(ctx);
     const recentEvents = await Promise.all(
@@ -615,7 +618,14 @@ export const getPatientDashboard = query({
           createdAt: event.createdAt,
           action: event.action,
           actor: actor ? { name: fullName(actor), hospital: actor.hospital } : null,
-          purpose: typeof purposeValue === "string" ? purposeValue : null,
+          purpose:
+            purposeValue === "treatment" ||
+            purposeValue === "emergency" ||
+            purposeValue === "referral" ||
+            purposeValue === "follow-up" ||
+            purposeValue === "administrative"
+              ? purposeValue
+              : null,
         };
       }),
     );
@@ -632,6 +642,7 @@ export const getPatientDashboard = query({
         city: homeFacility.city,
       },
       recentEvents,
+      isHistoryCapped,
     };
   },
 });

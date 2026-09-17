@@ -265,10 +265,19 @@ async function unlinkChiomaPatientAccount(ctx: MutationCtx) {
   if (!chioma?.patientId) {
     return;
   }
-  const { _id, _creationTime, patientId, ...fields } = chioma;
-  void _creationTime;
-  void patientId;
-  await ctx.db.replace(_id, fields);
+  await ctx.db.replace(chioma._id, {
+    email: chioma.email,
+    hashedPassword: chioma.hashedPassword,
+    roles: chioma.roles,
+    hospital: chioma.hospital,
+    department: chioma.department,
+    accountStatus: chioma.accountStatus,
+    profile: chioma.profile,
+    facilityId: chioma.facilityId,
+    workerId: chioma.workerId,
+    normalAccessHours: chioma.normalAccessHours,
+    normalPatientVolume: chioma.normalPatientVolume,
+  });
 }
 
 /**

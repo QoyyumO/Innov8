@@ -26,7 +26,7 @@ Should-have after the 7-step demo. Chioma already has a patient-role demo login 
 
 #### A1. `users.patientId`
 
-Optional `v.id("patients")` plus `by_patientId`, same pattern as `facilityId` / `workerId`. Seed sets it only for Chioma when PAT-002391 is upserted (`patchCountedUser`). Login `ensureDemoUsers` does not guess a patient. Wipe unsets the link before deleting patients.
+Optional `v.id("patients")` on `users` (no extra index; the portal reads `user.patientId` from the session). Seed sets it only for Chioma when PAT-002391 is upserted (`patchCountedUser`). Login `ensureDemoUsers` does not guess a patient. Wipe unsets the link before deleting patients.
 
 #### A2. `auditEvents.patientId`
 
@@ -38,7 +38,7 @@ Optional `v.id("patients")` plus `by_patientId_createdAt`. `appendAuditEvent` se
 
 Args: `{ token }` only. `requireSession` + `requireRole(["patient"])`. Auth / wrong role / missing `users.patientId` → `null`.
 
-Returns (no clinical sections): `publicId`, profile first/last name, home facility `{ code, name, city }`, `recentEvents` (cap `PATIENT_HISTORY_LIMIT` = 20). Indexed `auditEvents.by_patientId_createdAt` desc.
+Returns (no clinical sections): `publicId`, profile first/last name, home facility `{ code, name, city }`, `recentEvents` plus `isHistoryCapped` (cap `PATIENT_HISTORY_LIMIT` = 20). Indexed `auditEvents.by_patientId_createdAt` desc.
 
 ### Part C — UI
 

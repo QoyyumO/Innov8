@@ -539,6 +539,7 @@ describe("getPatientDashboard", () => {
       publicId: "PAT-002391",
       profile: { firstName: "Chioma", lastName: "Okonkwo" },
       homeFacility: { code: "FMC-LOS", name: "FMC Lagos", city: "Lagos" },
+      isHistoryCapped: false,
     });
     expect(dashboard?.recentEvents.length).toBeGreaterThan(0);
     expect(dashboard?.recentEvents.some((event) => event.action === "AccessRequested")).toBe(

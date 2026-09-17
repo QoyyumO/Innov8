@@ -43,8 +43,7 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_workerId", ["workerId"])
-    .index("by_facilityId", ["facilityId"])
-    .index("by_patientId", ["patientId"]),
+    .index("by_facilityId", ["facilityId"]),
 
   sessions: defineTable({
     userId: v.id("users"),

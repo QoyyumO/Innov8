@@ -40,13 +40,12 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-52](https://linear.app/innov8-health/issue/INN-52) hospital admins see only their facility's activity
 - [INN-53](https://linear.app/innov8-health/issue/INN-53) stored per-facility worker / patient totals
 - [INN-45](https://linear.app/innov8-health/issue/INN-45) patient consent for cross-facility requests (missing → VERIFY)
-- [INN-46](https://linear.app/innov8-health/issue/INN-46) patient portal: Chioma sees PAT-002391 identity + access history
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-The MVP demo path is complete. Should-have: none open (INN-45 consent is in review; INN-46 patient portal is in progress). No follow-ups open.
+[INN-46](https://linear.app/innov8-health/issue/INN-46) patient portal (this PR). INN-45 consent is in review. No follow-ups open.
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

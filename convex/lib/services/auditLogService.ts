@@ -2,7 +2,11 @@ import { DatabaseWriter } from "../../_generated/server";
 import { Id } from "../../_generated/dataModel";
 import { AuditAction, AuditDetails } from "../domain";
 import { assertNonEmptyString } from "../invariants";
-import { linkAuditEventFacilities, resolveAuditPatientId } from "./auditFacilityService";
+import {
+  linkAuditEventFacilities,
+  loadAuditRelatedDocs,
+  resolveAuditPatientId,
+} from "./auditFacilityService";
 
 export type AuditEventInput = {
   actorId?: Id<"users">;
@@ -33,11 +37,20 @@ export async function appendAuditEvent(
   event: AuditEventInput,
 ): Promise<Id<"auditEvents">> {
   const entity = assertNonEmptyString("entity", event.entity);
-  const patientId = await resolveAuditPatientId(db, {
+  const related = await loadAuditRelatedDocs(db, {
     entity,
     entityId: event.entityId,
     details: event.details,
   });
+  const patientId = await resolveAuditPatientId(
+    db,
+    {
+      entity,
+      entityId: event.entityId,
+      details: event.details,
+    },
+    related,
+  );
   const row = {
     actorId: event.actorId,
     sessionId: event.sessionId,
@@ -49,6 +62,6 @@ export async function appendAuditEvent(
     patientId,
   };
   const eventId = await db.insert("auditEvents", row);
-  await linkAuditEventFacilities(db, { _id: eventId, ...row });
+  await linkAuditEventFacilities(db, { _id: eventId, ...row }, related);
   return eventId;
 }

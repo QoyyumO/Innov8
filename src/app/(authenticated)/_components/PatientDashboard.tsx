@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EyeIcon } from "@/icons";
-import { formatRequestTime } from "./accessLabels";
+import { PURPOSE_LABELS, formatRequestTime } from "./accessLabels";
 import { AUDIT_ACTION_BADGE_COLORS, AUDIT_ACTION_LABELS } from "./auditLabels";
 import { WelcomeCard } from "./DashboardWidgets";
 
@@ -122,6 +122,7 @@ export default function PatientDashboard() {
               icon={<EyeIcon className="h-12 w-12 text-brand-500" />}
             />
           ) : (
+            <div className="space-y-3">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -167,12 +168,18 @@ export default function PatientDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">
-                        {event.purpose ?? "—"}
+                        {event.purpose ? PURPOSE_LABELS[event.purpose] : "—"}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+            </div>
+            {dashboard.isHistoryCapped && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Showing the {dashboard.recentEvents.length} most recent events.
+              </p>
+            )}
             </div>
           )}
         </ComponentCard>
