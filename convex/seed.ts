@@ -160,23 +160,14 @@ export const seedHealthcareWorkers = internalMutation({
         workerFields.normalPatientVolume = workerSeed.normalPatientVolume;
       }
 
-      if (existing) {
-        await patchCountedUser(ctx.db, existing, workerFields);
-        updated += 1;
-        continue;
+      if (!existing) {
+        throw new Error(
+          `Demo user ${demoUser.email} missing after ensureDemoUsers`,
+        );
       }
 
-      await insertCountedUser(ctx.db, {
-        email: demoUser.email,
-        hashedPassword,
-        roles: demoUser.roles,
-        hospital: demoUser.hospital,
-        department: demoUser.department,
-        accountStatus: "active",
-        profile: demoUser.profile,
-        ...workerFields,
-      });
-      inserted += 1;
+      await patchCountedUser(ctx.db, existing, workerFields);
+      updated += 1;
     }
 
     for (let workerIndex = 1; workerIndex <= total; workerIndex += 1) {

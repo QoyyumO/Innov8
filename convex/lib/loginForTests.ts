@@ -1,20 +1,19 @@
-import { FunctionReference } from "convex/server";
 import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { DEMO_PASSWORD } from "./demoUsers";
 
 type LoginTestBackend = {
-  mutation: (
-    functionReference: FunctionReference<"mutation", "public" | "internal">,
-    args: object,
-  ) => Promise<unknown>;
+  mutation: (functionReference: unknown, args: unknown) => Promise<unknown>;
 };
 
 export async function ensureDemoUsersForTests(testBackend: LoginTestBackend) {
   await testBackend.mutation(internal.auth.ensureDemoUsers, {});
 }
 
-export async function loginDemoUser(testBackend: LoginTestBackend, email: string) {
+export async function loginDemoSession(
+  testBackend: LoginTestBackend,
+  email: string,
+) {
   await ensureDemoUsersForTests(testBackend);
   const loginResult = await testBackend.mutation(api.auth.login, {
     email,
@@ -34,4 +33,12 @@ export async function loginDemoUser(testBackend: LoginTestBackend, email: string
     token: string;
     _id: Id<"users">;
   };
+}
+
+export async function loginDemoUser(
+  testBackend: LoginTestBackend,
+  email: string,
+) {
+  const loginResult = await loginDemoSession(testBackend, email);
+  return loginResult.token;
 }

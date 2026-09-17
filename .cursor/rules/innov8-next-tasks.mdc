@@ -41,12 +41,13 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-53](https://linear.app/innov8-health/issue/INN-53) stored per-facility worker / patient totals
 - [INN-45](https://linear.app/innov8-health/issue/INN-45) patient consent for cross-facility requests (missing → VERIFY)
 - [INN-46](https://linear.app/innov8-health/issue/INN-46) patient portal: Chioma sees PAT-002391 identity + access history
+- [INN-56](https://linear.app/innov8-health/issue/INN-56) audit empty patient searches
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-[INN-57](https://linear.app/innov8-health/issue/INN-57) public `login` must not re-seed demo users (this branch). INN-56 is in review.
+[INN-57](https://linear.app/innov8-health/issue/INN-57) public `login` must not re-seed demo users (this branch).
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

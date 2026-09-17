@@ -30,11 +30,6 @@ function createTest() {
   return convexTest(schema, modules);
 }
 
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await loginDemoUser(testBackend, email);
-  return loginResult.token;
-}
-
 async function seedDemoWorld(
   testBackend: TestBackend,
   options: { lagosRecordTypes?: (typeof ALL_RECORD_TYPES)[number][] } = {},
@@ -123,7 +118,7 @@ describe("createAccessRequest", () => {
   test("Ibrahim treatment request for PAT-002391 is ALLOW 8 with reasons", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const result = await requestTreatment(testBackend, token);
 
@@ -140,7 +135,7 @@ describe("createAccessRequest", () => {
   test("stores the request, decision, and factors", async () => {
     const testBackend = createTest();
     const { abujaId, lagosId, patientId } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const result = await requestTreatment(testBackend, token);
 
@@ -184,7 +179,7 @@ describe("createAccessRequest", () => {
   test("audits AccessRequested and AccessAllowed", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const result = await requestTreatment(testBackend, token);
 
@@ -214,7 +209,7 @@ describe("createAccessRequest", () => {
   test("always scores a single patient; harvest volume is not a client argument", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const result = await requestTreatment(testBackend, token);
 
@@ -226,7 +221,7 @@ describe("createAccessRequest", () => {
   test("falls back to the facility named on the user when facilityId is missing", async () => {
     const testBackend = createTest();
     const { abujaId } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     const storedUser = await testBackend.run((ctx) => ctx.db.get(user!._id));
     expect(storedUser?.facilityId).toBeUndefined();
@@ -239,7 +234,7 @@ describe("createAccessRequest", () => {
   test("same-facility request is not marked cross-facility", async () => {
     const testBackend = createTest();
     const { lagosId } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     await testBackend.run((ctx) => ctx.db.patch(user!._id, { facilityId: lagosId }));
 
@@ -251,7 +246,7 @@ describe("createAccessRequest", () => {
   test("duplicate record types are collapsed", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     const result = await testBackend.mutation(api.accessRequests.createAccessRequest, {
       token,
@@ -266,9 +261,9 @@ describe("createAccessRequest", () => {
   test("rejects non-clinicians, patients, and missing or suspended sessions", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const patientToken = await loginUser(testBackend, CHIOMA_EMAIL);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(requestTreatment(testBackend, securityToken)).rejects.toThrow(
       PERMISSION_DENIED_MESSAGE,
@@ -297,7 +292,7 @@ describe("createAccessRequest", () => {
   test("rejects unknown patients, empty types, and types not held", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend, { lagosRecordTypes: ["allergies"] });
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(
       requestTreatment(testBackend, token, { publicId: "PAT-999999" }),
@@ -323,8 +318,8 @@ describe("listMyAccessRequests", () => {
   test("returns only my requests, newest first, paginated, with decisions", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
 
     const first = await requestTreatment(testBackend, ibrahimToken);
     const second = await requestTreatment(testBackend, ibrahimToken);
@@ -359,7 +354,7 @@ describe("listMyAccessRequests", () => {
   test("returns an empty finished page without a valid clinician session", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const emptyPage = { page: [], isDone: true, continueCursor: "" };
 
     for (const token of [undefined, "not-a-token", securityToken]) {
@@ -376,11 +371,11 @@ describe("getAccessRequest", () => {
   test("is visible to the requester, security, and admins only", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const adminToken = await loginUser(testBackend, "admin@fmc.abuja.ng");
-    const patientToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, "admin@fmc.abuja.ng");
+    const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
     const created = await requestTreatment(testBackend, ibrahimToken);
 
     const asOwner = await testBackend.query(api.accessRequests.getAccessRequest, {
@@ -417,7 +412,7 @@ describe("getAccessRequest", () => {
   test("returns null for malformed or unknown ids", async () => {
     const testBackend = createTest();
     const { patientId } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     for (const requestId of ["not-an-id", "", patientId as Id<"patients"> as string]) {
       const result = await testBackend.query(api.accessRequests.getAccessRequest, {

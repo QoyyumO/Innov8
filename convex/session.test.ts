@@ -7,7 +7,7 @@ import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import {
   ensureDemoUsersForTests,
-  loginDemoUser,
+  loginDemoSession,
 } from "./lib/loginForTests";
 import type { AuditAction } from "./lib/domain";
 import {
@@ -28,7 +28,7 @@ function createTest() {
 
 async function loginIbrahim() {
   const testBackend = createTest();
-  const loginResult = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+  const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
   return { testBackend, loginResult };
 }
 

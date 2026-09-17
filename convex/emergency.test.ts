@@ -43,11 +43,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await loginDemoUser(testBackend, email);
-  return loginResult.token;
-}
-
 async function seedDemoWorld(testBackend: TestBackend) {
   return await testBackend.run(async (ctx) => {
     const abujaId = await ctx.db.insert("facilities", {
@@ -157,7 +152,7 @@ describe("grantEmergencyAccess", () => {
   test("creates an emergency request, a 15-minute grant, audits, and a medium alert", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const before = Date.now();
 
     const grant = await breakGlass(testBackend, token, { justification: `  ${JUSTIFICATION}  ` });
@@ -215,7 +210,7 @@ describe("grantEmergencyAccess", () => {
   ])("rejects justification %j", async (justification, message) => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(breakGlass(testBackend, token, { justification })).rejects.toThrow(message);
     const grants = await testBackend.run((ctx) => ctx.db.query("emergencyAccess").take(5));
@@ -225,7 +220,7 @@ describe("grantEmergencyAccess", () => {
   test("refuses a second live grant for the same patient but allows another patient", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await breakGlass(testBackend, token);
     await expect(breakGlass(testBackend, token)).rejects.toThrow(EMERGENCY_ALREADY_ACTIVE_MESSAGE);
@@ -236,7 +231,7 @@ describe("grantEmergencyAccess", () => {
   test("rejects a client-chosen duration", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await expect(
       testBackend.mutation(api.emergency.grantEmergencyAccess, {
@@ -253,12 +248,12 @@ describe("grantEmergencyAccess", () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL, CHIOMA_EMAIL]) {
-      const token = await loginUser(testBackend, email);
+      const token = await loginDemoUser(testBackend, email);
       await expect(breakGlass(testBackend, token)).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
     }
     await expect(breakGlass(testBackend, undefined)).rejects.toThrow(/session has expired/);
 
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     await testBackend.run((ctx) => ctx.db.patch(user!._id, { accountStatus: "suspended" }));
     await expect(breakGlass(testBackend, token)).rejects.toThrow(/suspended/);
@@ -280,7 +275,7 @@ describe("linking to an existing request", () => {
     async (outcome) => {
       const testBackend = createTest();
       await seedDemoWorld(testBackend);
-      const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+      const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
       const request = await ownRequest(testBackend, token);
       await setDecisionOutcome(testBackend, request.requestId, outcome);
 
@@ -308,7 +303,7 @@ describe("linking to an existing request", () => {
         await ctx.db.patch(recordIndex._id, { recordTypes: ["allergies"] });
       }
     });
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const request = await ownRequest(testBackend, token);
     await setDecisionOutcome(testBackend, request.requestId, "BLOCK");
 
@@ -323,8 +318,8 @@ describe("linking to an existing request", () => {
   test("refuses allowed, harvest, other clinicians', other patients', and malformed requests", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
 
     const allowed = await ownRequest(testBackend, ibrahimToken);
     const harvest = await testBackend.mutation(api.accessRequests.simulateBulkHarvest, {
@@ -358,7 +353,7 @@ describe("authorised records under break-glass", () => {
     vi.useFakeTimers();
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const grant = await breakGlass(testBackend, token, { recordTypes: ["allergies"] });
 
     const live = await testBackend.mutation(api.records.viewAuthorisedSummary, {
@@ -375,7 +370,7 @@ describe("authorised records under break-glass", () => {
     vi.advanceTimersByTime(EMERGENCY_ACCESS_TTL_MS + 1000);
     await testBackend.finishAllScheduledFunctions(vi.runAllTimers);
 
-    const freshToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const freshToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const ended = await testBackend.mutation(api.records.viewAuthorisedSummary, {
       token: freshToken,
       requestId: grant.requestId,
@@ -403,7 +398,7 @@ describe("authorised records under break-glass", () => {
     vi.useFakeTimers();
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const grant = await breakGlass(testBackend, token);
 
     const early = await testBackend.mutation(internal.emergency.expireEmergencyAccess, {
@@ -428,7 +423,7 @@ describe("authorised records under break-glass", () => {
     vi.useFakeTimers();
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const grant = await breakGlass(testBackend, token);
 
     const revoked = await testBackend.mutation(api.emergency.revokeEmergencyAccess, {
@@ -456,10 +451,10 @@ describe("revokeEmergencyAccess", () => {
   test("security officers and admins can revoke; other clinicians cannot", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const adminToken = await loginUser(testBackend, ADMIN_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ADMIN_EMAIL);
 
     const first = await breakGlass(testBackend, ibrahimToken);
     await expect(
@@ -497,7 +492,7 @@ describe("revokeEmergencyAccess", () => {
   test("rejects unknown ids and anonymous callers", async () => {
     const testBackend = createTest();
     const { patientIds } = await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const grant = await breakGlass(testBackend, token);
 
     for (const grantId of ["nope", patientIds[0] as string]) {
@@ -515,8 +510,8 @@ describe("getActiveEmergencyAccess", () => {
   test("returns only the caller's live grant for that patient", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
     const grant = await breakGlass(testBackend, ibrahimToken);
 
     expect(
@@ -548,8 +543,8 @@ describe("visibility of break-glass", () => {
   test("request views and the security queue show the grant", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const grant = await breakGlass(testBackend, ibrahimToken);
 
     const request = await testBackend.query(api.accessRequests.getAccessRequest, {

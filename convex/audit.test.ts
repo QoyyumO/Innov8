@@ -30,11 +30,6 @@ function createTest() {
   return convexTest(schema, modules);
 }
 
-async function loginUser(testBackend: TestBackend, email: string) {
-  const loginResult = await loginDemoUser(testBackend, email);
-  return loginResult.token;
-}
-
 async function userIdFor(testBackend: TestBackend, email: string) {
   return await testBackend.run(async (ctx) => {
     const user = await ctx.db
@@ -143,7 +138,7 @@ describe("listAuditEvents", () => {
   test("after the demo walk, Ibrahim's trail shows every demo step, newest first", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const token = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, token);
 
     const result = await listEvents(testBackend, token);
@@ -176,10 +171,10 @@ describe("listAuditEvents", () => {
   test("clinicians and patients only see their own events", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, ibrahimToken);
-    const fatimaToken = await loginUser(testBackend, FATIMA_EMAIL);
-    const chiomaToken = await loginUser(testBackend, CHIOMA_EMAIL);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     for (const [token, email] of [
       [fatimaToken, FATIMA_EMAIL],
@@ -203,11 +198,11 @@ describe("listAuditEvents", () => {
   test("reviewers see everyone in their scope and can filter to one actor", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, ibrahimToken);
-    await loginUser(testBackend, FATIMA_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
-    const adminToken = await loginUser(testBackend, ADMIN_EMAIL);
+    await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginDemoUser(testBackend, ADMIN_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
 
     // The exchange security officer belongs to no hospital, so the FMC Abuja
@@ -238,9 +233,9 @@ describe("listAuditEvents", () => {
   test("the action filter returns only that action", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
-    const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
-    await loginUser(testBackend, FATIMA_EMAIL);
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     const logins = await listEvents(testBackend, securityToken, { action: "UserLoggedIn" });
     expect(logins.page).toHaveLength(3);
@@ -254,7 +249,7 @@ describe("listAuditEvents", () => {
 
   test("backdated (seeded) events sort by createdAt, not insertion order, and paginate", async () => {
     const testBackend = createTest();
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
     const baseTime = Date.UTC(2026, 0, 1);
     await testBackend.run(async (ctx) => {
@@ -298,7 +293,7 @@ describe("listAuditEvents", () => {
 
   test("anonymous callers and malformed actor ids get an empty page", async () => {
     const testBackend = createTest();
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
     for (const token of [undefined, "not-a-session"]) {
       const result = await listEvents(testBackend, token);
@@ -310,7 +305,7 @@ describe("listAuditEvents", () => {
 
   test("system events without an actor still list, and the module exposes no writes", async () => {
     const testBackend = createTest();
-    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     await testBackend.run(async (ctx) => {
       await appendAuditEvent(ctx.db, {
         action: "EmergencyExpired",

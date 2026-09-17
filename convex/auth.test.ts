@@ -10,7 +10,7 @@ import {
   RESET_GENERIC_MESSAGE,
   RESET_INVALID_TOKEN_MESSAGE,
 } from "./lib/authConstants";
-import { ensureDemoUsersForTests, loginDemoUser } from "./lib/loginForTests";
+import { ensureDemoUsersForTests, loginDemoSession } from "./lib/loginForTests";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 
@@ -19,7 +19,7 @@ function createTest() {
 }
 
 async function seedIbrahimLogin(testBackend: ReturnType<typeof createTest>) {
-  await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+  await loginDemoSession(testBackend, IBRAHIM_EMAIL);
 }
 
 describe("login (INN-57)", () => {
@@ -223,7 +223,7 @@ describe("password reset", () => {
 describe("session account status", () => {
   test("getCurrentUser returns null for a suspended account", async () => {
     const testBackend = createTest();
-    const loginResult = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
 
     await testBackend.run(async (ctx) => {
       await ctx.db.patch(loginResult._id, { accountStatus: "suspended" });
