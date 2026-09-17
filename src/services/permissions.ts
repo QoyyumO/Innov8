@@ -25,6 +25,18 @@ export function isAdmin(roles: UserRole[]) {
   return roles.includes("hospital_admin") || roles.includes("system_admin");
 }
 
+/**
+ * Hospital admins review only activity involving their own facility (INN-52).
+ * Mirrors `getReviewScope` in `convex/lib/roles.ts`.
+ */
+export function hasFacilityReviewScope(roles: UserRole[]) {
+  return (
+    roles.includes("hospital_admin") &&
+    !roles.includes("system_admin") &&
+    !roles.includes("security_officer")
+  );
+}
+
 export function isPatient(roles: UserRole[]) {
   return roles.includes("patient");
 }

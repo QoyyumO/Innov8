@@ -2,6 +2,7 @@ import { DatabaseWriter } from "../../_generated/server";
 import { Id } from "../../_generated/dataModel";
 import { AuditAction, AuditDetails } from "../domain";
 import { assertNonEmptyString } from "../invariants";
+import { linkAuditEventFacilities } from "./auditFacilityService";
 
 export type AuditEventInput = {
   actorId?: Id<"users">;
@@ -21,12 +22,16 @@ export type AuditEventInput = {
  * public Convex function writes to `auditEvents` directly. `action` must be
  * one of the closed `auditAction` literals in `convex/lib/domain.ts`; the
  * schema re-validates it on insert.
+ *
+ * Every event is also indexed under the facilities it involves
+ * (`auditEventFacilities`, INN-52) so hospital admins can page through
+ * their facility's trail.
  */
 export async function appendAuditEvent(
   db: DatabaseWriter,
   event: AuditEventInput,
 ): Promise<Id<"auditEvents">> {
-  return await db.insert("auditEvents", {
+  const row = {
     actorId: event.actorId,
     sessionId: event.sessionId,
     action: event.action,
@@ -34,5 +39,8 @@ export async function appendAuditEvent(
     entityId: event.entityId,
     details: event.details,
     createdAt: event.createdAt ?? Date.now(),
-  });
+  };
+  const eventId = await db.insert("auditEvents", row);
+  await linkAuditEventFacilities(db, { _id: eventId, ...row });
+  return eventId;
 }

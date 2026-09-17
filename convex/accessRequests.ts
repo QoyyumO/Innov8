@@ -4,18 +4,14 @@ import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { isAuthErrorMessage } from "./lib/authConstants";
 import {
+  consentCheck,
   decisionOutcome,
   purpose,
   Purpose,
   recordType,
   RecordType,
 } from "./lib/domain";
-import {
-  ADMIN_ROLES,
-  SECURITY_ROLES,
-  requireClinicianSession,
-  userRole,
-} from "./lib/roles";
+import { requireClinicianSession, userRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
   normalizeRecordTypes,
@@ -23,6 +19,8 @@ import {
 } from "./lib/services/accessControlService";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { allowWindowStart, allowedUntil } from "./lib/accessWindow";
+import { evaluateConsent } from "./lib/services/consentService";
+import { resolveReviewerScope, scopeIncludesRequest } from "./lib/facilityScope";
 import { stepUpAttemptsLeft } from "./lib/services/stepUpService";
 import { raiseBlockAlert } from "./lib/services/alertService";
 import { toGrantView } from "./lib/services/emergencyAccessService";
@@ -39,6 +37,7 @@ const factorsValidator = v.object({
   purpose,
   sameHospital: v.boolean(),
   recordCount: v.number(),
+  consent: v.optional(consentCheck),
 });
 
 const decisionValidator = v.object({
@@ -223,6 +222,18 @@ async function recordAccessRequest(
     requestedAt,
   });
 
+  const consent = await evaluateConsent(
+    ctx.db,
+    {
+      patientId: target.patient._id,
+      facilityId: target.sourceFacilityId,
+      purpose: input.purpose,
+      sameHospital: target.sameHospital,
+      recordCount,
+    },
+    requestedAt,
+  );
+
   const risk = scoreAccessRequest({
     actorRoles: user.roles,
     purpose: input.purpose,
@@ -232,6 +243,7 @@ async function recordAccessRequest(
     requestedAt,
     normalAccessHours: user.normalAccessHours,
     normalPatientVolume: user.normalPatientVolume,
+    consent,
   });
 
   const decisionId = await ctx.db.insert("accessDecisions", {
@@ -275,6 +287,7 @@ async function recordAccessRequest(
 
   if (risk.outcome === "BLOCK") {
     await raiseBlockAlert(ctx.db, {
+      requestId,
       decisionId,
       actor: user,
       sessionId: session._id,
@@ -422,9 +435,7 @@ export const getAccessRequest = query({
 
     const canView =
       request.actorId === viewer._id ||
-      viewer.roles.some(
-        (role) => SECURITY_ROLES.includes(role) || ADMIN_ROLES.includes(role),
-      );
+      scopeIncludesRequest(await resolveReviewerScope(ctx.db, viewer), request);
     if (!canView) {
       return null;
     }

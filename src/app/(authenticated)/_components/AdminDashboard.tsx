@@ -5,12 +5,13 @@ import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
 import { useStartOfToday } from "@/hooks/useStartOfToday";
+import { hasFacilityReviewScope } from "@/services/permissions";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import MetricCard from "@/components/common/MetricCard";
 import ComponentCard from "@/components/common/ComponentCard";
 import Alert from "@/components/ui/alert/Alert";
 import Button from "@/components/ui/button/Button";
-import { AlertIcon, DocsIcon, GroupIcon, LockIcon } from "@/icons";
+import { AlertIcon, DocsIcon, GroupIcon, LockIcon, UserIcon } from "@/icons";
 import { formatBoundedCount } from "../../../../convex/lib/dashboardConstants";
 import { LOADING_VALUE, WelcomeCard } from "./DashboardWidgets";
 import { RecentDecisionsCard } from "./RecentDecisionsCard";
@@ -20,6 +21,8 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, sessionToken } = useAuth();
   const since = useStartOfToday();
+  const isFacilityScoped = user !== null && hasFacilityReviewScope(user.roles);
+  const scopeLabel = isFacilityScoped ? (user?.hospital ?? "your facility") : "the exchange";
   const dashboard = useQuery(
     api.dashboards.getSecurityDashboard,
     sessionToken ? { token: sessionToken, since } : "skip",
@@ -59,14 +62,43 @@ export default function AdminDashboard() {
         <Alert
           variant="info"
           title="Exchange overview"
-          message="Facilities keep their own records — Lagos and Abuja do not talk point-to-point. The exchange brokers each request and records it in the audit trail."
+          message={
+            isFacilityScoped
+              ? `Alerts, blocks, audit events, and decisions below cover ${scopeLabel}: your staff, and requests to or from your facility. Facilities keep their own records; the exchange brokers each request and records it in the audit trail.`
+              : "Facilities keep their own records — Lagos and Abuja do not talk point-to-point. The exchange brokers each request and records it in the audit trail."
+          }
         />
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <MetricCard
+            title="Healthcare workers"
+            value={dashboard ? dashboard.population.workerCount.toLocaleString() : LOADING_VALUE}
+            description={
+              isFacilityScoped ? `Staff linked to ${scopeLabel}` : "Staff linked to a participating facility"
+            }
+            icon={<UserIcon className="h-6 w-6 text-brand-500" />}
+          />
+          <MetricCard
+            title="Patients"
+            value={dashboard ? dashboard.population.patientCount.toLocaleString() : LOADING_VALUE}
+            description={
+              isFacilityScoped
+                ? `Synthetic patients whose home facility is ${scopeLabel}`
+                : "Synthetic patients across participating facilities"
+            }
+            icon={<GroupIcon className="h-6 w-6 text-brand-500" />}
+          />
+        </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title="Facilities"
+            title="Exchange facilities"
             value={facilities ? String(facilities.length) : LOADING_VALUE}
-            description={facilities?.map((facility) => facility.city).join(" · ")}
+            description={
+              isFacilityScoped
+                ? "Participating hospitals (exchange-wide)"
+                : facilities?.map((facility) => facility.city).join(" · ")
+            }
             icon={<GroupIcon className="h-6 w-6 text-brand-500" />}
           />
           <MetricCard
@@ -110,13 +142,20 @@ export default function AdminDashboard() {
         </div>
 
         <ComponentCard
-          title="Participating facilities"
-          desc="Live exchange membership."
+          title="Exchange membership"
+          desc={
+            isFacilityScoped
+              ? `All participating hospitals. Alerts, blocks, audit volume, and decisions below are limited to ${scopeLabel}.`
+              : "Live exchange membership."
+          }
         >
           <FacilitiesTable facilities={facilities} />
         </ComponentCard>
 
-        <RecentDecisionsCard rows={dashboard?.recentDecisions} />
+        <RecentDecisionsCard
+          rows={dashboard?.recentDecisions}
+          scopeLabel={isFacilityScoped ? scopeLabel : undefined}
+        />
       </div>
     </div>
   );

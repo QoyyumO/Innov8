@@ -88,6 +88,20 @@ export const alertStatus = v.union(
 
 export type AlertStatus = Infer<typeof alertStatus>;
 
+/** INN-45: a recorded patient consent is active until it expires or is revoked. */
+export const consentStatus = v.union(v.literal("active"), v.literal("revoked"));
+
+export type ConsentStatus = Infer<typeof consentStatus>;
+
+/** INN-45: how consent affected a decision (snapshot on `accessDecisions.factors`). */
+export const consentCheck = v.union(
+  v.literal("not_required"),
+  v.literal("active"),
+  v.literal("missing"),
+);
+
+export type ConsentCheck = Infer<typeof consentCheck>;
+
 export const auditAction = v.union(
   v.literal("UserLoggedIn"),
   v.literal("PatientSearched"),
@@ -104,6 +118,8 @@ export const auditAction = v.union(
   v.literal("SecurityAlertAcknowledged"),
   v.literal("SecurityAlertClosed"),
   v.literal("StepUpCompleted"),
+  v.literal("ConsentRecorded"),
+  v.literal("ConsentRevoked"),
   v.literal("StepUpFailed"),
 );
 

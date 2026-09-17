@@ -63,6 +63,12 @@ export function FacilitiesTable({ facilities }: { facilities: Facility[] | undef
             <TableCell isHeader className={HEADER_CELL_CLASS}>
               City
             </TableCell>
+            <TableCell isHeader className={`${HEADER_CELL_CLASS} text-right`}>
+              Healthcare workers
+            </TableCell>
+            <TableCell isHeader className={`${HEADER_CELL_CLASS} text-right`}>
+              Patients
+            </TableCell>
             <TableCell isHeader className={HEADER_CELL_CLASS}>
               Exchange status
             </TableCell>
@@ -82,6 +88,12 @@ export function FacilitiesTable({ facilities }: { facilities: Facility[] | undef
               </TableCell>
               <TableCell className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
                 {facility.city}
+              </TableCell>
+              <TableCell className="px-4 py-4 text-right text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                {facility.workerCount.toLocaleString()}
+              </TableCell>
+              <TableCell className="px-4 py-4 text-right text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                {facility.patientCount.toLocaleString()}
               </TableCell>
               <TableCell className="px-4 py-4">
                 <Badge color={STATUS_BADGE_COLORS[facility.status]} size="sm">

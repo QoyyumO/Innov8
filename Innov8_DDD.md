@@ -34,10 +34,13 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
 - **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
 - **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan.
+- **INN-52** — Facility scope for hospital admins: AuditEvents and SecurityAlerts are indexed by the facilities they involve (actor's facility, request source/target), so a hospital admin reviews only their facility's activity. Security officers and system admins keep the exchange-wide view.
+- **INN-45** — ConsentService: a Consent lets one Facility request a Patient's records held at another; missing consent makes a single-patient, non-emergency cross-facility Decision VERIFY. Recorded by clinicians, revoked by reviewers, audited as `ConsentRecorded` / `ConsentRevoked`.
+- **INN-53** — FacilityStats: stored worker and patient totals per Facility, updated whenever a user or patient is created or changes facility.
 
 ## Next (live demo path)
 
-The MVP demo path is live end to end. Next: should-have consent (INN-45), and patient access history (INN-46). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. Next: should-have patient access history (INN-46). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
@@ -51,6 +54,7 @@ The MVP demo path is live end to end. Next: should-have consent (INN-45), and pa
 - **AccessRequest**: actor, session, sourceFacility, targetFacility, patient, purpose, recordTypes, time
 - **AccessDecision**: requestId, outcome (`ALLOW` | `VERIFY` | `BLOCK`), riskScore, reasons[]
 - **EmergencyAccess**: requestId, justification, expiresAt, grantedBy
+- **Consent**: patientId, facilityId (granted to), patientFacilityId (records held at), status, note, recordedBy, grantedAt, expiresAt (INN-45)
 - **SecurityAlert**: decisionId, severity, status, message
 - **AuditEvent**: actor, action, entity, details, session, timestamp
 
@@ -82,11 +86,11 @@ The MVP demo path is live end to end. Next: should-have consent (INN-45), and pa
 - **EmergencyAccessService** — break-glass grant/revoke/expire — *implemented (INN-41)*
 - **AlertService** — notify security on BLOCK / emergency — *implemented for BLOCK (INN-39) and break-glass (INN-41)*
 - **AuditLogService** — append-only events — *implemented (INN-35); read-only trail in INN-42*
-- **ConsentService** — should-have after demo — *INN-45*
+- **ConsentService** — active consent before ALLOW for cross-facility requests — *implemented (INN-45)*
 
 ## Domain events (audit)
 
-`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`, `SecurityAlertAcknowledged`, `SecurityAlertClosed`, `StepUpCompleted`, `StepUpFailed`
+`UserLoggedIn`, `PatientSearched`, `AccessRequested`, `AccessAllowed`, `AccessChallenged`, `AccessBlocked`, `AccessExpired`, `RecordViewed`, `EmergencyGranted`, `EmergencyExpired`, `EmergencyRevoked`, `SecurityAlertRaised`, `SecurityAlertAcknowledged`, `SecurityAlertClosed`, `StepUpCompleted`, `StepUpFailed`, `ConsentRecorded`, `ConsentRevoked`
 
 ## Invariants
 

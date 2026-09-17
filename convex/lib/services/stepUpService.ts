@@ -7,10 +7,12 @@ import {
   STEP_UP_MAX_FAILURES,
   STEP_UP_NOT_ELIGIBLE_MESSAGE,
   STEP_UP_PASSWORD_REQUIRED_MESSAGE,
+  STEP_UP_CONSENT_REQUIRED_MESSAGE,
   STEP_UP_VERIFIED_REASON,
 } from "../stepUpConstants";
 import { raiseBlockAlert } from "./alertService";
 import { appendAuditEvent } from "./auditLogService";
+import { findActiveConsent } from "./consentService";
 
 /**
  * Step-up verification (INN-44).
@@ -72,6 +74,12 @@ export async function completeStepUp(
   const { request, decision } = await requireChallengedRequest(db, user, requestId);
   if (password.trim() === "") {
     throw new Error(STEP_UP_PASSWORD_REQUIRED_MESSAGE);
+  }
+  if (
+    decision.factors?.consent === "missing" &&
+    !(await findActiveConsent(db, request.patientId, request.sourceFacilityId, now))
+  ) {
+    throw new Error(STEP_UP_CONSENT_REQUIRED_MESSAGE);
   }
   const patient = await db.get(request.patientId);
   const patientPublicId = patient?.publicId ?? "Unknown patient";
@@ -155,6 +163,7 @@ export async function completeStepUp(
   });
   await raiseBlockAlert(db, {
     decisionId: decision._id,
+    requestId,
     actor: user,
     sessionId: session._id,
     patientPublicId,

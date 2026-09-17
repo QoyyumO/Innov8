@@ -15,6 +15,8 @@ import {
 import { decisionOutcome, facilityStatus, purpose } from "./lib/domain";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
+import { resolveReviewerScope } from "./lib/facilityScope";
+import { FacilityTotals, getFacilityTotals } from "./lib/facilityStats";
 import { requireSession } from "./lib/session";
 import { isLiveGrant } from "./lib/services/emergencyAccessService";
 
@@ -74,6 +76,8 @@ const securityDashboardValidator = v.object({
   auditEventsToday: boundedCountValidator,
   activeGrants: v.array(activeGrantValidator),
   recentDecisions: v.array(dashboardRowValidator),
+  /** Stored totals (INN-53): the exchange, or the hospital admin's facility. */
+  population: v.object({ workerCount: v.number(), patientCount: v.number() }),
 });
 
 const facilityViewValidator = v.object({
@@ -82,6 +86,8 @@ const facilityViewValidator = v.object({
   name: v.string(),
   city: v.string(),
   status: facilityStatus,
+  workerCount: v.number(),
+  patientCount: v.number(),
 });
 
 function isAuthError(error: unknown): boolean {
@@ -264,7 +270,201 @@ export const getClinicianDashboard = query({
   },
 });
 
-/** Exchange-wide view for security officers and admins. Facility scope is INN-52. */
+/**
+ * Newest requests to or from one facility, merged from the source and target
+ * indexes (INN-52). Each side is capped, so the merge is bounded.
+ */
+async function listFacilityRequests(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities">,
+  options: { since?: number; limit: number },
+): Promise<{ requests: Doc<"accessRequests">[]; isCapped: boolean }> {
+  const since = options.since ?? 0;
+  const [outgoing, incoming] = await Promise.all([
+    ctx.db
+      .query("accessRequests")
+      .withIndex("by_sourceFacilityId_requestedAt", (query) =>
+        query.eq("sourceFacilityId", facilityId).gte("requestedAt", since),
+      )
+      .order("desc")
+      .take(options.limit + 1),
+    ctx.db
+      .query("accessRequests")
+      .withIndex("by_targetFacilityId_requestedAt", (query) =>
+        query.eq("targetFacilityId", facilityId).gte("requestedAt", since),
+      )
+      .order("desc")
+      .take(options.limit + 1),
+  ]);
+  const byId = new Map<Id<"accessRequests">, Doc<"accessRequests">>();
+  for (const request of [...outgoing, ...incoming]) {
+    byId.set(request._id, request);
+  }
+  const requests = [...byId.values()].sort(
+    (left, right) => right.requestedAt - left.requestedAt,
+  );
+  return {
+    requests,
+    isCapped: outgoing.length > options.limit || incoming.length > options.limit,
+  };
+}
+
+/**
+ * Live grants to or from one facility (INN-52), via source/target indexes
+ * copied onto the grant at insert time.
+ */
+async function listFacilityLiveGrants(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities">,
+  now: number,
+): Promise<Doc<"emergencyAccess">[]> {
+  const [outgoing, incoming] = await Promise.all([
+    ctx.db
+      .query("emergencyAccess")
+      .withIndex("by_sourceFacilityId_expiresAt", (query) =>
+        query.eq("sourceFacilityId", facilityId).gt("expiresAt", now),
+      )
+      .take(ACTIVE_GRANT_LIMIT + 1),
+    ctx.db
+      .query("emergencyAccess")
+      .withIndex("by_targetFacilityId_expiresAt", (query) =>
+        query.eq("targetFacilityId", facilityId).gt("expiresAt", now),
+      )
+      .take(ACTIVE_GRANT_LIMIT + 1),
+  ]);
+  const byId = new Map<Id<"emergencyAccess">, Doc<"emergencyAccess">>();
+  for (const grant of [...outgoing, ...incoming]) {
+    if (isLiveGrant(grant, now)) {
+      byId.set(grant._id, grant);
+    }
+  }
+  return [...byId.values()]
+    .sort((left, right) => left.expiresAt - right.expiresAt)
+    .slice(0, ACTIVE_GRANT_LIMIT);
+}
+
+/** Hospital-admin dashboard: the same summary, limited to one facility (INN-52). */
+async function buildFacilitySecurityDashboard(
+  ctx: QueryCtx,
+  facilityId: Id<"facilities"> | null,
+  since: number,
+  now: number,
+) {
+  const noCount = { count: 0, isCapped: false };
+  if (!facilityId) {
+    return {
+      openAlerts: { total: noCount, high: 0, medium: 0, low: 0 },
+      blockedToday: noCount,
+      auditEventsToday: noCount,
+      activeGrants: [],
+      recentDecisions: [],
+      population: { workerCount: 0, patientCount: 0 },
+    };
+  }
+  const load = createLoader(ctx);
+
+  const [openLinks, auditToday, liveGrants, todayRequests, newestRequests] =
+    await Promise.all([
+      ctx.db
+        .query("alertFacilities")
+        .withIndex("by_facilityId_status_createdAt", (query) =>
+          query.eq("facilityId", facilityId).eq("status", "open"),
+        )
+        .order("desc")
+        .take(OPEN_ALERT_COUNT_LIMIT + 1),
+      ctx.db
+        .query("auditEventFacilities")
+        .withIndex("by_facilityId_createdAt", (query) =>
+          query.eq("facilityId", facilityId).gte("createdAt", since),
+        )
+        .take(AUDIT_TODAY_COUNT_LIMIT + 1),
+      listFacilityLiveGrants(ctx, facilityId, now),
+      listFacilityRequests(ctx, facilityId, { since, limit: TODAY_COUNT_LIMIT }),
+      listFacilityRequests(ctx, facilityId, { limit: 2 * RECENT_REQUEST_LIMIT }),
+    ]);
+
+  const openAlerts = (
+    await Promise.all(
+      openLinks.slice(0, OPEN_ALERT_COUNT_LIMIT).map((link) => ctx.db.get(link.alertId)),
+    )
+  ).filter((alert) => alert !== null);
+  const countSeverity = (severity: Doc<"securityAlerts">["severity"]) =>
+    openAlerts.filter((alert) => alert.severity === severity).length;
+
+  const todayDecisions = await Promise.all(
+    todayRequests.requests.map((request) => findDecision(ctx, request._id)),
+  );
+  const blockedCount = todayDecisions.filter(
+    (decision) => decision?.outcome === "BLOCK",
+  ).length;
+
+  const newestDecisions = await Promise.all(
+    newestRequests.requests.map((request) => findDecision(ctx, request._id)),
+  );
+  const decidedRequests = newestRequests.requests
+    .map((request, index) => ({ request, decision: newestDecisions[index] }))
+    .filter((entry) => entry.decision !== null)
+    .slice(0, RECENT_REQUEST_LIMIT);
+  const recentDecisions = await Promise.all(
+    decidedRequests.map(({ request, decision }) =>
+      toDashboardRow(ctx, load, request, now, decision),
+    ),
+  );
+
+  return {
+    openAlerts: {
+      total: toBoundedCount(openLinks, OPEN_ALERT_COUNT_LIMIT),
+      high: countSeverity("high"),
+      medium: countSeverity("medium"),
+      low: countSeverity("low"),
+    },
+    blockedToday: {
+      count: Math.min(blockedCount, TODAY_COUNT_LIMIT),
+      isCapped: todayRequests.isCapped || blockedCount > TODAY_COUNT_LIMIT,
+    },
+    auditEventsToday: toBoundedCount(auditToday, AUDIT_TODAY_COUNT_LIMIT),
+    activeGrants: await toGrantRows(load, liveGrants),
+    recentDecisions,
+    population: await getFacilityTotals(ctx.db, facilityId),
+  };
+}
+
+const EMPTY_FACILITY_TOTALS: FacilityTotals = { workerCount: 0, patientCount: 0 };
+
+/** One indexed page of stored totals (INN-53); at most FACILITY_LIST_LIMIT rows. */
+async function loadFacilityStatsByFacilityId(
+  ctx: QueryCtx,
+): Promise<Map<Id<"facilities">, FacilityTotals>> {
+  const rows = await ctx.db
+    .query("facilityStats")
+    .withIndex("by_facilityId")
+    .take(FACILITY_LIST_LIMIT);
+  const byFacilityId = new Map<Id<"facilities">, FacilityTotals>();
+  for (const row of rows) {
+    byFacilityId.set(row.facilityId, {
+      workerCount: row.workerCount,
+      patientCount: row.patientCount,
+    });
+  }
+  return byFacilityId;
+}
+
+/** Sum of stored facility totals across the exchange (INN-53). */
+async function getExchangeTotals(ctx: QueryCtx): Promise<FacilityTotals> {
+  const byFacilityId = await loadFacilityStatsByFacilityId(ctx);
+  let workerCount = 0;
+  let patientCount = 0;
+  for (const totals of byFacilityId.values()) {
+    workerCount += totals.workerCount;
+    patientCount += totals.patientCount;
+  }
+  return { workerCount, patientCount };
+}
+
+/**
+ * Exchange-wide view for security officers and system admins. Hospital admins
+ * get the same summary limited to their facility (INN-52).
+ */
 export const getSecurityDashboard = query({
   args: {
     token: v.optional(v.string()),
@@ -273,8 +473,9 @@ export const getSecurityDashboard = query({
   },
   returns: v.union(v.null(), securityDashboardValidator),
   handler: async (ctx, args) => {
+    let user: Doc<"users">;
     try {
-      const { user } = await requireSession(ctx, args.token);
+      user = (await requireSession(ctx, args.token)).user;
       requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
       if (isAuthError(error)) {
@@ -282,9 +483,13 @@ export const getSecurityDashboard = query({
       }
       throw error;
     }
-    const load = createLoader(ctx);
     const now = Date.now();
     const since = clampDashboardSince(args.since, now);
+    const scope = await resolveReviewerScope(ctx.db, user);
+    if (scope.kind === "facility") {
+      return await buildFacilitySecurityDashboard(ctx, scope.facilityId, since, now);
+    }
+    const load = createLoader(ctx);
 
     const [openAlerts, blockedToday, auditToday, expiringGrants, latestDecisions] =
       await Promise.all([
@@ -341,11 +546,12 @@ export const getSecurityDashboard = query({
         expiringGrants.filter((grant) => isLiveGrant(grant, now)),
       ),
       recentDecisions,
+      population: await getExchangeTotals(ctx),
     };
   },
 });
 
-/** Participating hospitals, for any signed-in user. */
+/** Participating hospitals with stored worker / patient totals (INN-53), for any signed-in user. */
 export const listFacilities = query({
   args: {
     token: v.optional(v.string()),
@@ -360,16 +566,17 @@ export const listFacilities = query({
       }
       throw error;
     }
-    const facilities = await ctx.db
-      .query("facilities")
-      .withIndex("by_code")
-      .take(FACILITY_LIST_LIMIT);
+    const [facilities, statsByFacilityId] = await Promise.all([
+      ctx.db.query("facilities").withIndex("by_code").take(FACILITY_LIST_LIMIT),
+      loadFacilityStatsByFacilityId(ctx),
+    ]);
     return facilities.map((facility) => ({
       facilityId: facility._id,
       code: facility.code,
       name: facility.name,
       city: facility.city,
       status: facility.status,
+      ...(statsByFacilityId.get(facility._id) ?? EMPTY_FACILITY_TOTALS),
     }));
   },
 });

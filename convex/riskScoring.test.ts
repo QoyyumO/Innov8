@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { DEMO_WORKER_SEEDS } from "./lib/demoUsers";
+import { CONSENT_ACTIVE_REASON, CONSENT_MISSING_REASON } from "./lib/consentConstants";
 import type { Purpose } from "./lib/domain";
 import type { UserRole } from "./lib/roles";
 import {
   BLOCK_THRESHOLD,
+  CONSENT_MISSING_POINTS,
   HARVEST_RECORD_COUNT,
   HARVEST_SCORE,
   VERIFY_THRESHOLD,
@@ -205,6 +207,36 @@ describe("factor weights", () => {
   });
 });
 
+describe("patient consent (INN-45)", () => {
+  test("missing consent turns Ibrahim's treatment request into VERIFY 43, with the reason", () => {
+    const result = scoreAccessRequest(ibrahimRequest({ consent: "missing" }));
+    expect(result.score).toBe(8 + CONSENT_MISSING_POINTS);
+    expect(result.outcome).toBe("VERIFY");
+    expect(result.reasons).toContain(CONSENT_MISSING_REASON);
+    expect(result.factors.consent).toBe("missing");
+  });
+
+  test("missing consent is never below the VERIFY threshold", () => {
+    for (const purpose of ["treatment", "follow-up", "referral", "administrative"] as const) {
+      const result = scoreAccessRequest(ibrahimRequest({ purpose, consent: "missing" }));
+      expect(result.score).toBeGreaterThanOrEqual(VERIFY_THRESHOLD);
+      expect(result.outcome).not.toBe("ALLOW");
+    }
+  });
+
+  test("active consent adds a reason but no points; not required adds neither", () => {
+    const active = scoreAccessRequest(ibrahimRequest({ consent: "active" }));
+    expect(active).toMatchObject({ score: 8, outcome: "ALLOW" });
+    expect(active.reasons).toContain(CONSENT_ACTIVE_REASON);
+    expect(active.factors.consent).toBe("active");
+
+    const notRequired = scoreAccessRequest(ibrahimRequest());
+    expect(notRequired.score).toBe(8);
+    expect(notRequired.reasons).not.toContain(CONSENT_ACTIVE_REASON);
+    expect(notRequired.reasons).not.toContain(CONSENT_MISSING_REASON);
+  });
+});
+
 describe("access hours", () => {
   const officeHours = { start: "08:00", end: "18:00" };
 
@@ -247,6 +279,7 @@ describe("output contract", () => {
       purpose: "treatment",
       sameHospital: false,
       recordCount: 1,
+      consent: "not_required",
     });
   });
 

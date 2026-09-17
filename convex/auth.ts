@@ -22,6 +22,7 @@ import {
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
+import { insertCountedUser } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 
 async function ensureDemoUsers(ctx: MutationCtx) {
@@ -38,7 +39,7 @@ async function ensureDemoUsers(ctx: MutationCtx) {
     }
 
     hashedPassword ??= await hashPassword(DEMO_PASSWORD);
-    await ctx.db.insert("users", {
+    await insertCountedUser(ctx.db, {
       email: user.email,
       hashedPassword,
       roles: user.roles,

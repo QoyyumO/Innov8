@@ -33,6 +33,8 @@ type AuthorisedSummaryProps = {
   allowedUntil?: number;
   /** VERIFY only, own single-patient request: step-up attempts left (INN-44). */
   stepUpAttemptsLeft?: number;
+  /** INN-45: the request was challenged because patient consent was missing. */
+  isMissingConsent?: boolean;
 };
 
 function RequestAgainLink({ publicId }: { publicId: string }) {
@@ -101,6 +103,7 @@ export function AuthorisedSummary({
   hasEmergencyGrant,
   allowedUntil,
   stepUpAttemptsLeft,
+  isMissingConsent = false,
 }: AuthorisedSummaryProps) {
   const { sessionToken } = useAuth();
   const now = useNow();
@@ -151,6 +154,21 @@ export function AuthorisedSummary({
           This request was challenged. Re-enter your password to release the requested
           sections; nothing is shown until you do.
         </p>
+        {isMissingConsent && (
+          <Alert
+            variant="warning"
+            title="Patient consent needed first"
+            message={`${publicId} has no active consent for your facility. Record the patient's consent, then complete verification.`}
+          />
+        )}
+        {isMissingConsent && (
+          <Link
+            href={`/patients/${encodeURIComponent(publicId)}`}
+            className="inline-block text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+          >
+            Record consent on the patient page
+          </Link>
+        )}
         <StepUpVerification
           requestId={requestId}
           publicId={publicId}

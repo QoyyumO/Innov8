@@ -7,6 +7,8 @@ import {
   auditAction,
   auditDetails,
   bloodGroup,
+  consentCheck,
+  consentStatus,
   decisionOutcome,
   facilityStatus,
   gender,
@@ -122,7 +124,10 @@ export default defineSchema({
     .index("by_actorId", ["actorId"])
     .index("by_patientId", ["patientId"])
     .index("by_requestedAt", ["requestedAt"])
-    .index("by_actorId_requestedAt", ["actorId", "requestedAt"]),
+    .index("by_actorId_requestedAt", ["actorId", "requestedAt"])
+    // Facility-scoped admin views (INN-52).
+    .index("by_sourceFacilityId_requestedAt", ["sourceFacilityId", "requestedAt"])
+    .index("by_targetFacilityId_requestedAt", ["targetFacilityId", "requestedAt"]),
 
   accessDecisions: defineTable({
     requestId: v.id("accessRequests"),
@@ -136,6 +141,7 @@ export default defineSchema({
         purpose,
         sameHospital: v.boolean(),
         recordCount: v.number(),
+        consent: v.optional(consentCheck),
       }),
     ),
     // Step-up (INN-44): set when a VERIFY decision is completed or escalated.
@@ -155,12 +161,17 @@ export default defineSchema({
     grantedAt: v.number(),
     expiresAt: v.number(),
     revokedAt: v.optional(v.number()),
+    // INN-52: copied from the request so facility dashboards can index live grants.
+    sourceFacilityId: v.optional(v.id("facilities")),
+    targetFacilityId: v.optional(v.id("facilities")),
   })
     .index("by_actorId", ["actorId"])
     .index("by_actorId_and_patientId", ["actorId", "patientId"])
     .index("by_patientId", ["patientId"])
     .index("by_requestId", ["requestId"])
-    .index("by_expiresAt", ["expiresAt"]),
+    .index("by_expiresAt", ["expiresAt"])
+    .index("by_sourceFacilityId_expiresAt", ["sourceFacilityId", "expiresAt"])
+    .index("by_targetFacilityId_expiresAt", ["targetFacilityId", "expiresAt"]),
 
   securityAlerts: defineTable({
     decisionId: v.optional(v.id("accessDecisions")),
@@ -188,4 +199,66 @@ export default defineSchema({
     .index("by_action_createdAt", ["action", "createdAt"])
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
+
+  // INN-45: a patient's consent for one facility to request their records.
+  // `patientFacilityId` is where the patient's records are held, so hospital
+  // admins on either side can review it (INN-52).
+  consents: defineTable({
+    patientId: v.id("patients"),
+    facilityId: v.id("facilities"),
+    patientFacilityId: v.id("facilities"),
+    status: consentStatus,
+    note: v.string(),
+    recordedBy: v.optional(v.id("users")),
+    grantedAt: v.number(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    revokedBy: v.optional(v.id("users")),
+  })
+    .index("by_patientId_facilityId", ["patientId", "facilityId"])
+    .index("by_patientId_facilityId_status", ["patientId", "facilityId", "status"])
+    .index("by_grantedAt", ["grantedAt"])
+    .index("by_facilityId_grantedAt", ["facilityId", "grantedAt"])
+    .index("by_patientFacilityId_grantedAt", ["patientFacilityId", "grantedAt"]),
+
+  // INN-53: stored per-facility totals, so dashboards never count users or
+  // patients live. Maintained by `convex/lib/facilityStats.ts`.
+  facilityStats: defineTable({
+    facilityId: v.id("facilities"),
+    workerCount: v.number(),
+    patientCount: v.number(),
+    updatedAt: v.number(),
+  }).index("by_facilityId", ["facilityId"]),
+
+  // INN-52: one row per facility an audit event involves (the actor's
+  // facility plus the source/target of the request it is about), so a
+  // hospital admin's trail is a single indexed, paginated stream.
+  auditEventFacilities: defineTable({
+    eventId: v.id("auditEvents"),
+    facilityId: v.id("facilities"),
+    actorId: v.optional(v.id("users")),
+    action: auditAction,
+    createdAt: v.number(),
+  })
+    .index("by_eventId", ["eventId"])
+    .index("by_facilityId_createdAt", ["facilityId", "createdAt"])
+    .index("by_facilityId_action_createdAt", ["facilityId", "action", "createdAt"])
+    .index("by_facilityId_actorId_createdAt", ["facilityId", "actorId", "createdAt"])
+    .index("by_facilityId_actorId_action_createdAt", [
+      "facilityId",
+      "actorId",
+      "action",
+      "createdAt",
+    ]),
+
+  // INN-52: one row per facility an alert involves (source/target of its request).
+  alertFacilities: defineTable({
+    alertId: v.id("securityAlerts"),
+    facilityId: v.id("facilities"),
+    status: alertStatus,
+    createdAt: v.number(),
+  })
+    .index("by_alertId", ["alertId"])
+    .index("by_facilityId_createdAt", ["facilityId", "createdAt"])
+    .index("by_facilityId_status_createdAt", ["facilityId", "status", "createdAt"]),
 });

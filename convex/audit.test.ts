@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
+import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
 import { AuditAction } from "./lib/domain";
@@ -52,7 +53,7 @@ async function userIdFor(testBackend: TestBackend, email: string) {
 
 async function seedDemoWorld(testBackend: TestBackend) {
   await testBackend.run(async (ctx) => {
-    await ctx.db.insert("facilities", {
+    const abujaId = await ctx.db.insert("facilities", {
       code: "FMC-ABJ",
       name: "FMC Abuja",
       city: "Abuja",
@@ -78,6 +79,16 @@ async function seedDemoWorld(testBackend: TestBackend) {
       facilityId: lagosId,
       recordTypes: [...ALL_RECORD_TYPES],
       updatedAt: Date.now(),
+    });
+    // INN-45: the demo consent for PAT-002391 at FMC Abuja (as in the real seed).
+    await ctx.db.insert("consents", {
+      patientId,
+      facilityId: abujaId,
+      patientFacilityId: lagosId,
+      status: "active",
+      note: "Test consent for FMC Abuja",
+      grantedAt: Date.now(),
+      expiresAt: Date.now() + DEMO_CONSENT_DURATION_MS,
     });
     await ctx.db.insert("clinicalSummaries", {
       patientId,
@@ -192,23 +203,26 @@ describe("listAuditEvents", () => {
     expect(ownFilter.page).toHaveLength(1);
   });
 
-  test("security officers and admins see everyone and can filter to one actor", async () => {
+  test("reviewers see everyone in their scope and can filter to one actor", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const ibrahimToken = await loginUser(testBackend, IBRAHIM_EMAIL);
     await walkDemo(testBackend, ibrahimToken);
     await loginUser(testBackend, FATIMA_EMAIL);
-    const reviewerTokens = [
-      await loginUser(testBackend, SECURITY_EMAIL),
-      await loginUser(testBackend, ADMIN_EMAIL),
-    ];
+    const securityToken = await loginUser(testBackend, SECURITY_EMAIL);
+    const adminToken = await loginUser(testBackend, ADMIN_EMAIL);
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
 
-    for (const token of reviewerTokens) {
+    // The exchange security officer belongs to no hospital, so the FMC Abuja
+    // admin (INN-52) sees Abuja staff but not the officer's sign-in.
+    const expectedEmails = [
+      [securityToken, [IBRAHIM_EMAIL, FATIMA_EMAIL, SECURITY_EMAIL, ADMIN_EMAIL]],
+      [adminToken, [IBRAHIM_EMAIL, FATIMA_EMAIL, ADMIN_EMAIL]],
+    ] as const;
+    for (const [token, emails] of expectedEmails) {
       const everything = await listEvents(testBackend, token);
-      const emails = new Set(everything.page.map((event) => event.actor?.email));
-      expect(emails).toEqual(
-        new Set([IBRAHIM_EMAIL, FATIMA_EMAIL, SECURITY_EMAIL, ADMIN_EMAIL]),
+      expect(new Set(everything.page.map((event) => event.actor?.email))).toEqual(
+        new Set(emails),
       );
 
       const ibrahimOnly = await listEvents(testBackend, token, { actorId: ibrahimId });

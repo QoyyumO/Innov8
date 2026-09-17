@@ -19,6 +19,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   SecurityAlertAcknowledged: "Security alert acknowledged",
   SecurityAlertClosed: "Security alert closed",
   StepUpCompleted: "Verification completed",
+  ConsentRecorded: "Consent recorded",
+  ConsentRevoked: "Consent revoked",
   StepUpFailed: "Verification failed",
 };
 
@@ -38,6 +40,8 @@ export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
   SecurityAlertAcknowledged: "info",
   SecurityAlertClosed: "light",
   StepUpCompleted: "success",
+  ConsentRecorded: "success",
+  ConsentRevoked: "warning",
   StepUpFailed: "warning",
 };
 

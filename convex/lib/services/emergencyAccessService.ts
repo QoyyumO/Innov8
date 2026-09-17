@@ -12,7 +12,7 @@ import {
   JUSTIFICATION_TOO_LONG_MESSAGE,
   JUSTIFICATION_TOO_SHORT_MESSAGE,
 } from "../emergencyConstants";
-import { ADMIN_ROLES, SECURITY_ROLES } from "../roles";
+import { resolveReviewerScope, scopeIncludesRequest } from "../facilityScope";
 import { PERMISSION_DENIED_MESSAGE } from "../authConstants";
 import {
   normalizePublicId,
@@ -180,6 +180,8 @@ export async function grantBreakGlass(
     justification,
     grantedAt: now,
     expiresAt,
+    sourceFacilityId: target.sourceFacilityId,
+    targetFacilityId: target.targetFacility._id,
   });
 
   await appendAuditEvent(db, {
@@ -202,6 +204,7 @@ export async function grantBreakGlass(
 
   await raiseEmergencyAlert(db, {
     emergencyAccessId: grantId,
+    requestId,
     actor: user,
     sessionId: session._id,
     patientPublicId: target.patient.publicId,
@@ -235,9 +238,9 @@ export async function revokeGrant(
   if (!grant) {
     throw new Error(EMERGENCY_GRANT_NOT_FOUND_MESSAGE);
   }
-  const isReviewer = user.roles.some(
-    (role) => SECURITY_ROLES.includes(role) || ADMIN_ROLES.includes(role),
-  );
+  const request = await db.get(grant.requestId);
+  const scope = await resolveReviewerScope(db, user);
+  const isReviewer = request !== null && scopeIncludesRequest(scope, request);
   if (grant.actorId !== user._id && !isReviewer) {
     throw new Error(PERMISSION_DENIED_MESSAGE);
   }
