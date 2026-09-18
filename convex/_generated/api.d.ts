@@ -13,6 +13,7 @@ import type * as alerts from "../alerts.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as consents from "../consents.js";
+import type * as crons from "../crons.js";
 import type * as dashboards from "../dashboards.js";
 import type * as emergency from "../emergency.js";
 import type * as facilityScopeBackfill from "../facilityScopeBackfill.js";
@@ -29,6 +30,7 @@ import type * as lib_emergencyConstants from "../lib/emergencyConstants.js";
 import type * as lib_facilityScope from "../lib/facilityScope.js";
 import type * as lib_facilityStats from "../lib/facilityStats.js";
 import type * as lib_invariants from "../lib/invariants.js";
+import type * as lib_loginForTests from "../lib/loginForTests.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_publicUser from "../lib/publicUser.js";
 import type * as lib_riskConstants from "../lib/riskConstants.js";
@@ -50,6 +52,7 @@ import type * as lib_synthetic from "../lib/synthetic.js";
 import type * as patients from "../patients.js";
 import type * as records from "../records.js";
 import type * as seed from "../seed.js";
+import type * as sessions from "../sessions.js";
 import type * as stepUp from "../stepUp.js";
 
 import type {
@@ -64,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   audit: typeof audit;
   auth: typeof auth;
   consents: typeof consents;
+  crons: typeof crons;
   dashboards: typeof dashboards;
   emergency: typeof emergency;
   facilityScopeBackfill: typeof facilityScopeBackfill;
@@ -80,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "lib/facilityScope": typeof lib_facilityScope;
   "lib/facilityStats": typeof lib_facilityStats;
   "lib/invariants": typeof lib_invariants;
+  "lib/loginForTests": typeof lib_loginForTests;
   "lib/password": typeof lib_password;
   "lib/publicUser": typeof lib_publicUser;
   "lib/riskConstants": typeof lib_riskConstants;
@@ -101,6 +106,7 @@ declare const fullApi: ApiFromModules<{
   patients: typeof patients;
   records: typeof records;
   seed: typeof seed;
+  sessions: typeof sessions;
   stepUp: typeof stepUp;
 }>;
 

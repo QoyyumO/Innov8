@@ -30,6 +30,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-56-audit-patient-searches-no-results](features/INN-56-audit-patient-searches-no-results/PLAN.md) | Audit patient searches that reach an index, hit or miss | Done on `main` ([#27](https://github.com/QoyyumO/Innov8/pull/27)) — narrows [#24](https://github.com/QoyyumO/Innov8/pull/24) |
 | [INN-57-login-must-not-reseed-demo-users](features/INN-57-login-must-not-reseed-demo-users/PLAN.md) | Public login must not re-seed demo users | Done on `main` ([#25](https://github.com/QoyyumO/Innov8/pull/25)) |
 | [INN-62-newest-break-glass-grant](features/INN-62-newest-break-glass-grant/PLAN.md) | Dashboards read the newest break-glass grant, not the oldest | Done on `main` ([#28](https://github.com/QoyyumO/Innov8/pull/28)) |
-| [INN-66-harden-verify-password](features/INN-66-harden-verify-password/PLAN.md) | `verifyPassword`: no throw on a malformed hash, compare without short-circuiting | In review ([#29](https://github.com/QoyyumO/Innov8/pull/29)) |
+| [INN-66-harden-verify-password](features/INN-66-harden-verify-password/PLAN.md) | `verifyPassword`: no throw on a malformed hash, compare without short-circuiting | Done on `main` ([#29](https://github.com/QoyyumO/Innov8/pull/29)) |
+| [INN-64-expire-sessions](features/INN-64-expire-sessions/PLAN.md) | Sessions delete themselves at `expiresAt`; bounded cleanup (with INN-61) | In review ([#31](https://github.com/QoyyumO/Innov8/pull/31)) |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

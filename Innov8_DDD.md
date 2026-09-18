@@ -42,7 +42,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 
 ## Next (live demo path)
 
-The MVP demo path is live end to end. INN-66 is in progress (harden `verifyPassword`: no throw on a malformed stored hash, compare without short-circuiting). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. INN-64 / INN-61 are in progress (sessions delete themselves at `expiresAt`, so expiry is reactive, and the cleanup queries are bounded). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 

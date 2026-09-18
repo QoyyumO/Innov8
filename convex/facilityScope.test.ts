@@ -439,7 +439,7 @@ describe("facilityScopeBackfill", () => {
       const testBackend = createTest();
       const facilityIds = await seedWorld(testBackend);
       const flows = await runFlows(testBackend);
-      const adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
+      let adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
       // Simulate data written before INN-52: no facility links at all.
       await testBackend.run(async (ctx) => {
         for (const link of await ctx.db.query("alertFacilities").take(100)) {
@@ -454,6 +454,9 @@ describe("facilityScopeBackfill", () => {
 
       await testBackend.mutation(internal.facilityScopeBackfill.start, {});
       await testBackend.finishAllScheduledFunctions(vi.runAllTimers);
+      // Running every timer also runs this session's scheduled expiry
+      // (INN-61), which is the point of that change - so sign in again.
+      adminToken = await loginDemoUser(testBackend, ABUJA_ADMIN_EMAIL);
 
       expect(new Set(await listAlertRequestIds(testBackend, adminToken))).toEqual(
         new Set([flows.ibrahimHarvest.requestId, flows.ibrahimGrant.requestId]),

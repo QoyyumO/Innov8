@@ -188,11 +188,13 @@ describe("grantEmergencyAccess", () => {
       title: EMERGENCY_ALERT_TITLE,
     });
     expect(stored.alerts[0].message).toContain(JUSTIFICATION);
-    expect(stored.scheduled).toHaveLength(1);
-    expect(stored.scheduled[0]).toMatchObject({
-      name: "emergency:expireEmergencyAccess",
-      scheduledTime: grant.expiresAt,
-    });
+    // Login also schedules a session expiry (INN-61), so assert on the
+    // emergency job rather than the total.
+    const expiryJobs = stored.scheduled.filter(
+      (job) => job.name === "emergency:expireEmergencyAccess",
+    );
+    expect(expiryJobs).toHaveLength(1);
+    expect(expiryJobs[0]).toMatchObject({ scheduledTime: grant.expiresAt });
 
     expect(await auditActions(testBackend)).toEqual([
       "UserLoggedIn",
