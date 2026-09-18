@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { ChangePasswordForm } from "./_components/ChangePasswordForm";
 import Alert from "@/components/ui/alert/Alert";
@@ -11,13 +11,30 @@ import UserMetaCard from "@/components/user-profile/UserMetaCard";
 import UserInfoCard from "@/components/user-profile/UserInfoCard";
 import AssignmentCard from "@/components/user-profile/AssignmentCard";
 
+const SUCCESS_MESSAGE_MS = 8000;
+
 export default function AccountSettingsPage() {
   const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const successTimeoutId = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutId.current !== null) {
+        window.clearTimeout(successTimeoutId.current);
+      }
+    };
+  }, []);
 
   const handleSuccess = (message: string) => {
     setSuccessMessage(message);
-    window.setTimeout(() => setSuccessMessage(null), 8000);
+    if (successTimeoutId.current !== null) {
+      window.clearTimeout(successTimeoutId.current);
+    }
+    successTimeoutId.current = window.setTimeout(() => {
+      setSuccessMessage(null);
+      successTimeoutId.current = null;
+    }, SUCCESS_MESSAGE_MS);
   };
 
   return (
