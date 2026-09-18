@@ -308,6 +308,9 @@ export const logout = mutation({
   args: {
     token: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+  }),
   handler: async (ctx, args) => {
     const { user, session } = await requireSession(ctx, args.token);
     await appendAuditEvent(ctx.db, {
@@ -319,7 +322,7 @@ export const logout = mutation({
       details: {},
     });
     await deleteSessionByToken(ctx.db, args.token);
-    return { success: true };
+    return { success: true as const };
   },
 });
 
@@ -343,6 +346,10 @@ export const updateProfile = mutation({
       middleName: v.optional(v.string()),
     }),
   },
+  returns: v.object({
+    success: v.literal(true),
+    profile: publicUserValidator.fields.profile,
+  }),
   handler: async (ctx, args) => {
     const { user, session } = await requireSession(ctx, args.token);
     const middleName = args.profile.middleName?.trim();
@@ -362,7 +369,7 @@ export const updateProfile = mutation({
       entityId: user._id,
       details: {},
     });
-    return { success: true, profile };
+    return { success: true as const, profile };
   },
 });
 
@@ -372,6 +379,9 @@ export const changePassword = mutation({
     currentPassword: v.string(),
     newPassword: v.string(),
   },
+  returns: v.object({
+    success: v.literal(true),
+  }),
   handler: async (ctx, args) => {
     const { user, session } = await requireSession(ctx, args.token);
 
@@ -405,6 +415,7 @@ export const changePassword = mutation({
       entityId: user._id,
       details: {},
     });
-    return { success: true };
+    return { success: true as const };
   },
 });
+

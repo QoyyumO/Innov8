@@ -30,7 +30,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-40](https://linear.app/innov8-health/issue/INN-40) authorised clinical summary, audited `RecordViewed` (demo step 5)
 - [INN-39](https://linear.app/innov8-health/issue/INN-39) harvest BLOCK → security alert, `/security` queue (demo step 6)
 - [INN-41](https://linear.app/innov8-health/issue/INN-41) break-glass: 15-minute grant, alert, scheduled expiry, early revoke, `/emergency` (demo step 7)
-- [INN-42](https://linear.app/innov8-health/issue/INN-42) read-only audit trail, `/audit`
+- [INN-42](https://linear.app/innov8-health/issue/INN-42) read-only audit trail, `/audit` (logout, password change/reset, and profile update audited in INN-58)
 - [INN-43](https://linear.app/innov8-health/issue/INN-43) live role dashboards, `/facilities`
 - [INN-51](https://linear.app/innov8-health/issue/INN-51) ALLOW decisions expire after 24 hours (`AccessExpired`)
 - [INN-54](https://linear.app/innov8-health/issue/INN-54) login errors, 7-day Keep me logged in, seed `recordCount` 1, mobile overlay
@@ -43,6 +43,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-46](https://linear.app/innov8-health/issue/INN-46) patient portal: Chioma sees PAT-002391 identity + access history
 - [INN-56](https://linear.app/innov8-health/issue/INN-56) audit patient searches that reach an index, hit or miss
 - [INN-57](https://linear.app/innov8-health/issue/INN-57) public `login` verifies a password and never re-seeds demo users
+- [INN-58](https://linear.app/innov8-health/issue/INN-58) audit logout, password change, password reset, and profile update
 - [INN-62](https://linear.app/innov8-health/issue/INN-62) dashboards read the newest break-glass grant, not the oldest
 - [INN-66](https://linear.app/innov8-health/issue/INN-66) `verifyPassword` never throws on a malformed stored hash
 

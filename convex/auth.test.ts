@@ -265,7 +265,9 @@ describe("account mutation audit events", () => {
       newPassword: "resetpass1",
     });
 
-    const events = await testBackend.run((ctx) => ctx.db.query("auditEvents").collect());
+    const events = await testBackend.run(async (ctx) =>
+      ctx.db.query("auditEvents").take(20),
+    );
     expect(events.map((event) => event.action)).toEqual([
       "UserLoggedIn",
       "ProfileUpdated",
@@ -278,11 +280,39 @@ describe("account mutation audit events", () => {
     expect(JSON.stringify(events)).not.toContain("changedpass1");
     expect(JSON.stringify(events)).not.toContain(loginResult.token);
 
-    const resetEvents = await resetBackend.run((ctx) => ctx.db.query("auditEvents").collect());
+    const resetEvents = await resetBackend.run(async (ctx) =>
+      ctx.db.query("auditEvents").take(20),
+    );
     expect(resetEvents.filter((event) => event.action === "PasswordReset")).toHaveLength(1);
     expect(JSON.stringify(resetEvents)).not.toContain(resetToken);
     expect(
-      await resetBackend.run((ctx) => ctx.db.query("sessions").collect()),
+      await resetBackend.run(async (ctx) => ctx.db.query("sessions").take(20)),
     ).toHaveLength(0);
+  });
+
+  test("failed password change and invalid reset do not write those audit actions", async () => {
+    const testBackend = createTest();
+    const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
+
+    await expect(
+      testBackend.mutation(api.auth.changePassword, {
+        token: loginResult.token,
+        currentPassword: "wrong-password",
+        newPassword: "changedpass1",
+      }),
+    ).rejects.toThrow("Current password is incorrect");
+
+    await expect(
+      testBackend.mutation(api.auth.resetPassword, {
+        email: IBRAHIM_EMAIL,
+        resetToken: "not-a-real-token",
+        newPassword: "resetpass1",
+      }),
+    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+
+    const events = await testBackend.run(async (ctx) =>
+      ctx.db.query("auditEvents").take(20),
+    );
+    expect(events.map((event) => event.action)).toEqual(["UserLoggedIn"]);
   });
 });
