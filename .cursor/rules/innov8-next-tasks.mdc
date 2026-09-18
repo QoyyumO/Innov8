@@ -67,6 +67,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-81](https://linear.app/innov8-health/issue/INN-81) audited clinical note after ALLOW (not an EMR)
 - [INN-82](https://linear.app/innov8-health/issue/INN-82) document case-insensitive patient public ID search
 - [INN-83](https://linear.app/innov8-health/issue/INN-83) request-flow loading and keep the decision in view
+- [INN-84](https://linear.app/innov8-health/issue/INN-84) align QA checklist with consent-gated step-up
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
