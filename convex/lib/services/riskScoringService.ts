@@ -18,6 +18,8 @@ import { ADMIN_ROLES, CLINICIAN_ROLES, SECURITY_ROLES, UserRole } from "../roles
  * Demo invariants (see AGENTS.md):
  * - Ibrahim (doctor, FMC Abuja) → PAT-002391 (FMC Lagos), treatment,
  *   1 record = 5 base + 0 role + 0 purpose + 3 cross-facility = 8 → ALLOW.
+ *   Night treatment stays 8 (clinical hours are not penalised). Device is
+ *   not scored. Location is the source facility unless it mismatches.
  * - Any request covering >= 500 records → at least 94 → BLOCK.
  * - INN-45: a single-patient cross-facility request without active patient
  *   consent gets CONSENT_MISSING_POINTS and at least VERIFY_THRESHOLD.
@@ -34,6 +36,11 @@ export const CROSS_FACILITY_POINTS = 3;
 export const WITHIN_BASELINE_POINTS = 5;
 export const ABOVE_BASELINE_POINTS = 35;
 export const AFTER_HOURS_POINTS = 15;
+export const UNUSUAL_LOCATION_POINTS = 12;
+export const BEHAVIOUR_DEVIATION_POINTS = 20;
+/** Prior requests in this window are compared to `normalPatientVolume`. */
+export const BEHAVIOUR_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const CONTEXT_MAX_LENGTH = 80;
 export const CONSENT_MISSING_POINTS = 35;
 
 export { HARVEST_RECORD_COUNT, HARVEST_SCORE };
@@ -62,6 +69,12 @@ const ROUND_THE_CLOCK_PURPOSES: readonly Purpose[] = ["treatment", "emergency"];
 
 export type AccessHours = { start: string; end: string };
 
+export type FacilityPlace = {
+  code: string;
+  name: string;
+  city: string;
+};
+
 export type RiskInput = {
   actorRoles: readonly UserRole[];
   purpose: Purpose;
@@ -80,6 +93,14 @@ export type RiskInput = {
   normalPatientVolume?: number;
   /** INN-45: whether patient consent applies and was found. Defaults to `not_required`. */
   consent?: ConsentCheck;
+  /**
+   * Coarse location label (source-facility city, or seed "off-site").
+   * Not GPS. Device is omitted: the client can spoof it.
+   */
+  location?: string;
+  sourceFacility?: FacilityPlace;
+  /** Other requests by this worker in `BEHAVIOUR_WINDOW_MS` (excludes this one). */
+  recentRequestCount?: number;
 };
 
 export type RiskFactors = {
@@ -88,6 +109,9 @@ export type RiskFactors = {
   sameHospital: boolean;
   recordCount: number;
   consent: ConsentCheck;
+  locationMismatch: boolean;
+  afterHours: boolean;
+  recentRequestCount: number;
 };
 
 /** Domain value object (`Innov8_DDD.md` RiskBreakdown). */
@@ -220,6 +244,37 @@ export function isOutsideAccessHours(
   return !isInside;
 }
 
+export function normalizeRequestContext(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    return undefined;
+  }
+  if (trimmed.length <= CONTEXT_MAX_LENGTH) {
+    return trimmed;
+  }
+  return trimmed.slice(0, CONTEXT_MAX_LENGTH);
+}
+
+/** True when a provided location string does not name the source facility. */
+export function isLocationMismatch(
+  location: string | undefined,
+  facility: FacilityPlace | undefined,
+): boolean {
+  const normalizedLocation = normalizeRequestContext(location)?.toLowerCase();
+  if (normalizedLocation === undefined || facility === undefined) {
+    return false;
+  }
+  const tokens = [facility.code, facility.name, facility.city]
+    .map((token) => token.trim().toLowerCase())
+    .filter((token) => token.length > 0);
+  return !tokens.some(
+    (token) => normalizedLocation.includes(token) || token.includes(normalizedLocation),
+  );
+}
+
 export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
   if (input.recordTypes.length === 0) {
     throw new Error("Risk scoring requires at least one record type");
@@ -251,12 +306,27 @@ export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
   score += volumeScore.points;
   reasons.push(volumeScore.reason);
 
-  if (
-    !ROUND_THE_CLOCK_PURPOSES.includes(input.purpose) &&
-    isOutsideAccessHours(input.requestedAt, input.normalAccessHours)
-  ) {
+  const afterHours = isOutsideAccessHours(input.requestedAt, input.normalAccessHours);
+  if (afterHours && !ROUND_THE_CLOCK_PURPOSES.includes(input.purpose)) {
     score += AFTER_HOURS_POINTS;
     reasons.push("Outside the requester's normal access hours");
+  } else if (afterHours) {
+    reasons.push("Outside normal hours; clinical care is round the clock");
+  }
+
+  const location = normalizeRequestContext(input.location);
+  const locationMismatch = isLocationMismatch(location, input.sourceFacility);
+  if (locationMismatch) {
+    score += UNUSUAL_LOCATION_POINTS;
+    reasons.push("Request location does not match the requester's facility");
+  }
+
+  const recentRequestCount = input.recentRequestCount ?? 0;
+  if (recentRequestCount >= baseline) {
+    score += BEHAVIOUR_DEVIATION_POINTS;
+    reasons.push(
+      `${recentRequestCount} requests in 24 hours, at or above normal volume (${baseline})`,
+    );
   }
 
   const consent = input.consent ?? "not_required";
@@ -287,6 +357,9 @@ export function scoreAccessRequest(input: RiskInput): RiskBreakdown {
       sameHospital: input.sameHospital,
       recordCount: input.recordCount,
       consent,
+      locationMismatch,
+      afterHours,
+      recentRequestCount,
     },
   };
 }

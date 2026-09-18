@@ -47,6 +47,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-67** — Seeded AuditEvents, including `SecurityAlertRaised`, go through `appendAuditEvent`. The alert audit names the SecurityAlert, not the Decision.
 - **INN-69** — Looking up a Patient by publicId on the detail page is audited as `PatientDiscovered` (one row per Session and publicId, including misses).
 - **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in.
+- **INN-71** — Risk scoring adds explainable location mismatch and 24-hour request-volume vs baseline. Device is not scored. Clinical after-hours is a reason with no extra points so Ibrahim treatment stays 8; harvest stays 94.
 
 ## Next (live demo path)
 
@@ -73,7 +74,7 @@ The MVP demo path is live end to end. Remaining work is review-found bugs after 
 - **FullName**: `{ firstName, middleName?, lastName }`
 - **Purpose**: `treatment` | `emergency` | `referral` | `follow-up` | `administrative`
 - **RecordType**: `medical_summary` | `allergies` | `medications` | `diagnoses`
-- **RiskBreakdown**: `{ score: 0-100, outcome, reasons: string[], factors: { role, purpose, sameHospital, recordCount } }` — ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80
+- **RiskBreakdown**: `{ score: 0-100, outcome, reasons: string[], factors: { role, purpose, sameHospital, recordCount, consent, locationMismatch, afterHours, recentRequestCount } }` — ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80
 - **DecisionOutcome**: `ALLOW` | `VERIFY` | `BLOCK`
 
 ## Aggregates
