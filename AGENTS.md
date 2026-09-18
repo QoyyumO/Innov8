@@ -115,8 +115,9 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 
 - **INN-64 / INN-61** session lifecycle — `convex/sessions.ts`. `createSession` schedules `internal.sessions.expireSession` at `expiresAt`, so a session **deletes itself**. That delete is a write, which is what makes expiry reactive: a subscribed query does not re-run just because the clock moved, so before this a tab left open could keep serving records after the session lapsed. `purgeUserSessions` pages instead of `.collect()` and hands any remainder to `internal.sessions.purgeSessionsForUser`, so a password reset cannot fail on transaction limits. `convex/crons.ts` sweeps `by_expiresAt` hourly as a backstop for jobs that never ran. The clock check in `getUnexpiredSession` stays as a guard for the window before the job fires - it can only reject earlier, never extend a session.
 - **INN-60** validation errors — user-facing throws use `ConvexError({ code, message })` (`convex/lib/appError.ts`). Production Convex redacts a plain `Error` to `"Server Error"`; the client shows `error.data.message` via `toUserFacingError`. Shared `findXInputError` substring helpers are gone.
+- **INN-65** dead uniqueness helpers — `convex/lib/invariants.ts` keeps `assertNonEmptyString` / `assertDecisionReasons` / `assertRiskScore`. The unused `requireUnused*` exports are gone; one decision per request is still enforced by `.unique()` on `accessDecisions.by_requestId`.
 
-**Next:** [INN-60](https://linear.app/innov8-health/issue/INN-60) throw `ConvexError` so validation messages survive in production (this branch). Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
+**Next:** Remaining review-found bugs after INN-60. Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 
 When a ticket changes what works, update `README.md` ("What works today"), `docs/README.md`, this section, `Innov8_DDD.md`, and `.cursor/rules/innov8-next-tasks.mdc` in the same PR.
 

@@ -40,10 +40,11 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-46** — Patient portal: a User with role `patient` is linked to one Patient via `users.patientId` (seeded Chioma → PAT-002391). `getPatientDashboard` returns that identity, home Facility, and a bounded list of AuditEvents that name them. Clinician sessions cannot read it as the patient.
 - **INN-57** — Demo Users are created by seed (`internal.auth.ensureDemoUsers`). Public login does not insert users; a suspended demo account stays suspended.
 - **INN-60** — User-facing validation throws `ConvexError({ code, message })` so production keeps the payload. The client reads `error.data`, not a substring of `error.message`.
+- **INN-65** — Uniqueness of facility codes, patient public ids, worker ids, and one decision per request is not enforced by `requireUnused*` helpers (those exports were unused). One decision per request is still enforced by `.unique()` on `accessDecisions.by_requestId`.
 
 ## Next (live demo path)
 
-The MVP demo path is live end to end. INN-60 (typed `ConvexError` for validation) is this branch. INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. Remaining work is review-found bugs after INN-60. INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 
