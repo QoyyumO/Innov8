@@ -10,12 +10,14 @@ import {
 import { CONSENT_LIST_LIMIT } from "./lib/consentConstants";
 import { consentStatus } from "./lib/domain";
 import { resolveReviewerScope } from "./lib/facilityScope";
-import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requireRole } from "./lib/roles";
+import { AUDIT_REVIEWER_ROLES, requireClinicianSession, requirePatientSession, requireRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
   findActiveConsent,
   isConsentLive,
   recordConsent,
+  recordOwnedConsent,
+  requireLinkedPatientId,
   resolveConsentContext,
   revokeConsent,
 } from "./lib/services/consentService";
@@ -185,6 +187,80 @@ export const revokePatientConsent = mutation({
     const sessionContext = await requireSession(ctx, args.token);
     requireRole(sessionContext.user, AUDIT_REVIEWER_ROLES);
     const consent = await revokeConsent(ctx.db, sessionContext, args.consentId, Date.now());
+    return { consentId: args.consentId, revokedAt: consent.revokedAt ?? Date.now() };
+  },
+});
+
+/** Newest consents for the signed-in patient's own record (INN-77). */
+export const listMyConsents = query({
+  args: {
+    token: v.optional(v.string()),
+  },
+  returns: v.array(consentViewValidator),
+  handler: async (ctx, args) => {
+    let user: Doc<"users">;
+    try {
+      user = (await requirePatientSession(ctx, args.token)).user;
+    } catch (error) {
+      if (isAuthAppError(error)) {
+        return [];
+      }
+      throw error;
+    }
+    if (!user.patientId) {
+      return [];
+    }
+    const patientId = user.patientId;
+    const consents = await ctx.db
+      .query("consents")
+      .withIndex("by_patientId_grantedAt", (query) => query.eq("patientId", patientId))
+      .order("desc")
+      .take(CONSENT_LIST_LIMIT);
+    const now = Date.now();
+    const cache = createConsentViewCache();
+    return await Promise.all(
+      consents.map((consent) => toConsentView(ctx, consent, now, cache)),
+    );
+  },
+});
+
+/** The signed-in patient grants consent to one participating facility (30 days). */
+export const grantMyConsent = mutation({
+  args: {
+    token: v.optional(v.string()),
+    facilityId: v.id("facilities"),
+    note: v.string(),
+  },
+  returns: v.object({ consentId: v.id("consents"), expiresAt: v.number() }),
+  handler: async (ctx, args) => {
+    const sessionContext = await requirePatientSession(ctx, args.token);
+    const consent = await recordOwnedConsent(
+      ctx.db,
+      sessionContext,
+      { facilityId: args.facilityId, note: args.note },
+      Date.now(),
+    );
+    return { consentId: consent._id, expiresAt: consent.expiresAt };
+  },
+});
+
+/** The signed-in patient revokes one of their own live consents. */
+export const revokeMyConsent = mutation({
+  args: {
+    token: v.optional(v.string()),
+    consentId: v.id("consents"),
+  },
+  returns: v.object({ consentId: v.id("consents"), revokedAt: v.number() }),
+  handler: async (ctx, args) => {
+    const sessionContext = await requirePatientSession(ctx, args.token);
+    const patientId = requireLinkedPatientId(sessionContext.user);
+    const consent = await revokeConsent(
+      ctx.db,
+      sessionContext,
+      args.consentId,
+      Date.now(),
+      { kind: "owner", patientId },
+    );
     return { consentId: args.consentId, revokedAt: consent.revokedAt ?? Date.now() };
   },
 });

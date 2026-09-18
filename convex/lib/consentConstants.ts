@@ -31,3 +31,11 @@ export const CONSENT_NOT_FOUND_CODE = "CONSENT_NOT_FOUND";
 export const CONSENT_NOT_FOUND_MESSAGE = "Consent not found";
 export const CONSENT_ALREADY_ENDED_CODE = "CONSENT_ALREADY_ENDED";
 export const CONSENT_ALREADY_ENDED_MESSAGE = "This consent has already ended";
+export const CONSENT_ALREADY_ACTIVE_PATIENT_MESSAGE =
+  "You already have active consent for this facility";
+export const CONSENT_NOT_NEEDED_PATIENT_MESSAGE =
+  "Your records are already held at this facility, so no extra consent is needed";
+export const PATIENT_NOT_LINKED_CODE = "PATIENT_NOT_LINKED";
+export const PATIENT_NOT_LINKED_MESSAGE = "This login is not linked to a patient record";
+export const FACILITY_NOT_FOUND_CODE = "FACILITY_NOT_FOUND";
+export const FACILITY_NOT_FOUND_MESSAGE = "That facility is not in the exchange";

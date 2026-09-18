@@ -11,6 +11,7 @@ import { throwAppError } from "../appError";
 import {
   CONSENT_ALREADY_ACTIVE_CODE,
   CONSENT_ALREADY_ACTIVE_MESSAGE,
+  CONSENT_ALREADY_ACTIVE_PATIENT_MESSAGE,
   CONSENT_ALREADY_ENDED_CODE,
   CONSENT_ALREADY_ENDED_MESSAGE,
   CONSENT_DURATION_MS,
@@ -24,6 +25,11 @@ import {
   CONSENT_NOT_FOUND_MESSAGE,
   CONSENT_NOT_NEEDED_CODE,
   CONSENT_NOT_NEEDED_MESSAGE,
+  CONSENT_NOT_NEEDED_PATIENT_MESSAGE,
+  FACILITY_NOT_FOUND_CODE,
+  FACILITY_NOT_FOUND_MESSAGE,
+  PATIENT_NOT_LINKED_CODE,
+  PATIENT_NOT_LINKED_MESSAGE,
 } from "../consentConstants";
 import { ConsentCheck, Purpose } from "../domain";
 import { resolveReviewerScope, resolveUserFacilityId } from "../facilityScope";
@@ -38,7 +44,8 @@ import { appendAuditEvent } from "./auditLogService";
  * requests; without an active consent the risk engine returns VERIFY.
  * Break-glass never needs consent. Clinicians record consent for their own
  * facility (30 days, with a note); security officers and admins in scope
- * can revoke it. Every change is audited.
+ * can revoke it. Patients linked by `users.patientId` can list, grant, and
+ * revoke their own consents (INN-77). Every change is audited.
  */
 
 /** Newest live consent: `active` rows only, walked with `.take()` (Convex allows `.paginate()` once per function). */
@@ -172,22 +179,90 @@ export async function recordConsent(
   if (!context.isRequired) {
     throwAppError(CONSENT_NOT_NEEDED_CODE, CONSENT_NOT_NEEDED_MESSAGE);
   }
-  if (await findActiveConsent(db, context.patient._id, context.facilityId, now)) {
-    throwAppError(CONSENT_ALREADY_ACTIVE_CODE, CONSENT_ALREADY_ACTIVE_MESSAGE);
+  return await insertActiveConsent(
+    db,
+    { user, session },
+    {
+      patient: context.patient,
+      facilityId: context.facilityId,
+      patientFacilityId: context.patientFacilityId,
+      note,
+      alreadyActiveMessage: CONSENT_ALREADY_ACTIVE_MESSAGE,
+    },
+    now,
+  );
+}
+
+export function requireLinkedPatientId(user: Doc<"users">): Id<"patients"> {
+  if (!user.patientId) {
+    throwAppError(PATIENT_NOT_LINKED_CODE, PATIENT_NOT_LINKED_MESSAGE);
+  }
+  return user.patientId;
+}
+
+/** The signed-in patient grants consent for one participating facility. */
+export async function recordOwnedConsent(
+  db: DatabaseWriter,
+  { user, session }: SessionContext,
+  input: { facilityId: Id<"facilities">; note: string },
+  now: number,
+): Promise<Doc<"consents">> {
+  const note = normalizeConsentNote(input.note);
+  const patientId = requireLinkedPatientId(user);
+  const patient = await db.get(patientId);
+  if (!patient) {
+    throwAppError(PATIENT_NOT_FOUND_CODE, PATIENT_NOT_FOUND_MESSAGE);
+  }
+  const facility = await db.get(input.facilityId);
+  if (!facility) {
+    throwAppError(FACILITY_NOT_FOUND_CODE, FACILITY_NOT_FOUND_MESSAGE);
+  }
+  const patientFacilityId = await resolvePatientRecordFacilityId(db, patient);
+  if (facility._id === patientFacilityId) {
+    throwAppError(CONSENT_NOT_NEEDED_CODE, CONSENT_NOT_NEEDED_PATIENT_MESSAGE);
+  }
+  return await insertActiveConsent(
+    db,
+    { user, session },
+    {
+      patient,
+      facilityId: facility._id,
+      patientFacilityId,
+      note,
+      alreadyActiveMessage: CONSENT_ALREADY_ACTIVE_PATIENT_MESSAGE,
+    },
+    now,
+  );
+}
+
+async function insertActiveConsent(
+  db: DatabaseWriter,
+  { user, session }: SessionContext,
+  input: {
+    patient: Doc<"patients">;
+    facilityId: Id<"facilities">;
+    patientFacilityId: Id<"facilities">;
+    note: string;
+    alreadyActiveMessage: string;
+  },
+  now: number,
+): Promise<Doc<"consents">> {
+  if (await findActiveConsent(db, input.patient._id, input.facilityId, now)) {
+    throwAppError(CONSENT_ALREADY_ACTIVE_CODE, input.alreadyActiveMessage);
   }
 
   const row = {
-    patientId: context.patient._id,
-    facilityId: context.facilityId,
-    patientFacilityId: context.patientFacilityId,
+    patientId: input.patient._id,
+    facilityId: input.facilityId,
+    patientFacilityId: input.patientFacilityId,
     status: "active" as const,
-    note,
+    note: input.note,
     recordedBy: user._id,
     grantedAt: now,
     expiresAt: now + CONSENT_DURATION_MS,
   };
   const consentId = await db.insert("consents", row);
-  const facility = await db.get(context.facilityId);
+  const facility = await db.get(input.facilityId);
   await appendAuditEvent(db, {
     actorId: user._id,
     sessionId: session._id,
@@ -195,9 +270,9 @@ export async function recordConsent(
     entity: "consents",
     entityId: consentId,
     details: {
-      patientPublicId: context.patient.publicId,
+      patientPublicId: input.patient.publicId,
       facility: facility?.code ?? null,
-      note,
+      note: input.note,
       expiresAt: row.expiresAt,
     },
     createdAt: now,
@@ -205,24 +280,26 @@ export async function recordConsent(
   return { _id: consentId, _creationTime: now, ...row };
 }
 
-/** Security officers, system admins, and hospital admins on either side can revoke. */
+export type ConsentRevokeActor =
+  | { kind: "reviewer" }
+  | { kind: "owner"; patientId: Id<"patients"> };
+
+/** Reviewers in scope, or the patient the consent belongs to, can revoke. */
 export async function revokeConsent(
   db: DatabaseWriter,
   { user, session }: SessionContext,
   consentId: Id<"consents">,
   now: number,
+  actor: ConsentRevokeActor = { kind: "reviewer" },
 ): Promise<Doc<"consents">> {
   const consent = await db.get(consentId);
   if (!consent) {
     throwAppError(CONSENT_NOT_FOUND_CODE, CONSENT_NOT_FOUND_MESSAGE);
   }
-  const scope = await resolveReviewerScope(db, user);
   const canRevoke =
-    scope.kind === "global" ||
-    (scope.kind === "facility" &&
-      scope.facilityId !== null &&
-      (consent.facilityId === scope.facilityId ||
-        consent.patientFacilityId === scope.facilityId));
+    actor.kind === "owner"
+      ? consent.patientId === actor.patientId
+      : await reviewerCanRevokeConsent(db, user, consent);
   if (!canRevoke) {
     throwAppError(PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE);
   }
@@ -245,4 +322,19 @@ export async function revokeConsent(
     createdAt: now,
   });
   return { ...consent, status: "revoked", revokedAt: now, revokedBy: user._id };
+}
+
+async function reviewerCanRevokeConsent(
+  db: DatabaseReader,
+  user: Doc<"users">,
+  consent: Doc<"consents">,
+): Promise<boolean> {
+  const scope = await resolveReviewerScope(db, user);
+  return (
+    scope.kind === "global" ||
+    (scope.kind === "facility" &&
+      scope.facilityId !== null &&
+      (consent.facilityId === scope.facilityId ||
+        consent.patientFacilityId === scope.facilityId))
+  );
 }
