@@ -49,7 +49,7 @@ const AppSidebar: React.FC = () => {
       );
     }
     return items;
-  }, [user]);
+  }, [user?.roles]);
 
   const renderMenuItems = (
     navItems: NavItem[],

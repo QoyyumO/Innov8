@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import { usePaginatedQuery } from "convex/react";
 import { api } from "@/lib/convex";
@@ -63,7 +63,13 @@ export function AuditEventsTable({ canFilterByActor, actorId, actorLabel }: Audi
   const matchingActor = actorId
     ? results.find((event) => event.actor?.actorId === actorId)?.actor
     : undefined;
-  const filteredActorName = actorLabel ?? (matchingActor ? actorDisplayName(matchingActor) : undefined);
+  const filteredActorName =
+    actorLabel || (matchingActor ? actorDisplayName(matchingActor) : undefined);
+
+  const handleActionChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    setAction(value === ALL_ACTIONS ? undefined : (value as AuditAction));
+  };
 
   return (
     <div className="space-y-4">
@@ -73,10 +79,7 @@ export function AuditEventsTable({ canFilterByActor, actorId, actorLabel }: Audi
           <select
             id="audit-action-filter"
             value={action ?? ALL_ACTIONS}
-            onChange={(event) => {
-              const value = event.target.value;
-              setAction(value === ALL_ACTIONS ? undefined : (value as AuditAction));
-            }}
+            onChange={handleActionChange}
             className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
           >
             {ACTION_OPTIONS.map((option) => (
