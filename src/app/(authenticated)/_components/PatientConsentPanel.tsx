@@ -59,8 +59,14 @@ export function PatientConsentPanel({ homeFacilityCode }: PatientConsentPanelPro
   const [revokingId, setRevokingId] = useState<Id<"consents"> | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const liveFacilityNames = new Set(
+    (consents ?? [])
+      .filter((consent) => consent.isLive)
+      .map((consent) => consent.facility),
+  );
   const grantableFacilities = (facilities ?? []).filter(
-    (facility) => facility.code !== homeFacilityCode,
+    (facility) =>
+      facility.code !== homeFacilityCode && !liveFacilityNames.has(facility.name),
   );
   const trimmedNote = note.trim();
 
@@ -174,7 +180,7 @@ export function PatientConsentPanel({ homeFacilityCode }: PatientConsentPanelPro
       {consents.length === 0 ? (
         <EmptyState
           title="No consents yet"
-          description="Grant consent when another hospital needs to request your records. Seeded Chioma already has FMC Abuja after a full demo seed."
+          description="Grant consent when another hospital needs to request your records. Emergency break-glass does not use this list."
           icon={<DocsIcon className="h-12 w-12 text-brand-500" />}
         />
       ) : (

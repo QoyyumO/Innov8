@@ -5,7 +5,7 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
-import { loginDemoUser } from "./lib/loginForTests";
+import { loginDemoSession, loginDemoUser } from "./lib/loginForTests";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { appErrorCode } from "./lib/appError.testing";
 import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
@@ -503,7 +503,8 @@ describe("patient-owned consent (INN-77)", () => {
     const testBackend = createTest();
     const ids = await seedWorld(testBackend);
     const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
-    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
+    const chiomaLogin = await loginDemoSession(testBackend, CHIOMA_EMAIL);
+    const chiomaToken = chiomaLogin.token;
 
     expect(await testBackend.query(api.consents.listMyConsents, { token: chiomaToken })).toEqual(
       [],
@@ -590,14 +591,13 @@ describe("patient-owned consent (INN-77)", () => {
     expect(revoked.consentId).toBe(granted.consentId);
     expect((await requestAccess(testBackend, ibrahimToken)).outcome).toBe("VERIFY");
 
-    const chiomaUser = await testBackend.query(api.auth.getCurrentUser, { token: chiomaToken });
     const events = await testBackend.run(async (ctx) =>
       (await ctx.db.query("auditEvents").take(300)).filter(
         (event) =>
           event.action === "ConsentRecorded" || event.action === "ConsentRevoked",
       ),
     );
-    expect(events.every((event) => event.actorId === chiomaUser!._id)).toBe(true);
+    expect(events.every((event) => event.actorId === chiomaLogin._id)).toBe(true);
 
     const otherPatientId = await testBackend.run(async (ctx) =>
       ctx.db.insert("patients", {
