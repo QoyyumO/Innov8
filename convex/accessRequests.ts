@@ -2,7 +2,7 @@ import { mutation, MutationCtx, query, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError } from "./lib/appError";
 import {
   consentCheck,
   decisionOutcome,
@@ -113,7 +113,7 @@ const HARVEST_RECORD_TYPES: readonly RecordType[] = [
 ];
 
 function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
+  return isAuthAppError(error);
 }
 
 async function loadFacilityRef(

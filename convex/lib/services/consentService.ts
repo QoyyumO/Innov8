@@ -1,16 +1,28 @@
 import { DatabaseReader, DatabaseWriter } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
-import { PERMISSION_DENIED_MESSAGE } from "../authConstants";
-import { NO_SOURCE_FACILITY_MESSAGE, PATIENT_NOT_FOUND_MESSAGE } from "../accessRequestMessages";
+import { PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE } from "../authConstants";
 import {
+  NO_SOURCE_FACILITY_CODE,
+  NO_SOURCE_FACILITY_MESSAGE,
+  PATIENT_NOT_FOUND_CODE,
+  PATIENT_NOT_FOUND_MESSAGE,
+} from "../accessRequestMessages";
+import { throwAppError } from "../appError";
+import {
+  CONSENT_ALREADY_ACTIVE_CODE,
   CONSENT_ALREADY_ACTIVE_MESSAGE,
+  CONSENT_ALREADY_ENDED_CODE,
   CONSENT_ALREADY_ENDED_MESSAGE,
   CONSENT_DURATION_MS,
   CONSENT_NOTE_MAX_LENGTH,
   CONSENT_NOTE_MIN_LENGTH,
+  CONSENT_NOTE_TOO_LONG_CODE,
   CONSENT_NOTE_TOO_LONG_MESSAGE,
+  CONSENT_NOTE_TOO_SHORT_CODE,
   CONSENT_NOTE_TOO_SHORT_MESSAGE,
+  CONSENT_NOT_FOUND_CODE,
   CONSENT_NOT_FOUND_MESSAGE,
+  CONSENT_NOT_NEEDED_CODE,
   CONSENT_NOT_NEEDED_MESSAGE,
 } from "../consentConstants";
 import { ConsentCheck, Purpose } from "../domain";
@@ -102,10 +114,10 @@ export async function evaluateConsent(
 export function normalizeConsentNote(note: string): string {
   const trimmed = note.trim();
   if (trimmed.length < CONSENT_NOTE_MIN_LENGTH) {
-    throw new Error(CONSENT_NOTE_TOO_SHORT_MESSAGE);
+    throwAppError(CONSENT_NOTE_TOO_SHORT_CODE, CONSENT_NOTE_TOO_SHORT_MESSAGE);
   }
   if (trimmed.length > CONSENT_NOTE_MAX_LENGTH) {
-    throw new Error(CONSENT_NOTE_TOO_LONG_MESSAGE);
+    throwAppError(CONSENT_NOTE_TOO_LONG_CODE, CONSENT_NOTE_TOO_LONG_MESSAGE);
   }
   return trimmed;
 }
@@ -116,7 +128,7 @@ async function requirePatient(db: DatabaseReader, publicId: string) {
     .withIndex("by_publicId", (query) => query.eq("publicId", normalizePublicId(publicId)))
     .unique();
   if (!patient) {
-    throw new Error(PATIENT_NOT_FOUND_MESSAGE);
+    throwAppError(PATIENT_NOT_FOUND_CODE, PATIENT_NOT_FOUND_MESSAGE);
   }
   return patient;
 }
@@ -137,7 +149,7 @@ export async function resolveConsentContext(
   const patient = await requirePatient(db, publicId);
   const facilityId = await resolveUserFacilityId(db, user);
   if (!facilityId) {
-    throw new Error(NO_SOURCE_FACILITY_MESSAGE);
+    throwAppError(NO_SOURCE_FACILITY_CODE, NO_SOURCE_FACILITY_MESSAGE);
   }
   const patientFacilityId = await resolvePatientRecordFacilityId(db, patient);
   return {
@@ -158,10 +170,10 @@ export async function recordConsent(
   const note = normalizeConsentNote(input.note);
   const context = await resolveConsentContext(db, user, input.publicId);
   if (!context.isRequired) {
-    throw new Error(CONSENT_NOT_NEEDED_MESSAGE);
+    throwAppError(CONSENT_NOT_NEEDED_CODE, CONSENT_NOT_NEEDED_MESSAGE);
   }
   if (await findActiveConsent(db, context.patient._id, context.facilityId, now)) {
-    throw new Error(CONSENT_ALREADY_ACTIVE_MESSAGE);
+    throwAppError(CONSENT_ALREADY_ACTIVE_CODE, CONSENT_ALREADY_ACTIVE_MESSAGE);
   }
 
   const row = {
@@ -202,7 +214,7 @@ export async function revokeConsent(
 ): Promise<Doc<"consents">> {
   const consent = await db.get(consentId);
   if (!consent) {
-    throw new Error(CONSENT_NOT_FOUND_MESSAGE);
+    throwAppError(CONSENT_NOT_FOUND_CODE, CONSENT_NOT_FOUND_MESSAGE);
   }
   const scope = await resolveReviewerScope(db, user);
   const canRevoke =
@@ -212,10 +224,10 @@ export async function revokeConsent(
       (consent.facilityId === scope.facilityId ||
         consent.patientFacilityId === scope.facilityId));
   if (!canRevoke) {
-    throw new Error(PERMISSION_DENIED_MESSAGE);
+    throwAppError(PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE);
   }
   if (!isConsentLive(consent, now)) {
-    throw new Error(CONSENT_ALREADY_ENDED_MESSAGE);
+    throwAppError(CONSENT_ALREADY_ENDED_CODE, CONSENT_ALREADY_ENDED_MESSAGE);
   }
 
   await db.patch(consentId, { status: "revoked", revokedAt: now, revokedBy: user._id });

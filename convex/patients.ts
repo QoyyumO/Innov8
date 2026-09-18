@@ -2,7 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { personName, recordType } from "./lib/domain";
 import { requireClinicianSession } from "./lib/roles";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError } from "./lib/appError";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   findPatientsByQuery,
@@ -83,8 +83,7 @@ export const getPatientDiscovery = query({
     try {
       await requireClinicianSession(ctx, args.token);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (isAuthErrorMessage(message)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;

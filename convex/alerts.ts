@@ -2,7 +2,7 @@ import { mutation, MutationCtx, query, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError, throwAppError } from "./lib/appError";
 import {
   alertSeverity,
   alertStatus,
@@ -12,6 +12,7 @@ import {
 import { ADMIN_ROLES, SECURITY_ROLES, requireRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
+  ALERT_NOT_FOUND_CODE,
   ALERT_NOT_FOUND_MESSAGE,
   isHarvestCount,
   transitionAlert,
@@ -125,7 +126,7 @@ export const listSecurityAlerts = query({
     try {
       reviewer = (await requireAlertReviewer(ctx, args.token)).user;
     } catch (error) {
-      if (error instanceof Error && isAuthErrorMessage(error.message)) {
+      if (isAuthAppError(error)) {
         return EMPTY_PAGE;
       }
       throw error;
@@ -179,7 +180,7 @@ export const listSecurityAlerts = query({
 function normalizeAlertId(ctx: MutationCtx, alertId: string): Id<"securityAlerts"> {
   const normalized = ctx.db.normalizeId("securityAlerts", alertId);
   if (!normalized) {
-    throw new Error(ALERT_NOT_FOUND_MESSAGE);
+    throwAppError(ALERT_NOT_FOUND_CODE, ALERT_NOT_FOUND_MESSAGE);
   }
   return normalized;
 }

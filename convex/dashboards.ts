@@ -1,7 +1,7 @@
 import { query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError } from "./lib/appError";
 import {
   ACTIVE_GRANT_LIMIT,
   AUDIT_TODAY_COUNT_LIMIT,
@@ -115,7 +115,7 @@ const facilityViewValidator = v.object({
 });
 
 function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
+  return isAuthAppError(error);
 }
 
 const ACCESS_PURPOSES: readonly Purpose[] = [

@@ -7,10 +7,17 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
+import { appErrorCode } from "./lib/appError";
 import {
-  PERMISSION_DENIED_MESSAGE,
-  SESSION_EXPIRED_MESSAGE,
+  ACCOUNT_SUSPENDED_CODE,
+  PERMISSION_DENIED_CODE,
+  SESSION_EXPIRED_CODE,
 } from "./lib/authConstants";
+import {
+  NO_RECORD_TYPES_CODE,
+  PATIENT_NOT_FOUND_CODE,
+  RECORDS_NOT_HELD_CODE,
+} from "./lib/accessRequestMessages";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const FATIMA_EMAIL = "fatima@fmc.abuja.ng";
@@ -265,25 +272,21 @@ describe("createAccessRequest", () => {
     const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
     const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
-    await expect(requestTreatment(testBackend, securityToken)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
-    await expect(requestTreatment(testBackend, patientToken)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
+    await expect(requestTreatment(testBackend, securityToken)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
+    await expect(requestTreatment(testBackend, patientToken)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     await expect(
       testBackend.mutation(api.accessRequests.createAccessRequest, {
         publicId: "PAT-002391",
         purpose: "treatment",
         recordTypes: ["allergies"],
       }),
-    ).rejects.toThrow(SESSION_EXPIRED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
 
     const ibrahim = await testBackend.query(api.auth.getCurrentUser, { token: ibrahimToken });
     await testBackend.run((ctx) =>
       ctx.db.patch(ibrahim!._id, { accountStatus: "suspended" }),
     );
-    await expect(requestTreatment(testBackend, ibrahimToken)).rejects.toThrow(/suspended/);
+    await expect(requestTreatment(testBackend, ibrahimToken)).rejects.toSatisfy(appErrorCode(ACCOUNT_SUSPENDED_CODE));
 
     const requests = await testBackend.run((ctx) => ctx.db.query("accessRequests").take(5));
     expect(requests).toHaveLength(0);
@@ -296,7 +299,7 @@ describe("createAccessRequest", () => {
 
     await expect(
       requestTreatment(testBackend, token, { publicId: "PAT-999999" }),
-    ).rejects.toThrow("Patient not found");
+    ).rejects.toSatisfy(appErrorCode(PATIENT_NOT_FOUND_CODE));
     await expect(
       testBackend.mutation(api.accessRequests.createAccessRequest, {
         token,
@@ -304,9 +307,9 @@ describe("createAccessRequest", () => {
         purpose: "treatment",
         recordTypes: [],
       }),
-    ).rejects.toThrow("Choose at least one record type");
-    await expect(requestTreatment(testBackend, token)).rejects.toThrow(
-      "Records not held at FMC Lagos: medical summary, medications, diagnoses",
+    ).rejects.toSatisfy(appErrorCode(NO_RECORD_TYPES_CODE));
+    await expect(requestTreatment(testBackend, token)).rejects.toSatisfy(
+      appErrorCode(RECORDS_NOT_HELD_CODE),
     );
 
     const requests = await testBackend.run((ctx) => ctx.db.query("accessRequests").take(5));
@@ -421,20 +424,5 @@ describe("getAccessRequest", () => {
       });
       expect(result).toBeNull();
     }
-  });
-});
-
-describe("findAccessRequestInputError", () => {
-  test("extracts known messages from wrapped Convex errors", async () => {
-    const { findAccessRequestInputError } = await import("./lib/accessRequestMessages");
-    const wrap = (inner: string) =>
-      `[CONVEX M(accessRequests:createAccessRequest)] [Request ID: abc] Server Error\nUncaught Error: ${inner}\n    at handler (../convex/accessRequests.ts:1:1)`;
-    expect(findAccessRequestInputError(wrap("Patient not found"))).toBe("Patient not found");
-    expect(
-      findAccessRequestInputError(
-        wrap("Records not held at FMC Lagos: medical summary, diagnoses"),
-      ),
-    ).toBe("Records not held at FMC Lagos: medical summary, diagnoses");
-    expect(findAccessRequestInputError(wrap("Something else broke"))).toBeNull();
   });
 });

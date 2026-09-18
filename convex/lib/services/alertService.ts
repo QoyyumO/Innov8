@@ -8,6 +8,7 @@ import {
   scopeIncludesAlert,
   updateAlertFacilitiesStatus,
 } from "../facilityScope";
+import { throwAppError } from "../appError";
 import { HARVEST_RECORD_COUNT } from "../riskConstants";
 
 /**
@@ -18,7 +19,9 @@ import { HARVEST_RECORD_COUNT } from "../riskConstants";
  * for what and why it was blocked — never clinical content.
  */
 
+export const ALERT_NOT_FOUND_CODE = "ALERT_NOT_FOUND";
 export const ALERT_NOT_FOUND_MESSAGE = "Alert not found";
+export const ALERT_INVALID_STATUS_CODE = "ALERT_INVALID_STATUS";
 
 export const HARVEST_ALERT_TITLE = "Bulk record harvest blocked";
 export const BLOCK_ALERT_TITLE = "High-risk access request blocked";
@@ -170,10 +173,10 @@ export async function transitionAlert(
   const alert = await db.get(alertId);
   const scope = await resolveReviewerScope(db, user);
   if (!alert || !(await scopeIncludesAlert(db, scope, alertId))) {
-    throw new Error(ALERT_NOT_FOUND_MESSAGE);
+    throwAppError(ALERT_NOT_FOUND_CODE, ALERT_NOT_FOUND_MESSAGE);
   }
   if (!ALLOWED_TRANSITIONS[alert.status].includes(nextStatus)) {
-    throw new Error(`Alert is already ${alert.status}`);
+    throwAppError(ALERT_INVALID_STATUS_CODE, `Alert is already ${alert.status}`);
   }
   await db.patch(alertId, { status: nextStatus });
   await updateAlertFacilitiesStatus(db, alertId, nextStatus);

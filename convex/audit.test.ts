@@ -6,7 +6,8 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError";
+import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
 import { AuditAction } from "./lib/domain";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import * as auditModule from "./audit";
@@ -188,7 +189,7 @@ describe("listAuditEvents", () => {
     const ibrahimId = await userIdFor(testBackend, IBRAHIM_EMAIL);
     await expect(
       listEvents(testBackend, fatimaToken, { actorId: ibrahimId }),
-    ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
 
     const fatimaId = await userIdFor(testBackend, FATIMA_EMAIL);
     const ownFilter = await listEvents(testBackend, fatimaToken, { actorId: fatimaId });

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { DatabaseReader } from "../_generated/server";
-import { PERMISSION_DENIED_MESSAGE } from "./authConstants";
+import { PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE } from "./authConstants";
+import { throwAppError } from "./appError";
 import { requireSession } from "./session";
 
 export const userRole = v.union(
@@ -73,7 +74,7 @@ export function requireRole(
 ): void {
   const isAllowed = allowedRoles.some((role) => user.roles.includes(role));
   if (!isAllowed) {
-    throw new Error(PERMISSION_DENIED_MESSAGE);
+    throwAppError(PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE);
   }
 }
 

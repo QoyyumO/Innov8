@@ -10,6 +10,7 @@ import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
 import EmptyState from "@/components/empty-state/EmptyState";
+import { toUserFacingError } from "@/lib/userFacingError";
 
 interface ProfileUpdateFormProps {
   onSuccess?: () => void;
@@ -125,9 +126,7 @@ function ProfileUpdateFields({
       }
     } catch (err) {
       setApiError(
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred. Please try again.",
+        toUserFacingError(err, "An unexpected error occurred. Please try again."),
       );
     } finally {
       setIsLoading(false);

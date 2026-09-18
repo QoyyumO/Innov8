@@ -19,6 +19,11 @@ import {
 } from "./lib/roles";
 import { PERSISTENT_SESSION_DURATION_MS, publicUser, requireSession } from "./lib/session";
 import { appendAuditEvent } from "./lib/services/auditLogService";
+import { appErrorCode } from "./lib/appError";
+import {
+  ACCOUNT_SUSPENDED_CODE,
+  SESSION_EXPIRED_CODE,
+} from "./lib/authConstants";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 
@@ -132,7 +137,7 @@ describe("requireSession", () => {
     for (const token of [undefined, "", "not-a-real-token"]) {
       await expect(
         testBackend.run((ctx) => requireSession(ctx, token)),
-      ).rejects.toThrow(/session has expired/);
+      ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
     }
   });
 
@@ -144,7 +149,7 @@ describe("requireSession", () => {
     });
     await expect(
       testBackend.run((ctx) => requireSession(ctx, loginResult.token)),
-    ).rejects.toThrow(/session has expired/);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
   });
 
   test("rejects a suspended user even with a live token", async () => {
@@ -154,7 +159,7 @@ describe("requireSession", () => {
     );
     await expect(
       testBackend.run((ctx) => requireSession(ctx, loginResult.token)),
-    ).rejects.toThrow(/suspended/);
+    ).rejects.toSatisfy(appErrorCode(ACCOUNT_SUSPENDED_CODE));
   });
 
   test("rejects a session whose user no longer exists", async () => {
@@ -162,7 +167,7 @@ describe("requireSession", () => {
     await testBackend.run((ctx) => ctx.db.delete(loginResult._id));
     await expect(
       testBackend.run((ctx) => requireSession(ctx, loginResult.token)),
-    ).rejects.toThrow(/session has expired/);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
   });
 
   test("publicUser never includes hashedPassword", async () => {

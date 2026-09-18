@@ -17,12 +17,10 @@ import Badge from "@/components/ui/badge/Badge";
 import { toUserFacingError } from "@/lib/userFacingError";
 import type { RecordType } from "../../../../../convex/lib/domain";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
-import { findAccessRequestInputError } from "../../../../../convex/lib/accessRequestMessages";
 import {
   EMERGENCY_ACCESS_TTL_MS,
   JUSTIFICATION_MAX_LENGTH,
   JUSTIFICATION_MIN_LENGTH,
-  findEmergencyInputError,
 } from "../../../../../convex/lib/emergencyConstants";
 import {
   RECORD_TYPES,
@@ -35,12 +33,7 @@ type GrantResult = FunctionReturnType<typeof api.emergency.grantEmergencyAccess>
 const TTL_MINUTES = Math.round(EMERGENCY_ACCESS_TTL_MS / 60_000);
 
 function toGrantError(error: unknown): string {
-  const message = error instanceof Error ? error.message : "";
-  return (
-    findEmergencyInputError(message) ??
-    findAccessRequestInputError(message) ??
-    toUserFacingError(error, "Emergency access could not be granted. Try again.")
-  );
+  return toUserFacingError(error, "Emergency access could not be granted. Try again.");
 }
 
 type BreakGlassFormProps = {

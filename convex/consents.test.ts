@@ -6,19 +6,21 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { loginDemoUser } from "./lib/loginForTests";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError";
+import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
+import { PATIENT_NOT_FOUND_CODE } from "./lib/accessRequestMessages";
 import {
   CONSENT_ACTIVE_REASON,
-  CONSENT_ALREADY_ACTIVE_MESSAGE,
-  CONSENT_ALREADY_ENDED_MESSAGE,
+  CONSENT_ALREADY_ACTIVE_CODE,
+  CONSENT_ALREADY_ENDED_CODE,
   CONSENT_DURATION_MS,
   CONSENT_MISSING_REASON,
-  CONSENT_NOTE_TOO_SHORT_MESSAGE,
-  CONSENT_NOT_FOUND_MESSAGE,
-  CONSENT_NOT_NEEDED_MESSAGE,
+  CONSENT_NOTE_TOO_SHORT_CODE,
+  CONSENT_NOT_FOUND_CODE,
+  CONSENT_NOT_NEEDED_CODE,
 } from "./lib/consentConstants";
 import { hashPassword } from "./lib/password";
-import { STEP_UP_CONSENT_REQUIRED_MESSAGE } from "./lib/stepUpConstants";
+import { STEP_UP_CONSENT_REQUIRED_CODE } from "./lib/stepUpConstants";
 import type { UserRole } from "./lib/roles";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
@@ -218,9 +220,7 @@ describe("consent in access decisions (INN-45)", () => {
     const sameFacility = await requestAccess(testBackend, aishaToken);
     expect(sameFacility).toMatchObject({ outcome: "ALLOW" });
     expect(sameFacility.factors.consent).toBe("not_required");
-    await expect(recordConsent(testBackend, aishaToken)).rejects.toThrow(
-      CONSENT_NOT_NEEDED_MESSAGE,
-    );
+    await expect(recordConsent(testBackend, aishaToken)).rejects.toSatisfy(appErrorCode(CONSENT_NOT_NEEDED_CODE));
     const aishaStatus = await testBackend.query(api.consents.getConsentStatus, {
       token: aishaToken,
       publicId: "PAT-002391",
@@ -259,7 +259,7 @@ describe("consent in access decisions (INN-45)", () => {
         requestId: challenged.requestId,
         password: DEMO_PASSWORD,
       }),
-    ).rejects.toThrow(STEP_UP_CONSENT_REQUIRED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(STEP_UP_CONSENT_REQUIRED_CODE));
     const untouched = await testBackend.query(api.accessRequests.getAccessRequest, {
       token,
       requestId: challenged.requestId,
@@ -281,19 +281,15 @@ describe("consent in access decisions (INN-45)", () => {
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
 
-    await expect(recordConsent(testBackend, token, "   ok   ")).rejects.toThrow(
-      CONSENT_NOTE_TOO_SHORT_MESSAGE,
-    );
+    await expect(recordConsent(testBackend, token, "   ok   ")).rejects.toSatisfy(appErrorCode(CONSENT_NOTE_TOO_SHORT_CODE));
     await expect(
       testBackend.mutation(api.consents.recordPatientConsent, {
         token,
         publicId: "PAT-999999",
         note: NOTE,
       }),
-    ).rejects.toThrow("Patient not found");
-    await expect(recordConsent(testBackend, securityToken)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
+    ).rejects.toSatisfy(appErrorCode(PATIENT_NOT_FOUND_CODE));
+    await expect(recordConsent(testBackend, securityToken)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     await expect(
       testBackend.mutation(api.consents.recordPatientConsent, {
         publicId: "PAT-002391",
@@ -302,9 +298,7 @@ describe("consent in access decisions (INN-45)", () => {
     ).rejects.toThrow();
 
     await recordConsent(testBackend, token);
-    await expect(recordConsent(testBackend, token)).rejects.toThrow(
-      CONSENT_ALREADY_ACTIVE_MESSAGE,
-    );
+    await expect(recordConsent(testBackend, token)).rejects.toSatisfy(appErrorCode(CONSENT_ALREADY_ACTIVE_CODE));
     const consents = await testBackend.run((ctx) => ctx.db.query("consents").take(10));
     expect(consents).toHaveLength(1);
     expect(await auditActions(testBackend)).toContain("ConsentRecorded");
@@ -384,24 +378,16 @@ describe("revoking and reviewing consents", () => {
       testBackend.mutation(api.consents.revokePatientConsent, { token, consentId });
 
     const first = await recordConsent(testBackend, ibrahimToken);
-    await expect(revoke(ibrahimToken, first.consentId)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
-    await expect(revoke(abeokutaAdminToken, first.consentId)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
+    await expect(revoke(ibrahimToken, first.consentId)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
+    await expect(revoke(abeokutaAdminToken, first.consentId)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     await testBackend.run(async (ctx) => {
       await ctx.db.delete(first.consentId);
     });
-    await expect(revoke(securityToken, first.consentId)).rejects.toThrow(
-      CONSENT_NOT_FOUND_MESSAGE,
-    );
+    await expect(revoke(securityToken, first.consentId)).rejects.toSatisfy(appErrorCode(CONSENT_NOT_FOUND_CODE));
 
     const stillLive = await recordConsent(testBackend, ibrahimToken);
     await revoke(securityToken, stillLive.consentId);
-    await expect(revoke(securityToken, stillLive.consentId)).rejects.toThrow(
-      CONSENT_ALREADY_ENDED_MESSAGE,
-    );
+    await expect(revoke(securityToken, stillLive.consentId)).rejects.toSatisfy(appErrorCode(CONSENT_ALREADY_ENDED_CODE));
     expect((await requestAccess(testBackend, ibrahimToken)).outcome).toBe("VERIFY");
 
     const second = await recordConsent(testBackend, ibrahimToken);

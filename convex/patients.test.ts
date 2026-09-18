@@ -5,9 +5,10 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { loginDemoUser } from "./lib/loginForTests";
+import { appErrorCode } from "./lib/appError";
 import {
-  PERMISSION_DENIED_MESSAGE,
-  SESSION_EXPIRED_MESSAGE,
+  PERMISSION_DENIED_CODE,
+  SESSION_EXPIRED_CODE,
 } from "./lib/authConstants";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
@@ -267,14 +268,14 @@ describe("patient discovery", () => {
       testBackend.mutation(api.patients.searchPatients, {
         query: "PAT-002391",
       }),
-    ).rejects.toThrow(SESSION_EXPIRED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
 
     await expect(
       testBackend.mutation(api.patients.searchPatients, {
         token: "not-a-session",
         query: "PAT-002391",
       }),
-    ).rejects.toThrow(SESSION_EXPIRED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
 
     const discovery = await testBackend.query(
       api.patients.getPatientDiscovery,
@@ -293,7 +294,7 @@ describe("patient discovery", () => {
         token,
         query: "PAT-002391",
       }),
-    ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
 
     const discovery = await testBackend.query(
       api.patients.getPatientDiscovery,

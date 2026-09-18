@@ -6,10 +6,12 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
 import {
+  CURRENT_PASSWORD_INCORRECT_CODE,
   INVALID_CREDENTIALS_MESSAGE,
   RESET_GENERIC_MESSAGE,
-  RESET_INVALID_TOKEN_MESSAGE,
+  RESET_INVALID_TOKEN_CODE,
 } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError";
 import { ensureDemoUsersForTests, loginDemoSession } from "./lib/loginForTests";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
@@ -128,7 +130,7 @@ describe("password reset", () => {
         resetToken: "dev-reset-token",
         newPassword: "hackedpassword",
       }),
-    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(RESET_INVALID_TOKEN_CODE));
   });
 
   test("short password with a bad token is still an invalid token", async () => {
@@ -139,7 +141,7 @@ describe("password reset", () => {
         resetToken: "dev-reset-token",
         newPassword: "ab",
       }),
-    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(RESET_INVALID_TOKEN_CODE));
   });
 
   test("issued token can reset once then is rejected", async () => {
@@ -165,7 +167,7 @@ describe("password reset", () => {
         resetToken,
         newPassword: "newpass2",
       }),
-    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(RESET_INVALID_TOKEN_CODE));
 
     const loginResult = await testBackend.mutation(api.auth.login, {
       email: IBRAHIM_EMAIL,
@@ -198,7 +200,7 @@ describe("password reset", () => {
         resetToken,
         newPassword: "newpass1",
       }),
-    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(RESET_INVALID_TOKEN_CODE));
   });
 
   test("public request cooldown does not insert a second token", async () => {
@@ -300,7 +302,7 @@ describe("account mutation audit events", () => {
         currentPassword: "wrong-password",
         newPassword: "changedpass1",
       }),
-    ).rejects.toThrow("Current password is incorrect");
+    ).rejects.toSatisfy(appErrorCode(CURRENT_PASSWORD_INCORRECT_CODE));
 
     await expect(
       testBackend.mutation(api.auth.resetPassword, {
@@ -308,7 +310,7 @@ describe("account mutation audit events", () => {
         resetToken: "not-a-real-token",
         newPassword: "resetpass1",
       }),
-    ).rejects.toThrow(RESET_INVALID_TOKEN_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(RESET_INVALID_TOKEN_CODE));
 
     const events = await testBackend.run(async (ctx) =>
       ctx.db.query("auditEvents").take(20),

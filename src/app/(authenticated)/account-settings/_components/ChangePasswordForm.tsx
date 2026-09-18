@@ -10,6 +10,9 @@ import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
 import EmptyState from "@/components/empty-state/EmptyState";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
+import { toUserFacingError } from "@/lib/userFacingError";
+import { isAppErrorCode } from "../../../../../convex/lib/appError";
+import { CURRENT_PASSWORD_INCORRECT_CODE } from "../../../../../convex/lib/authConstants";
 
 interface ChangePasswordFormProps {
   onSuccess?: () => void;
@@ -108,15 +111,13 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
         setApiError("Failed to change password. Please try again.");
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An unexpected error occurred";
-      if (errorMessage.includes("Current password is incorrect")) {
+      if (isAppErrorCode(err, CURRENT_PASSWORD_INCORRECT_CODE)) {
         setValidationErrors((prev) => ({
           ...prev,
           currentPassword: "Current password is incorrect",
         }));
       } else {
-        setApiError(errorMessage);
+        setApiError(toUserFacingError(err, "An unexpected error occurred"));
       }
     } finally {
       setIsLoading(false);

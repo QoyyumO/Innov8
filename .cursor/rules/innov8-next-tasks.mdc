@@ -46,12 +46,13 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-58](https://linear.app/innov8-health/issue/INN-58) audit logout, password change, password reset, and profile update
 - [INN-62](https://linear.app/innov8-health/issue/INN-62) dashboards read the newest break-glass grant, not the oldest
 - [INN-66](https://linear.app/innov8-health/issue/INN-66) `verifyPassword` never throws on a malformed stored hash
+- [INN-60](https://linear.app/innov8-health/issue/INN-60) `ConvexError({ code, message })` for user-facing validation (this branch)
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-[INN-64](https://linear.app/innov8-health/issue/INN-64) + [INN-61](https://linear.app/innov8-health/issue/INN-61) sessions expire themselves and the cleanup queries are bounded (this branch).
+Remaining review-found bugs after INN-60. Do **not** revive canceled tickets INN-5–INN-17 or INN-34.
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

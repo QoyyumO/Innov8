@@ -3,17 +3,24 @@ import { Doc, Id } from "../../_generated/dataModel";
 import { RecordType } from "../domain";
 import {
   EMERGENCY_ACCESS_TTL_MS,
+  EMERGENCY_ALREADY_ACTIVE_CODE,
   EMERGENCY_ALREADY_ACTIVE_MESSAGE,
+  EMERGENCY_GRANT_ALREADY_ENDED_CODE,
   EMERGENCY_GRANT_ALREADY_ENDED_MESSAGE,
+  EMERGENCY_GRANT_NOT_FOUND_CODE,
   EMERGENCY_GRANT_NOT_FOUND_MESSAGE,
+  EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE,
   EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE,
   JUSTIFICATION_MAX_LENGTH,
   JUSTIFICATION_MIN_LENGTH,
+  JUSTIFICATION_TOO_LONG_CODE,
   JUSTIFICATION_TOO_LONG_MESSAGE,
+  JUSTIFICATION_TOO_SHORT_CODE,
   JUSTIFICATION_TOO_SHORT_MESSAGE,
 } from "../emergencyConstants";
 import { resolveReviewerScope, scopeIncludesRequest } from "../facilityScope";
-import { PERMISSION_DENIED_MESSAGE } from "../authConstants";
+import { PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE } from "../authConstants";
+import { throwAppError } from "../appError";
 import {
   normalizePublicId,
   normalizeRecordTypes,
@@ -53,10 +60,10 @@ export function isLiveGrant(grant: Doc<"emergencyAccess">, now: number): boolean
 export function normalizeJustification(justification: string): string {
   const trimmed = justification.trim();
   if (trimmed.length < JUSTIFICATION_MIN_LENGTH) {
-    throw new Error(JUSTIFICATION_TOO_SHORT_MESSAGE);
+    throwAppError(JUSTIFICATION_TOO_SHORT_CODE, JUSTIFICATION_TOO_SHORT_MESSAGE);
   }
   if (trimmed.length > JUSTIFICATION_MAX_LENGTH) {
-    throw new Error(JUSTIFICATION_TOO_LONG_MESSAGE);
+    throwAppError(JUSTIFICATION_TOO_LONG_CODE, JUSTIFICATION_TOO_LONG_MESSAGE);
   }
   return trimmed;
 }
@@ -134,7 +141,7 @@ async function requireEligibleRequest(
     decision !== null &&
     decision.outcome !== "ALLOW";
   if (!isEligible || !request) {
-    throw new Error(EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE);
+    throwAppError(EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE, EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE);
   }
   return request;
 }
@@ -159,7 +166,7 @@ export async function grantBreakGlass(
   const target = await resolveAccessTarget(db, user, input.publicId, recordTypes);
 
   if (await findLiveGrantForPatient(db, user._id, target.patient._id, now)) {
-    throw new Error(EMERGENCY_ALREADY_ACTIVE_MESSAGE);
+    throwAppError(EMERGENCY_ALREADY_ACTIVE_CODE, EMERGENCY_ALREADY_ACTIVE_MESSAGE);
   }
 
   let requestId: Id<"accessRequests">;
@@ -259,16 +266,16 @@ export async function revokeGrant(
 ) {
   const grant = await db.get(grantId);
   if (!grant) {
-    throw new Error(EMERGENCY_GRANT_NOT_FOUND_MESSAGE);
+    throwAppError(EMERGENCY_GRANT_NOT_FOUND_CODE, EMERGENCY_GRANT_NOT_FOUND_MESSAGE);
   }
   const request = await db.get(grant.requestId);
   const scope = await resolveReviewerScope(db, user);
   const isReviewer = request !== null && scopeIncludesRequest(scope, request);
   if (grant.actorId !== user._id && !isReviewer) {
-    throw new Error(PERMISSION_DENIED_MESSAGE);
+    throwAppError(PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE);
   }
   if (!isLiveGrant(grant, now)) {
-    throw new Error(EMERGENCY_GRANT_ALREADY_ENDED_MESSAGE);
+    throwAppError(EMERGENCY_GRANT_ALREADY_ENDED_CODE, EMERGENCY_GRANT_ALREADY_ENDED_MESSAGE);
   }
 
   await db.patch(grantId, { revokedAt: now });

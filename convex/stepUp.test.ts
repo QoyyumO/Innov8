@@ -12,10 +12,11 @@ import { ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 import {
   STEP_UP_ESCALATED_REASON,
   STEP_UP_MAX_FAILURES,
-  STEP_UP_NOT_ELIGIBLE_MESSAGE,
-  STEP_UP_PASSWORD_REQUIRED_MESSAGE,
+  STEP_UP_NOT_ELIGIBLE_CODE,
+  STEP_UP_PASSWORD_REQUIRED_CODE,
   STEP_UP_VERIFIED_REASON,
 } from "./lib/stepUpConstants";
+import { appErrorCode } from "./lib/appError";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const FATIMA_EMAIL = "fatima@fmc.abuja.ng";
@@ -249,9 +250,7 @@ describe("completeVerification", () => {
     expect(stepUpAllows).toHaveLength(1);
     expect(stepUpAllows[0]?.details).toMatchObject({ requestId, outcome: "ALLOW" });
 
-    await expect(verify(testBackend, token, requestId, DEMO_PASSWORD)).rejects.toThrow(
-      STEP_UP_NOT_ELIGIBLE_MESSAGE,
-    );
+    await expect(verify(testBackend, token, requestId, DEMO_PASSWORD)).rejects.toSatisfy(appErrorCode(STEP_UP_NOT_ELIGIBLE_CODE));
   });
 
   // INN-66. This is the regression the hardening exists to prevent: when
@@ -324,9 +323,7 @@ describe("completeVerification", () => {
     expect(countOf(actions, "AccessBlocked")).toBe(1);
     expect(countOf(actions, "SecurityAlertRaised")).toBe(1);
 
-    await expect(verify(testBackend, token, requestId, DEMO_PASSWORD)).rejects.toThrow(
-      STEP_UP_NOT_ELIGIBLE_MESSAGE,
-    );
+    await expect(verify(testBackend, token, requestId, DEMO_PASSWORD)).rejects.toSatisfy(appErrorCode(STEP_UP_NOT_ELIGIBLE_CODE));
     const view = await testBackend.mutation(api.records.viewAuthorisedSummary, {
       token,
       requestId,
@@ -346,12 +343,8 @@ describe("completeVerification", () => {
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const requestId = await createChallengedRequest(testBackend, token);
 
-    await expect(verify(testBackend, token, requestId, "")).rejects.toThrow(
-      STEP_UP_PASSWORD_REQUIRED_MESSAGE,
-    );
-    await expect(verify(testBackend, token, requestId, "   ")).rejects.toThrow(
-      STEP_UP_PASSWORD_REQUIRED_MESSAGE,
-    );
+    await expect(verify(testBackend, token, requestId, "")).rejects.toSatisfy(appErrorCode(STEP_UP_PASSWORD_REQUIRED_CODE));
+    await expect(verify(testBackend, token, requestId, "   ")).rejects.toSatisfy(appErrorCode(STEP_UP_PASSWORD_REQUIRED_CODE));
     const decision = await storedDecision(testBackend, requestId);
     expect(decision?.stepUpFailures).toBeUndefined();
     expect(await auditActions(testBackend)).not.toContain("StepUpFailed");
@@ -389,7 +382,7 @@ describe("completeVerification", () => {
     ]) {
       await expect(
         verify(testBackend, ibrahimToken, requestId, DEMO_PASSWORD),
-      ).rejects.toThrow(STEP_UP_NOT_ELIGIBLE_MESSAGE);
+      ).rejects.toSatisfy(appErrorCode(STEP_UP_NOT_ELIGIBLE_CODE));
     }
     expect((await auditActions(testBackend)).length).toBe(before);
     expect((await storedDecision(testBackend, fatimaChallenged))?.outcome).toBe("VERIFY");

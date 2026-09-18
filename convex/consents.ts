@@ -1,11 +1,11 @@
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAppErrorCode, isAuthAppError } from "./lib/appError";
 import {
-  NO_INDEXED_RECORDS_MESSAGE,
-  NO_SOURCE_FACILITY_MESSAGE,
-  PATIENT_NOT_FOUND_MESSAGE,
+  NO_INDEXED_RECORDS_CODE,
+  NO_SOURCE_FACILITY_CODE,
+  PATIENT_NOT_FOUND_CODE,
 } from "./lib/accessRequestMessages";
 import { CONSENT_LIST_LIMIT } from "./lib/consentConstants";
 import { consentStatus } from "./lib/domain";
@@ -37,17 +37,14 @@ const consentViewValidator = v.object({
 });
 
 function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
+  return isAuthAppError(error);
 }
 
 function isConsentContextError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
   return (
-    error.message.includes(PATIENT_NOT_FOUND_MESSAGE) ||
-    error.message.includes(NO_SOURCE_FACILITY_MESSAGE) ||
-    error.message.includes(NO_INDEXED_RECORDS_MESSAGE)
+    isAppErrorCode(error, PATIENT_NOT_FOUND_CODE) ||
+    isAppErrorCode(error, NO_SOURCE_FACILITY_CODE) ||
+    isAppErrorCode(error, NO_INDEXED_RECORDS_CODE)
   );
 }
 
