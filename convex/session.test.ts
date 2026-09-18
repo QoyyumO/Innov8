@@ -123,6 +123,34 @@ describe("login audit (INN-35)", () => {
     expect(JSON.stringify(events)).not.toContain(unknownEmail);
   });
 
+  test("suspended account writes UserLoginFailed with the same client error", async () => {
+    const testBackend = createTest();
+    await ensureDemoUsersForTests(testBackend);
+    await testBackend.run(async (ctx) => {
+      const ibrahim = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", IBRAHIM_EMAIL))
+        .unique();
+      await ctx.db.patch(ibrahim!._id, { accountStatus: "suspended" });
+    });
+    const loginResult = await testBackend.mutation(api.auth.login, {
+      email: IBRAHIM_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    expect(loginResult).toEqual({
+      success: false,
+      error: "Invalid email or password",
+    });
+    const events = await testBackend.run((ctx) =>
+      ctx.db.query("auditEvents").collect(),
+    );
+    expect(events[0]?.action).toBe("UserLoginFailed");
+    expect(events[0]?.details).toEqual({
+      email: IBRAHIM_EMAIL,
+      reason: "account_not_active",
+    });
+  });
+
   test("keep me logged in lasts seven days", async () => {
     const testBackend = createTest();
     await ensureDemoUsersForTests(testBackend);
