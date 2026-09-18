@@ -42,6 +42,8 @@ A patient normally treated at **FMC Lagos** travels to **FMC Abuja** and needs c
 
 If a change does not help this demo, it is out of scope for the MVP.
 
+Judges dry-run after those seven steps (VERIFY / step-up, `/security` queue, Chioma's portal, `/facilities`): root `README.md`.
+
 ## Build these capabilities
 
 - Authentication for healthcare workers (and later patients, security officers)
@@ -117,6 +119,7 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 - **INN-70** log out everywhere — `users.sessionsInvalidatedAt` is stamped on password reset and password change. Any session with `createdAt` earlier than that stamp is rejected immediately, even if the paged delete has not finished. `changePassword` issues a fresh session so the caller stays signed in.
 - **INN-71** behavioural risk — `scoreAccessRequest` still additive. Location is the source-facility city (mismatch adds points); prior requests in 24 hours vs `normalPatientVolume` add points; clinical after-hours is explained with 0 points. Device is not scored. Ibrahim treatment stays ALLOW 8; harvest stays BLOCK 94.
 - **INN-75** decision-engine measurement — `scoreAccessRequest` p95 vs the 1-second NFR-04 **target** (not a production SLO). Write-up: `docs/features/INN-75-decision-latency-evaluation/EVALUATION.md`. `npx vitest run convex/decisionEvaluation.test.ts`
+- **INN-76** judges dry-run — after Ibrahim's seven steps, README covers VERIFY/step-up, the `/security` queue, Chioma's portal, and `/facilities`.
 - **INN-72** failed login audit — wrong password, inactive account, and unknown email each write `UserLoginFailed`. The form still says "Invalid email or password". Unknown-email rows omit the address.
 - **INN-73** §14 seed runbook — demo defaults stay 24 / 200 / 200. Full 500 / 10k / 100k steps are documented for a paid or throwaway Convex project only (`convex/README-seeding.md`). Never run them on the shared free deployment.
 - **INN-60** validation errors — user-facing throws use `ConvexError({ code, message })` (`convex/lib/appError.ts`). Production Convex redacts a plain `Error` to `"Server Error"`; the client shows `error.data.message` via `toUserFacingError`. Shared `findXInputError` substring helpers are gone.
