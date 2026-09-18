@@ -41,10 +41,8 @@ export default function PatientDiscoveryPage() {
     const recordDiscovery = async () => {
       try {
         await recordPatientDiscovery({ token: sessionToken, publicId });
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Error recording patient discovery:", error);
-        }
+      } catch {
+        // The page still shows identity from the query; the trail is best-effort.
       }
     };
     recordDiscovery();

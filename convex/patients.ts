@@ -110,6 +110,10 @@ export const recordPatientDiscovery = mutation({
       return { recorded: false };
     }
 
+    // Touch the session row first so a remount that races this mutation
+    // retries (OCC) and then sees the audit we are about to write.
+    await ctx.db.patch(session._id, { expiresAt: session.expiresAt });
+
     const existing = await ctx.db
       .query("auditEvents")
       .withIndex("by_sessionId_action_entityId", (query) =>
