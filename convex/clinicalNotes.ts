@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { isAuthAppError, readAppError, throwAppError } from "./lib/appError";
+import { isAppErrorCode, isAuthAppError, throwAppError } from "./lib/appError";
 import {
   CLINICAL_WRITE_NOT_ALLOWED_CODE,
   CLINICAL_WRITE_NOT_ALLOWED_MESSAGE,
@@ -79,7 +79,10 @@ export const listClinicalNotesForRequest = query({
         Date.now(),
       );
     } catch (error) {
-      if (isAuthAppError(error) || readAppError(error) !== null) {
+      if (
+        isAuthAppError(error) ||
+        isAppErrorCode(error, CLINICAL_WRITE_NOT_ALLOWED_CODE)
+      ) {
         return [];
       }
       throw error;

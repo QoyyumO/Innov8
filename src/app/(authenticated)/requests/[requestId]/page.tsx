@@ -122,7 +122,9 @@ export default function AccessRequestDetailPage() {
             </ComponentCard>
           )}
 
-          {request.canAppendClinicalNote && (
+          {request.canAppendClinicalNote &&
+            (request.decision?.allowedUntil === undefined ||
+              request.decision.allowedUntil > now) && (
             <ComponentCard
               title="Append clinical note"
               desc="Audited write after ALLOW. Not a full chart editor."
