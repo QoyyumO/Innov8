@@ -8,7 +8,10 @@ import {
   CONSENT_MISSING_POINTS,
   HARVEST_RECORD_COUNT,
   HARVEST_SCORE,
+  UNUSUAL_LOCATION_POINTS,
+  BEHAVIOUR_DEVIATION_POINTS,
   VERIFY_THRESHOLD,
+  isLocationMismatch,
   isOutsideAccessHours,
   outcomeForScore,
   scoreAccessRequest,
@@ -60,6 +63,8 @@ describe("demo invariants", () => {
     const result = scoreAccessRequest(ibrahimRequest({ requestedAt: NIGHTTIME }));
     expect(result.score).toBe(8);
     expect(result.outcome).toBe("ALLOW");
+    expect(result.factors.afterHours).toBe(true);
+    expect(result.reasons).toContain("Outside normal hours; clinical care is round the clock");
   });
 
   test("500-record harvest scores 94 BLOCK with harvest and volume reasons", () => {
@@ -280,6 +285,9 @@ describe("output contract", () => {
       sameHospital: false,
       recordCount: 1,
       consent: "not_required",
+      locationMismatch: false,
+      afterHours: false,
+      recentRequestCount: 0,
     });
   });
 
@@ -320,6 +328,50 @@ describe("input validation", () => {
   test("rejects an actor with no roles", () => {
     expect(() => scoreAccessRequest(ibrahimRequest({ actorRoles: [] }))).toThrow(
       /at least one role/,
+    );
+  });
+});
+
+describe("location and historical behaviour (INN-71)", () => {
+  const abuja: { code: string; name: string; city: string } = {
+    code: "FMC-ABJ",
+    name: "FMC Abuja",
+    city: "Abuja",
+  };
+
+  test("source-facility city is not a mismatch", () => {
+    expect(isLocationMismatch("Abuja", abuja)).toBe(false);
+    expect(isLocationMismatch("FMC Abuja", abuja)).toBe(false);
+    expect(isLocationMismatch(undefined, abuja)).toBe(false);
+  });
+
+  test("off-site location adds points and keeps harvest at 94", () => {
+    const mismatch = scoreAccessRequest(
+      ibrahimRequest({ location: "off-site", sourceFacility: abuja }),
+    );
+    expect(mismatch.score).toBe(8 + UNUSUAL_LOCATION_POINTS);
+    expect(mismatch.factors.locationMismatch).toBe(true);
+    expect(mismatch.reasons).toContain(
+      "Request location does not match the requester's facility",
+    );
+
+    const harvest = scoreAccessRequest(
+      ibrahimRequest({
+        recordCount: 500,
+        location: "off-site",
+        sourceFacility: abuja,
+      }),
+    );
+    expect(harvest.score).toBe(HARVEST_SCORE);
+    expect(harvest.outcome).toBe("BLOCK");
+  });
+
+  test("request volume at the worker baseline adds behaviour points", () => {
+    const result = scoreAccessRequest(ibrahimRequest({ recentRequestCount: 20 }));
+    expect(result.score).toBe(8 + BEHAVIOUR_DEVIATION_POINTS);
+    expect(result.factors.recentRequestCount).toBe(20);
+    expect(result.reasons).toContain(
+      "20 requests in 24 hours, at or above normal volume (20)",
     );
   });
 });

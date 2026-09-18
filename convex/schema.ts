@@ -146,6 +146,9 @@ export default defineSchema({
         sameHospital: v.boolean(),
         recordCount: v.number(),
         consent: v.optional(consentCheck),
+        locationMismatch: v.optional(v.boolean()),
+        afterHours: v.optional(v.boolean()),
+        recentRequestCount: v.optional(v.number()),
       }),
     ),
     // Step-up (INN-44): set when a VERIFY decision is completed or escalated.

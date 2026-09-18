@@ -77,6 +77,34 @@ Then sign in at the app with `ibrahim@fmc.abuja.ng` / `password123`.
 
 PAT-002391 is upserted on the first patient batch even when `total` is 200.
 
+## Paid plan only — full §14 volumes (INN-73)
+
+Judges walk **Ibrahim at FMC Abuja → PAT-002391 at FMC Lagos**. They do not
+need 10,000 patients. The default `seedDemoDataset` is the smoke seed.
+
+**Do not** run these counts on the shared free-plan deployment (`innov8`
+dev). They overflow the 512 MB cap. Use a **paid Convex project** or a
+throwaway preview, then delete it.
+
+Constants (not defaults) live in `convex/lib/synthetic.ts`:
+`SECTION_14_WORKER_COUNT` 500, `SECTION_14_PATIENT_COUNT` 10_000,
+`SECTION_14_ACCESS_EVENT_COUNT` 100_000.
+
+```bash
+# Point .env.local at the paid/preview deployment first.
+npx convex dev
+
+npx convex run internal.seed.seedFacilities
+npx convex run internal.seed.seedHealthcareWorkers '{"count": 500}'
+npx convex run internal.seed.seedPatientsBatch '{"total": 10000, "continueToEvents": true, "eventCount": 100000, "workerCount": 500}'
+```
+
+Wait until patient and event batches finish (`done: true`), then
+`npx convex run internal.seed.verifyDemoSeed`. Demo logins and PAT-002391
+are still upserted on the first patient batch. Wipe with
+`clearSeedDataBatch` (and table replace if row-by-row times out) before
+returning the project to demo-scale.
+
 ## Idempotency
 
 - Facilities: `by_code`

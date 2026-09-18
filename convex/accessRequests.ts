@@ -28,7 +28,11 @@ import {
   toGrantView,
 } from "./lib/services/emergencyAccessService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
-import { scoreAccessRequest } from "./lib/services/riskScoringService";
+import {
+  BEHAVIOUR_WINDOW_MS,
+  DEFAULT_PATIENT_VOLUME,
+  scoreAccessRequest,
+} from "./lib/services/riskScoringService";
 
 const facilityRefValidator = v.object({
   code: v.string(),
@@ -41,6 +45,9 @@ const factorsValidator = v.object({
   sameHospital: v.boolean(),
   recordCount: v.number(),
   consent: v.optional(consentCheck),
+  locationMismatch: v.optional(v.boolean()),
+  afterHours: v.optional(v.boolean()),
+  recentRequestCount: v.optional(v.number()),
 });
 
 const decisionValidator = v.object({
@@ -204,6 +211,25 @@ async function recordAccessRequest(
     recordTypes,
   );
   const requestedAt = Date.now();
+  const sourceFacility = await ctx.db.get(target.sourceFacilityId);
+  const sourcePlace = sourceFacility
+    ? {
+        code: sourceFacility.code,
+        name: sourceFacility.name,
+        city: sourceFacility.city,
+      }
+    : undefined;
+  const location = sourcePlace?.city;
+  const baseline = user.normalPatientVolume ?? DEFAULT_PATIENT_VOLUME;
+  const recentRows = await ctx.db
+    .query("accessRequests")
+    .withIndex("by_actorId_requestedAt", (query) =>
+      query
+        .eq("actorId", user._id)
+        .gte("requestedAt", requestedAt - BEHAVIOUR_WINDOW_MS),
+    )
+    .take(baseline + 1);
+  const recentRequestCount = recentRows.length;
 
   const requestId = await ctx.db.insert("accessRequests", {
     actorId: user._id,
@@ -214,6 +240,7 @@ async function recordAccessRequest(
     purpose: input.purpose,
     recordTypes,
     recordCount,
+    location,
     requestedAt,
   });
 
@@ -239,6 +266,9 @@ async function recordAccessRequest(
     normalAccessHours: user.normalAccessHours,
     normalPatientVolume: user.normalPatientVolume,
     consent,
+    location,
+    sourceFacility: sourcePlace,
+    recentRequestCount,
   });
 
   const decisionId = await ctx.db.insert("accessDecisions", {
