@@ -186,16 +186,21 @@ describe("demo-scale seed", () => {
       const raised = events.filter((event) => event.action === "SecurityAlertRaised");
       const alerts = await ctx.db.query("securityAlerts").take(20);
       return {
-        raised,
+        raised: raised.map((event) => ({
+          entityId: event.entityId,
+          decisionId: event.details.decisionId,
+          isAlertId: event.entityId
+            ? ctx.db.normalizeId("securityAlerts", event.entityId) === event.entityId
+            : false,
+        })),
         alertIds: alerts.map((alert) => alert._id),
-        decisionIds: alerts.map((alert) => alert.decisionId),
       };
     });
 
     expect(check.raised.length).toBeGreaterThan(0);
     for (const event of check.raised) {
+      expect(event.isAlertId).toBe(true);
       expect(check.alertIds).toContain(event.entityId);
-      expect(check.decisionIds).not.toContain(event.entityId);
     }
 
     const again = await testBackend.mutation(internal.seed.seedAccessEventsBatch, {
