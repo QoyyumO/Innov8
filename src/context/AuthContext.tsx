@@ -47,6 +47,7 @@ interface AuthContextType {
     keepMeLoggedIn?: boolean,
   ) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: () => Promise<void>;
+  replaceSessionToken: (token: string) => void;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
   hasAllRoles: (roles: UserRole[]) => boolean;
@@ -168,6 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logoutMutation, storedToken]);
 
+  const replaceSessionToken = useCallback((token: string) => {
+    persistSessionToken(token);
+  }, []);
+
   const hasRole = useCallback(
     (role: UserRole) => user?.roles.includes(role) ?? false,
     [user],
@@ -194,6 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sessionToken: storedToken,
         login,
         logout,
+        replaceSessionToken,
         hasRole,
         hasAnyRole,
         hasAllRoles,

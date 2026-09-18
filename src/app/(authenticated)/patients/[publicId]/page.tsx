@@ -37,7 +37,6 @@ export default function PatientDiscoveryPage() {
     if (!sessionToken || publicId === "") {
       return;
     }
-    let cancelled = false;
     const recordDiscovery = async () => {
       try {
         await recordPatientDiscovery({ token: sessionToken, publicId });
@@ -46,9 +45,6 @@ export default function PatientDiscoveryPage() {
       }
     };
     recordDiscovery();
-    return () => {
-      cancelled = true;
-    };
   }, [sessionToken, publicId, recordPatientDiscovery]);
 
   const isLoading =
