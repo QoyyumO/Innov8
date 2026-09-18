@@ -48,8 +48,7 @@ function LoginPageBody() {
           </p>
           <p className="text-xs text-gray-500">
             Other demos: fatima@fmc.abuja.ng · chinedu@fmc.lagos.ng ·
-            aisha@fmc.lagos.ng · security@innov8.ng · admin@fmc.abuja.ng ·
-            chioma@patient.innov8.ng
+            aisha@fmc.lagos.ng · security@innov8.ng · admin@fmc.abuja.ng
           </p>
         </div>
       }
