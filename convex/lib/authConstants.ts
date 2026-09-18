@@ -14,6 +14,21 @@ export const ACCOUNT_SUSPENDED_MESSAGE =
 export const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
 export const PERMISSION_DENIED_MESSAGE =
   "You do not have permission to perform this action";
+
+/** Known auth messages. `findAuthErrorMessage` matches them as substrings of a (possibly wrapped) client error. */
+export const AUTH_ERROR_MESSAGES = [
+  SESSION_EXPIRED_MESSAGE,
+  ACCOUNT_SUSPENDED_MESSAGE,
+  PERMISSION_DENIED_MESSAGE,
+] as const;
+
+export function findAuthErrorMessage(message: string): string | undefined {
+  return AUTH_ERROR_MESSAGES.find((known) => message.includes(known));
+}
+
+export function isAuthErrorMessage(message: string): boolean {
+  return findAuthErrorMessage(message) !== undefined;
+}
 export const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password";
 export const PASSWORD_TOO_SHORT_CODE = "PASSWORD_TOO_SHORT";
 export const PASSWORD_TOO_SHORT_MESSAGE = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
