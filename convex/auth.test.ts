@@ -247,12 +247,12 @@ describe("account mutation audit events", () => {
       token: loginResult.token,
       profile: { firstName: "Ibrahim", lastName: "Updated" },
     });
-    await testBackend.mutation(api.auth.changePassword, {
+    const changed = await testBackend.mutation(api.auth.changePassword, {
       token: loginResult.token,
       currentPassword: DEMO_PASSWORD,
       newPassword: "changedpass1",
     });
-    await testBackend.mutation(api.auth.logout, { token: loginResult.token });
+    await testBackend.mutation(api.auth.logout, { token: changed.token });
 
     const resetBackend = createTest();
     await loginDemoSession(resetBackend, IBRAHIM_EMAIL);

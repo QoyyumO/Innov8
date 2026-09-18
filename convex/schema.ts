@@ -40,6 +40,8 @@ export default defineSchema({
       }),
     ),
     normalPatientVolume: v.optional(v.number()),
+    /** Sessions with createdAt earlier than this are dead (INN-70). */
+    sessionsInvalidatedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_workerId", ["workerId"])

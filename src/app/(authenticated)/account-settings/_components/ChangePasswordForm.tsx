@@ -23,7 +23,7 @@ interface ChangePasswordFormProps {
 }
 
 export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
-  const { user, sessionToken } = useAuth();
+  const { user, sessionToken, replaceSessionToken } = useAuth();
   const changePasswordMutation = useMutation(api.auth.changePassword);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -107,6 +107,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
       });
 
       if (result.success) {
+        replaceSessionToken(result.token);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
