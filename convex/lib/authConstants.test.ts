@@ -45,6 +45,12 @@ describe("toUserFacingError (INN-59)", () => {
         genericMessage,
       ),
     ).toBe(PERMISSION_DENIED_MESSAGE);
+    expect(
+      toUserFacingError(
+        { message: wrappedPlainAuthError(SESSION_EXPIRED_MESSAGE).message },
+        genericMessage,
+      ),
+    ).toBe(SESSION_EXPIRED_MESSAGE);
   });
 
   test("still prefers ConvexError.data when present", () => {
