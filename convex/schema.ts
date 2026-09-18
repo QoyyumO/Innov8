@@ -114,6 +114,19 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_patientId_facilityId", ["patientId", "facilityId"]),
 
+  /** INN-81: append-only synthetic notes after ALLOW. Not a chart editor. */
+  clinicalNotes: defineTable({
+    requestId: v.id("accessRequests"),
+    patientId: v.id("patients"),
+    actorId: v.id("users"),
+    sessionId: v.id("sessions"),
+    sourceFacilityId: v.id("facilities"),
+    body: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_requestId_createdAt", ["requestId", "createdAt"])
+    .index("by_patientId_createdAt", ["patientId", "createdAt"]),
+
   accessRequests: defineTable({
     actorId: v.id("users"),
     sessionId: v.optional(v.id("sessions")),

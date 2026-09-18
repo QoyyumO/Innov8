@@ -805,6 +805,7 @@ const CLEAR_TABLES = [
   "auditEvents",
   "securityAlerts",
   "emergencyAccess",
+  "clinicalNotes",
   "accessDecisions",
   "accessRequests",
   "clinicalSummaries",

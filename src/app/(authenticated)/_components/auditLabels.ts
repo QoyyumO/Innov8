@@ -28,6 +28,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   ConsentRecorded: "Consent recorded",
   ConsentRevoked: "Consent revoked",
   StepUpFailed: "Verification failed",
+  ClinicalNoteAppended: "Clinical note appended",
 };
 
 export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
@@ -55,6 +56,7 @@ export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
   ConsentRecorded: "success",
   ConsentRevoked: "warning",
   StepUpFailed: "warning",
+  ClinicalNoteAppended: "info",
 };
 
 export const AUDIT_ACTIONS = Object.keys(AUDIT_ACTION_LABELS) as AuditAction[];

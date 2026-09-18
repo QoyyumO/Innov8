@@ -53,6 +53,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-78** — Audit investigation filters: reviewers query by patient publicId, facility, decision outcome, and `createdAt` range using indexes (no `.collect()`).
 - **INN-79** — Clinician record-type allow-list: pharmacist medications+allergies; laboratory diagnoses and lab results; doctor/nurse keep the Track C types plus lab results (INN-80).
 - **INN-80** — One extra federated type `lab_results` on the record index and authorised summary. Existence-only until ALLOW. No imaging PACS.
+- **INN-81** — Doctors may append a synthetic clinical note after ALLOW (`ClinicalNoteAppended`). Not a chart editor.
 - **INN-72** — Failed login writes `UserLoginFailed` (wrong password, inactive account, or unknown email). The client message stays generic; unknown emails are not stored on the row.
 - **INN-71** — Risk scoring adds explainable location mismatch and 24-hour request-volume vs baseline. Device is not scored. Clinical after-hours is a reason with no extra points so Ibrahim treatment stays 8; harvest stays 94.
 
@@ -69,6 +70,7 @@ The MVP demo path is live end to end. Remaining work is review-found bugs after 
 - **Patient**: publicId (`PAT-002391`), homeFacilityId, demographics (synthetic), identifiers for search
 - **RecordIndex**: patientId, facilityId, recordTypes[] — **existence only**, not full chart
 - **ClinicalSummary**: permitted fields after ALLOW (summary, allergies, medications, diagnoses, lab results); `conditions` never leave the exchange
+- **ClinicalNote**: append-only body after ALLOW (INN-81); actor, request, originating facility, createdAt
 - **AccessRequest**: actor, session, sourceFacility, targetFacility, patient, purpose, recordTypes, time
 - **AccessDecision**: requestId, outcome (`ALLOW` | `VERIFY` | `BLOCK`), riskScore, reasons[]
 - **EmergencyAccess**: requestId, justification, expiresAt, grantedBy

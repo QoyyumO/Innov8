@@ -29,6 +29,7 @@ import {
   findLatestGrantForRequest,
   toGrantView,
 } from "./lib/services/emergencyAccessService";
+import { canAppendClinicalNote } from "./lib/services/clinicalNoteService";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 import {
   BEHAVIOUR_WINDOW_MS,
@@ -88,6 +89,8 @@ const accessRequestViewValidator = v.object({
   decision: v.union(v.null(), decisionValidator),
   /** Newest break-glass grant on this request (INN-41), if any. */
   emergency: v.union(v.null(), emergencyViewValidator),
+  /** INN-81: own ALLOW window, doctor only. */
+  canAppendClinicalNote: v.boolean(),
 });
 
 const createResultValidator = v.object({
@@ -179,6 +182,7 @@ async function toRequestView(
         }
       : null,
     emergency: latestGrant ? toGrantView(latestGrant) : null,
+    canAppendClinicalNote: false,
   };
 }
 
@@ -472,6 +476,14 @@ export const getAccessRequest = query({
       return null;
     }
 
-    return await toRequestView(ctx, request, viewer._id, new Map());
+    return {
+      ...(await toRequestView(ctx, request, viewer._id, new Map())),
+      canAppendClinicalNote: await canAppendClinicalNote(
+        ctx.db,
+        viewer,
+        request,
+        Date.now(),
+      ),
+    };
   },
 });
