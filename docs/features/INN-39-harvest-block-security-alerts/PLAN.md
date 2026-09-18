@@ -41,7 +41,7 @@ Out of scope: dashboard metric cards (INN-43), break-glass alerts (INN-41), audi
 
 ### Part B — Public API (`convex/alerts.ts`)
 
-- `listSecurityAlerts(token?, status?, paginationOpts)` — security officers and admins only (`requireRole`). With a status: `by_status`; without: `by_createdAt`; newest first; `.paginate()`. Each row joins decision → request → actor → patient for display (`riskScore`, `outcome`, `recordCount`, `publicId`, requester name / hospital, `requestId`, `isHarvest`). Auth errors return an empty finished page.
+- `listSecurityAlerts(token?, status?, paginationOpts)` — security officers and admins only (`requireRole`). With a status: `by_status_createdAt`; without: `by_createdAt`; newest first by `createdAt`; `.paginate()`. Each row joins decision → request → actor → patient for display (`riskScore`, `outcome`, `recordCount`, `publicId`, requester name / hospital, `requestId`, `isHarvest`). Auth errors return an empty finished page.
 - `acknowledgeAlert(token?, alertId)` — open → acknowledged.
 - `closeAlert(token?, alertId)` — open or acknowledged → closed.
 - Invalid transitions throw "Alert is already <status>"; unknown ids throw "Alert not found".

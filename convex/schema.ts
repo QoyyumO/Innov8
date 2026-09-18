@@ -184,8 +184,8 @@ export default defineSchema({
     message: v.string(),
     createdAt: v.number(),
   })
-    .index("by_status", ["status"])
-    .index("by_severity", ["severity"])
+    // Seed backdates `createdAt`; do not order status tabs by `_creationTime`.
+    .index("by_status_createdAt", ["status", "createdAt"])
     .index("by_createdAt", ["createdAt"]),
 
   auditEvents: defineTable({

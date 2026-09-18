@@ -532,7 +532,7 @@ export const getSecurityDashboard = query({
       await Promise.all([
         ctx.db
           .query("securityAlerts")
-          .withIndex("by_status", (query) => query.eq("status", "open"))
+          .withIndex("by_status_createdAt", (query) => query.eq("status", "open"))
           .order("desc")
           .take(OPEN_ALERT_COUNT_LIMIT + 1),
         ctx.db

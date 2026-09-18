@@ -161,7 +161,7 @@ export const listSecurityAlerts = query({
     const results = status
       ? await ctx.db
           .query("securityAlerts")
-          .withIndex("by_status", (query) => query.eq("status", status))
+          .withIndex("by_status_createdAt", (query) => query.eq("status", status))
           .order("desc")
           .paginate(args.paginationOpts)
       : await ctx.db

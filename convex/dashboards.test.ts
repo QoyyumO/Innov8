@@ -449,7 +449,7 @@ describe("getSecurityDashboard", () => {
       const openAlerts = await testBackend.run((ctx) =>
         ctx.db
           .query("securityAlerts")
-          .withIndex("by_status", (query) => query.eq("status", "open"))
+          .withIndex("by_status_createdAt", (query) => query.eq("status", "open"))
           .take(50),
       );
       expect(dashboard?.openAlerts).toEqual({

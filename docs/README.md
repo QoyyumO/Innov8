@@ -35,6 +35,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-58-audit-account-security-mutations](https://github.com/QoyyumO/Innov8/pull/30) | Audit logout, password change, reset, and profile update | Done on `main` ([#30](https://github.com/QoyyumO/Innov8/pull/30)) |
 | [INN-60-throw-convexerror-for-validation](features/INN-60-throw-convexerror-for-validation/PLAN.md) | Throw `ConvexError` so validation messages survive in production | Done on `main` ([#32](https://github.com/QoyyumO/Innov8/pull/32)) |
 | [INN-65-remove-dead-requireunused-helpers](features/INN-65-remove-dead-requireunused-helpers/PLAN.md) | Remove unused `requireUnused*` uniqueness helpers | Done on `main` ([#33](https://github.com/QoyyumO/Innov8/pull/33)) |
-| [INN-68-role-filter-sidebar-and-auth-forms](features/INN-68-role-filter-sidebar-and-auth-forms/PLAN.md) | Role-filter the sidebar and tidy auth-form errors | This branch |
+| [INN-68-role-filter-sidebar-and-auth-forms](features/INN-68-role-filter-sidebar-and-auth-forms/PLAN.md) | Role-filter the sidebar and tidy auth-form errors | Done on `main` ([#35](https://github.com/QoyyumO/Innov8/pull/35)) |
+| [INN-63-status-filtered-alerts-newest-first](features/INN-63-status-filtered-alerts-newest-first/PLAN.md) | Status-filtered `/security` alerts order by `createdAt` | This branch |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
