@@ -17,7 +17,7 @@ export default function AccountSettingsPage() {
 
   const handleSuccess = (message: string) => {
     setSuccessMessage(message);
-    window.setTimeout(() => setSuccessMessage(null), 3000);
+    window.setTimeout(() => setSuccessMessage(null), 8000);
   };
 
   return (
@@ -44,7 +44,11 @@ export default function AccountSettingsPage() {
 
         <TabPane tab="Change password">
           <ChangePasswordForm
-            onSuccess={() => handleSuccess("Password changed successfully.")}
+            onSuccess={() =>
+              handleSuccess(
+                "Password changed. You stay signed in here; other sessions were signed out.",
+              )
+            }
           />
         </TabPane>
       </Tabs>
