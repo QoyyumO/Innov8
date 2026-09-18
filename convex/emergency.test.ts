@@ -23,6 +23,7 @@ import {
   JUSTIFICATION_TOO_LONG_CODE,
   JUSTIFICATION_TOO_SHORT_CODE,
 } from "./lib/emergencyConstants";
+import { RECORD_TYPE_NOT_ALLOWED_CODE } from "./lib/accessRequestMessages";
 import { EMERGENCY_ALERT_TITLE } from "./lib/services/alertService";
 import type { RecordType } from "./lib/domain";
 
@@ -31,6 +32,7 @@ const FATIMA_EMAIL = "fatima@fmc.abuja.ng";
 const SECURITY_EMAIL = "security@innov8.ng";
 const ADMIN_EMAIL = "admin@fmc.abuja.ng";
 const CHIOMA_EMAIL = "chioma@patient.innov8.ng";
+const AISHA_EMAIL = "aisha@fmc.lagos.ng";
 const JUSTIFICATION = "Unconscious patient in A&E, no consent possible";
 const LAGOS_SUMMARY = "Lagos: stable hypertension, reviewed quarterly";
 const ALL_RECORD_TYPES: RecordType[] = [
@@ -253,6 +255,19 @@ describe("grantEmergencyAccess", () => {
         ttlMs: 24 * 60 * 60 * 1000,
       } as never),
     ).rejects.toThrow();
+  });
+
+  test("new grants refuse record types the clinician role cannot request", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const aishaToken = await loginDemoUser(testBackend, AISHA_EMAIL);
+
+    await expect(
+      breakGlass(testBackend, aishaToken, { recordTypes: ["allergies"] }),
+    ).rejects.toSatisfy(appErrorCode(RECORD_TYPE_NOT_ALLOWED_CODE));
+    await expect(
+      breakGlass(testBackend, aishaToken, { recordTypes: ["diagnoses"] }),
+    ).resolves.toMatchObject({ recordTypes: ["diagnoses"] });
   });
 
   test("is clinicians only and rejects suspended accounts", async () => {

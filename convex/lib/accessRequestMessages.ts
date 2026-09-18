@@ -7,6 +7,9 @@ export const PATIENT_NOT_FOUND_CODE = "PATIENT_NOT_FOUND";
 export const PATIENT_NOT_FOUND_MESSAGE = "Patient not found";
 export const NO_RECORD_TYPES_CODE = "NO_RECORD_TYPES";
 export const NO_RECORD_TYPES_MESSAGE = "Choose at least one record type";
+export const RECORD_TYPE_NOT_ALLOWED_CODE = "RECORD_TYPE_NOT_ALLOWED";
+export const RECORD_TYPE_NOT_ALLOWED_MESSAGE =
+  "Your role cannot request that record type";
 export const NO_INDEXED_RECORDS_CODE = "NO_INDEXED_RECORDS";
 export const NO_INDEXED_RECORDS_MESSAGE = "No records are indexed for this patient";
 export const NO_SOURCE_FACILITY_CODE = "NO_SOURCE_FACILITY";

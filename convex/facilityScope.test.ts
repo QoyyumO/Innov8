@@ -120,7 +120,7 @@ async function runFlows(testBackend: TestBackend) {
     token: aishaToken,
     publicId: "PAT-002391",
     justification: JUSTIFICATION,
-    recordTypes: ["allergies"],
+    recordTypes: ["diagnoses"],
   });
   const yusufRequest = await testBackend.mutation(api.accessRequests.createAccessRequest, {
     token: yusufToken,

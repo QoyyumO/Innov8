@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { FunctionReturnType } from "convex/server";
 import { useMutation, useQuery } from "convex/react";
@@ -22,10 +22,11 @@ import {
   JUSTIFICATION_MAX_LENGTH,
   JUSTIFICATION_MIN_LENGTH,
 } from "../../../../../convex/lib/emergencyConstants";
+import { RECORD_TYPE_LABELS } from "../../_components/accessLabels";
 import {
-  RECORD_TYPES,
-  RECORD_TYPE_LABELS,
-} from "../../_components/accessLabels";
+  allowedRecordTypesForRoles,
+  nextUncheckedRecordTypes,
+} from "../../../../../convex/lib/recordTypeAccess";
 import { describeGrantStatus, isGrantLive } from "../../_components/emergencyLabels";
 
 type GrantResult = FunctionReturnType<typeof api.emergency.grantEmergencyAccess>;
@@ -43,11 +44,18 @@ type BreakGlassFormProps = {
 };
 
 export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormProps) {
-  const { sessionToken } = useAuth();
+  const { sessionToken, user } = useAuth();
   const now = useNow();
   const grantEmergencyAccess = useMutation(api.emergency.grantEmergencyAccess);
+  const allowedRecordTypes = useMemo(
+    () => allowedRecordTypesForRoles(user?.roles ?? []),
+    [user?.roles],
+  );
   const [publicId, setPublicId] = useState(initialPublicId);
-  const [recordTypes, setRecordTypes] = useState<RecordType[]>([...RECORD_TYPES]);
+  const [uncheckedRecordTypes, setUncheckedRecordTypes] = useState<RecordType[]>([]);
+  const recordTypes = allowedRecordTypes.filter(
+    (recordType) => !uncheckedRecordTypes.includes(recordType),
+  );
   const [justification, setJustification] = useState("");
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,12 +76,8 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
   const trimmedJustification = justification.trim();
 
   const toggleRecordType = (recordType: RecordType, isChecked: boolean) => {
-    setRecordTypes((current) =>
-      isChecked
-        ? RECORD_TYPES.filter(
-            (candidate) => candidate === recordType || current.includes(candidate),
-          )
-        : current.filter((candidate) => candidate !== recordType),
+    setUncheckedRecordTypes((current) =>
+      nextUncheckedRecordTypes(current, recordType, isChecked),
     );
   };
 
@@ -202,7 +206,7 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
             Record types
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            {RECORD_TYPES.map((recordType) => (
+            {allowedRecordTypes.map((recordType) => (
               <Checkbox
                 key={recordType}
                 id={`break-glass-type-${recordType}`}

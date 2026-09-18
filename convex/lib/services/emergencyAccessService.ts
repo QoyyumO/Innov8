@@ -24,6 +24,7 @@ import { throwAppError } from "../appError";
 import {
   normalizePublicId,
   normalizeRecordTypes,
+  assertRecordTypesAllowedForRoles,
   resolveAccessTarget,
 } from "./accessControlService";
 import { raiseEmergencyAlert } from "./alertService";
@@ -163,6 +164,9 @@ export async function grantBreakGlass(
     ? await requireEligibleRequest(db, user, input.requestId, input.publicId)
     : null;
   const recordTypes = linked?.recordTypes ?? normalizeRecordTypes(input.recordTypes);
+  if (!linked) {
+    assertRecordTypesAllowedForRoles(user.roles, recordTypes);
+  }
   const target = await resolveAccessTarget(db, user, input.publicId, recordTypes);
 
   if (await findLiveGrantForPatient(db, user._id, target.patient._id, now)) {

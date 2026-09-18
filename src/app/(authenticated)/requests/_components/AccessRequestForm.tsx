@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FunctionReturnType } from "convex/server";
@@ -19,9 +19,12 @@ import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import {
   PURPOSE_OPTIONS,
-  RECORD_TYPES,
   RECORD_TYPE_LABELS,
 } from "../../_components/accessLabels";
+import {
+  allowedRecordTypesForRoles,
+  nextUncheckedRecordTypes,
+} from "../../../../../convex/lib/recordTypeAccess";
 import { DecisionResult } from "./DecisionResult";
 import { StepUpVerification } from "./StepUpVerification";
 
@@ -39,22 +42,25 @@ type AccessRequestFormProps = {
 
 export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormProps) {
   const router = useRouter();
-  const { sessionToken } = useAuth();
+  const { sessionToken, user } = useAuth();
   const createAccessRequest = useMutation(api.accessRequests.createAccessRequest);
+  const allowedRecordTypes = useMemo(
+    () => allowedRecordTypesForRoles(user?.roles ?? []),
+    [user?.roles],
+  );
   const [publicId, setPublicId] = useState(initialPublicId);
   const [purpose, setPurpose] = useState<Purpose>("treatment");
-  const [recordTypes, setRecordTypes] = useState<RecordType[]>([...RECORD_TYPES]);
+  const [uncheckedRecordTypes, setUncheckedRecordTypes] = useState<RecordType[]>([]);
+  const recordTypes = allowedRecordTypes.filter(
+    (recordType) => !uncheckedRecordTypes.includes(recordType),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<CreateAccessRequestResult | null>(null);
 
   const toggleRecordType = (recordType: RecordType, isChecked: boolean) => {
-    setRecordTypes((current) =>
-      isChecked
-        ? RECORD_TYPES.filter(
-            (candidate) => candidate === recordType || current.includes(candidate),
-          )
-        : current.filter((candidate) => candidate !== recordType),
+    setUncheckedRecordTypes((current) =>
+      nextUncheckedRecordTypes(current, recordType, isChecked),
     );
   };
 
@@ -144,7 +150,7 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
             Record types
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            {RECORD_TYPES.map((recordType) => (
+            {allowedRecordTypes.map((recordType) => (
               <Checkbox
                 key={recordType}
                 id={`record-type-${recordType}`}
@@ -156,8 +162,8 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
             ))}
           </div>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Ask only for what you need. Only these sections are released if access is
-            allowed.
+            Ask only for what you need, and only what your role may request. Only these
+            sections are released if access is allowed.
           </p>
         </fieldset>
 
