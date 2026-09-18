@@ -20,7 +20,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 ## Done (live demo path so far)
 
 - **INN-35** — `AuditLogService` (`convex/lib/services/auditLogService.ts`), `requireSession`, `requireRole`. Login audits `UserLoggedIn`.
-- **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched` even when there are no hits, as long as a lookup ran (INN-56); discovery returns identity + record existence only.
+- **INN-36** — `PatientDiscoveryService` (`convex/lib/services/patientDiscoveryService.ts`) + `convex/patients.ts`. Search audits `PatientSearched` even when there are no hits, as long as a lookup ran (INN-56); discovery returns identity + record existence only. Public IDs are case-insensitive (INN-82).
 - **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min by default, 7 days with Keep me logged in (INN-54); suspended accounts rejected on every call.
 - **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` (`scoreAccessRequest` return type) with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 - **INN-37** — `AccessControlService` (`convex/lib/services/accessControlService.ts`) + `convex/accessRequests.ts`: AccessRequest and Decision aggregates are live; `AccessRequested` and outcome events are audited. Record types are role-limited (INN-79).
@@ -46,7 +46,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-63** — SecurityAlerts filtered by status are ordered by `createdAt` (index `by_status_createdAt`), matching the unfiltered list.
 - **INN-67** — Seeded AuditEvents, including `SecurityAlertRaised`, go through `appendAuditEvent`. The alert audit names the SecurityAlert, not the Decision.
 - **INN-69** — Looking up a Patient by publicId on the detail page is audited as `PatientDiscovered` (one row per Session and publicId, including misses).
-- **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in.
+- **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in (INN-86).
 - **INN-75** — Decision-engine measurement: `scoreAccessRequest` p95 vs the 1-second NFR-04 **target** (not a production SLO). Notes: `docs/features/INN-75-decision-latency-evaluation/EVALUATION.md`.
 - **INN-76** — Judges dry-run after the seven Ibrahim steps: VERIFY/step-up, `/security` queue, Chioma's portal, `/facilities` (root `README.md`).
 - **INN-77** — Patient-owned consent: a linked Patient User lists, grants, and revokes Consents for their `users.patientId`. Break-glass still needs no consent. Seed still pre-grants FMC Abuja for PAT-002391.

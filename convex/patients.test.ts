@@ -88,6 +88,13 @@ describe("patient discovery", () => {
     expect(results[0]?.profile.lastName).toBe("Okonkwo");
     expect(results[0]?.homeFacility.name).toBe("FMC Lagos");
     assertNoClinicalLeak(results);
+
+    const mixedCase = await testBackend.mutation(api.patients.searchPatients, {
+      token,
+      query: "Pat-002391",
+    });
+    expect(mixedCase).toHaveLength(1);
+    expect(mixedCase[0]?.publicId).toBe("PAT-002391");
   });
 
   test("name prefix search is bounded and audited", async () => {
@@ -288,6 +295,34 @@ describe("patient discovery", () => {
     });
     expect(first).toEqual({ recorded: true });
 
+    const discoveryAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientDiscovered");
+    });
+    expect(discoveryAudits).toHaveLength(1);
+    expect(discoveryAudits[0]?.details).toEqual({
+      publicId: "PAT-002391",
+      found: true,
+    });
+  });
+
+  test("lowercase publicId discovery hits the same patient", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+
+    const discovery = await testBackend.query(api.patients.getPatientDiscovery, {
+      token,
+      publicId: "pat-002391",
+    });
+    expect(discovery?.publicId).toBe("PAT-002391");
+    expect(discovery?.profile.firstName).toBe("Chioma");
+
+    const recorded = await testBackend.mutation(api.patients.recordPatientDiscovery, {
+      token,
+      publicId: "pat-002391",
+    });
+    expect(recorded).toEqual({ recorded: true });
     const discoveryAudits = await testBackend.run(async (ctx) => {
       const events = await ctx.db.query("auditEvents").take(50);
       return events.filter((event) => event.action === "PatientDiscovered");

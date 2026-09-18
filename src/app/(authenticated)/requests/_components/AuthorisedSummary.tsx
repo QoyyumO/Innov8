@@ -201,7 +201,7 @@ export function AuthorisedSummary({
               : "Access was not allowed. No clinical content is released unless an active emergency grant covers this request."}
         </p>
         <Button onClick={handleView} disabled={isLoading || !sessionToken}>
-          {isLoading ? "Opening…" : "View authorised records"}
+          {isLoading ? "Opening authorised records…" : "View authorised records"}
         </Button>
         {canUseBreakGlass && <BreakGlassLink requestId={requestId} publicId={publicId} />}
       </div>

@@ -4,6 +4,7 @@ import { personName, recordType } from "./lib/domain";
 import { requireClinicianSession } from "./lib/roles";
 import { isAuthAppError } from "./lib/appError";
 import { appendAuditEvent } from "./lib/services/auditLogService";
+import { normalizePublicId } from "./lib/services/accessControlService";
 import {
   findPatientsByQuery,
   getPatientDiscoveryByPublicId,
@@ -105,7 +106,7 @@ export const recordPatientDiscovery = mutation({
   returns: v.object({ recorded: v.boolean() }),
   handler: async (ctx, args) => {
     const { user, session } = await requireClinicianSession(ctx, args.token);
-    const publicId = args.publicId.trim();
+    const publicId = normalizePublicId(args.publicId);
     if (publicId === "") {
       return { recorded: false };
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/lib/convex";
@@ -47,6 +47,7 @@ export default function PatientDiscoveryPage() {
     recordDiscovery();
   }, [sessionToken, publicId, recordPatientDiscovery]);
 
+  const [isRequestingAccess, setIsRequestingAccess] = useState(false);
   const isLoading =
     sessionToken !== null && publicId !== "" && discovery === undefined;
   const displayName = discovery
@@ -117,13 +118,15 @@ export default function PatientDiscoveryPage() {
             </p>
             <Button
               type="button"
-              onClick={() =>
+              disabled={isRequestingAccess}
+              onClick={() => {
+                setIsRequestingAccess(true);
                 router.push(
                   `/requests/new?publicId=${encodeURIComponent(discovery.publicId)}`,
-                )
-              }
+                );
+              }}
             >
-              Request access
+              {isRequestingAccess ? "Requesting access…" : "Request access"}
             </Button>
           </ComponentCard>
         </div>

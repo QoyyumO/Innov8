@@ -53,7 +53,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-63](https://linear.app/innov8-health/issue/INN-63) status-filtered security alerts order by `createdAt`
 - [INN-67](https://linear.app/innov8-health/issue/INN-67) seed `SecurityAlertRaised` `entityId` is the alert, via `appendAuditEvent`
 - [INN-69](https://linear.app/innov8-health/issue/INN-69) patient detail lookups write `PatientDiscovered` (including misses)
-- [INN-70](https://linear.app/innov8-health/issue/INN-70) `users.sessionsInvalidatedAt` makes log-out-everywhere O(1)
+- [INN-70](https://linear.app/innov8-health/issue/INN-70) `users.sessionsInvalidatedAt` makes log-out-everywhere O(1); password change keeps this tab signed in (INN-86)
 - [INN-71](https://linear.app/innov8-health/issue/INN-71) risk: location mismatch + 24h request volume vs baseline (device not scored)
 - [INN-72](https://linear.app/innov8-health/issue/INN-72) audit failed login attempts (`UserLoginFailed`)
 - [INN-73](https://linear.app/innov8-health/issue/INN-73) paid-plan runbook for full §14 seed volumes
@@ -65,6 +65,10 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-79](https://linear.app/innov8-health/issue/INN-79) restrict record types by clinician role
 - [INN-80](https://linear.app/innov8-health/issue/INN-80) lab results on the record index and authorised summary
 - [INN-81](https://linear.app/innov8-health/issue/INN-81) audited clinical note after ALLOW (not an EMR)
+- [INN-82](https://linear.app/innov8-health/issue/INN-82) document case-insensitive patient public ID search
+- [INN-83](https://linear.app/innov8-health/issue/INN-83) request-flow loading and keep the decision in view
+- [INN-84](https://linear.app/innov8-health/issue/INN-84) align QA checklist with consent-gated step-up
+- [INN-86](https://linear.app/innov8-health/issue/INN-86) document password-change stay-signed-in vs reset
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
