@@ -19,10 +19,12 @@ import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import {
   PURPOSE_OPTIONS,
-  RECORD_TYPES,
   RECORD_TYPE_LABELS,
 } from "../../_components/accessLabels";
-import { allowedRecordTypesForRoles } from "../../../../../convex/lib/recordTypeAccess";
+import {
+  allowedRecordTypesForRoles,
+  nextUncheckedRecordTypes,
+} from "../../../../../convex/lib/recordTypeAccess";
 import { DecisionResult } from "./DecisionResult";
 import { StepUpVerification } from "./StepUpVerification";
 
@@ -43,10 +45,7 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
   const { sessionToken, user } = useAuth();
   const createAccessRequest = useMutation(api.accessRequests.createAccessRequest);
   const allowedRecordTypes = useMemo(
-    () => {
-      const roleTypes = allowedRecordTypesForRoles(user?.roles ?? []);
-      return roleTypes.length > 0 ? roleTypes : [...RECORD_TYPES];
-    },
+    () => allowedRecordTypesForRoles(user?.roles ?? []),
     [user?.roles],
   );
   const [publicId, setPublicId] = useState(initialPublicId);
@@ -61,11 +60,7 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
 
   const toggleRecordType = (recordType: RecordType, isChecked: boolean) => {
     setUncheckedRecordTypes((current) =>
-      isChecked
-        ? current.filter((candidate) => candidate !== recordType)
-        : current.includes(recordType)
-          ? current
-          : [...current, recordType],
+      nextUncheckedRecordTypes(current, recordType, isChecked),
     );
   };
 

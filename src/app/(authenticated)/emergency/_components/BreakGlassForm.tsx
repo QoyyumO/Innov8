@@ -22,11 +22,11 @@ import {
   JUSTIFICATION_MAX_LENGTH,
   JUSTIFICATION_MIN_LENGTH,
 } from "../../../../../convex/lib/emergencyConstants";
+import { RECORD_TYPE_LABELS } from "../../_components/accessLabels";
 import {
-  RECORD_TYPES,
-  RECORD_TYPE_LABELS,
-} from "../../_components/accessLabels";
-import { allowedRecordTypesForRoles } from "../../../../../convex/lib/recordTypeAccess";
+  allowedRecordTypesForRoles,
+  nextUncheckedRecordTypes,
+} from "../../../../../convex/lib/recordTypeAccess";
 import { describeGrantStatus, isGrantLive } from "../../_components/emergencyLabels";
 
 type GrantResult = FunctionReturnType<typeof api.emergency.grantEmergencyAccess>;
@@ -48,10 +48,7 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
   const now = useNow();
   const grantEmergencyAccess = useMutation(api.emergency.grantEmergencyAccess);
   const allowedRecordTypes = useMemo(
-    () => {
-      const roleTypes = allowedRecordTypesForRoles(user?.roles ?? []);
-      return roleTypes.length > 0 ? roleTypes : [...RECORD_TYPES];
-    },
+    () => allowedRecordTypesForRoles(user?.roles ?? []),
     [user?.roles],
   );
   const [publicId, setPublicId] = useState(initialPublicId);
@@ -80,11 +77,7 @@ export function BreakGlassForm({ initialPublicId, requestId }: BreakGlassFormPro
 
   const toggleRecordType = (recordType: RecordType, isChecked: boolean) => {
     setUncheckedRecordTypes((current) =>
-      isChecked
-        ? current.filter((candidate) => candidate !== recordType)
-        : current.includes(recordType)
-          ? current
-          : [...current, recordType],
+      nextUncheckedRecordTypes(current, recordType, isChecked),
     );
   };
 

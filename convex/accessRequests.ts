@@ -192,6 +192,11 @@ type AccessRequestInput = {
   recordTypes: RecordType[];
   /** Always chosen on the server, never by the client. */
   recordCount: number;
+  /**
+   * Harvest is a volume attack (INN-39), not a pharmacist chart request.
+   * Purpose-based requests always enforce the role allow-list (INN-79).
+   */
+  skipRoleRecordTypeCheck?: boolean;
 };
 
 /**
@@ -204,6 +209,9 @@ async function recordAccessRequest(
   input: AccessRequestInput,
 ) {
   const recordTypes = normalizeRecordTypes(input.recordTypes);
+  if (!input.skipRoleRecordTypeCheck) {
+    assertRecordTypesAllowedForRoles(user.roles, recordTypes);
+  }
   const recordCount = input.recordCount;
   const target = await resolveAccessTarget(
     ctx.db,
@@ -357,7 +365,6 @@ export const createAccessRequest = mutation({
   returns: createResultValidator,
   handler: async (ctx, args) => {
     const sessionContext = await requireClinicianSession(ctx, args.token);
-    assertRecordTypesAllowedForRoles(sessionContext.user.roles, args.recordTypes);
     return await recordAccessRequest(ctx, sessionContext, {
       publicId: args.publicId,
       purpose: args.purpose,
@@ -386,6 +393,7 @@ export const simulateBulkHarvest = mutation({
       purpose: "treatment",
       recordTypes: [...HARVEST_RECORD_TYPES],
       recordCount: HARVEST_RECORD_COUNT,
+      skipRoleRecordTypeCheck: true,
     });
   },
 });

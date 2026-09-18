@@ -22,7 +22,7 @@ Stacked on INN-78.
 
 ## Implementation
 
-`convex/lib/recordTypeAccess.ts` (client-safe). `createAccessRequest` and new (unlinked) break-glass grants assert the allow-list. Harvest does not.
+`convex/lib/recordTypeAccess.ts` (client-safe). Purpose-based `recordAccessRequest` and new (unlinked) break-glass grants assert the allow-list after types are normalised. Harvest sets `skipRoleRecordTypeCheck`. The request and break-glass forms never fall back to all four types while roles are still loading.
 
 ---
 

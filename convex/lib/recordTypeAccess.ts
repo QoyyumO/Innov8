@@ -41,3 +41,18 @@ export function isRecordTypeAllowedForRoles(
 ): boolean {
   return allowedRecordTypesForRoles(roles).includes(recordType);
 }
+
+/** Keep the caller's unchecked list unique when a checkbox flips. */
+export function nextUncheckedRecordTypes(
+  uncheckedRecordTypes: readonly RecordType[],
+  recordType: RecordType,
+  isChecked: boolean,
+): RecordType[] {
+  if (isChecked) {
+    return uncheckedRecordTypes.filter((candidate) => candidate !== recordType);
+  }
+  if (uncheckedRecordTypes.includes(recordType)) {
+    return [...uncheckedRecordTypes];
+  }
+  return [...uncheckedRecordTypes, recordType];
+}
