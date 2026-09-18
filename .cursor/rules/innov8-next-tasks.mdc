@@ -65,6 +65,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-79](https://linear.app/innov8-health/issue/INN-79) restrict record types by clinician role
 - [INN-80](https://linear.app/innov8-health/issue/INN-80) lab results on the record index and authorised summary
 - [INN-81](https://linear.app/innov8-health/issue/INN-81) audited clinical note after ALLOW (not an EMR)
+- [INN-82](https://linear.app/innov8-health/issue/INN-82) document case-insensitive patient public ID search
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
