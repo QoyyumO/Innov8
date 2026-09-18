@@ -76,7 +76,7 @@ describe("login audit (INN-35)", () => {
     );
   });
 
-  test("failed login writes no audit row", async () => {
+  test("failed login writes UserLoginFailed without a password", async () => {
     const testBackend = createTest();
     await ensureDemoUsersForTests(testBackend);
     const loginResult = await testBackend.mutation(api.auth.login, {
@@ -91,7 +91,36 @@ describe("login audit (INN-35)", () => {
     const events = await testBackend.run((ctx) =>
       ctx.db.query("auditEvents").collect(),
     );
-    expect(events).toHaveLength(0);
+    expect(events).toHaveLength(1);
+    expect(events[0]?.action).toBe("UserLoginFailed");
+    expect(events[0]?.details).toEqual({
+      email: IBRAHIM_EMAIL,
+      reason: "invalid_password",
+    });
+    expect(JSON.stringify(events)).not.toContain("wrong-password");
+  });
+
+  test("unknown email writes UserLoginFailed without the address", async () => {
+    const testBackend = createTest();
+    await ensureDemoUsersForTests(testBackend);
+    const unknownEmail = "nobody@example.invalid";
+    const loginResult = await testBackend.mutation(api.auth.login, {
+      email: unknownEmail,
+      password: "wrong-password",
+    });
+    expect(loginResult).toEqual({
+      success: false,
+      error: "Invalid email or password",
+    });
+
+    const events = await testBackend.run((ctx) =>
+      ctx.db.query("auditEvents").collect(),
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]?.action).toBe("UserLoginFailed");
+    expect(events[0]?.actorId).toBeUndefined();
+    expect(events[0]?.details).toEqual({ reason: "unknown_account" });
+    expect(JSON.stringify(events)).not.toContain(unknownEmail);
   });
 
   test("keep me logged in lasts seven days", async () => {

@@ -6,6 +6,7 @@ type AuditBadgeColor = "primary" | "success" | "error" | "warning" | "info" | "l
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   UserLoggedIn: "Signed in",
   UserLoggedOut: "Signed out",
+  UserLoginFailed: "Sign-in failed",
   PasswordChanged: "Password changed",
   PasswordReset: "Password reset",
   ProfileUpdated: "Profile updated",
@@ -32,6 +33,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
 export const AUDIT_ACTION_BADGE_COLORS: Record<AuditAction, AuditBadgeColor> = {
   UserLoggedIn: "light",
   UserLoggedOut: "light",
+  UserLoginFailed: "warning",
   PasswordChanged: "warning",
   PasswordReset: "warning",
   ProfileUpdated: "info",

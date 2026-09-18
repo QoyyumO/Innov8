@@ -1,6 +1,6 @@
 import { internalMutation, mutation, query, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Id, Doc } from "./_generated/dataModel";
 import {
   CURRENT_PASSWORD_INCORRECT_CODE,
   CURRENT_PASSWORD_INCORRECT_MESSAGE,
@@ -68,6 +68,29 @@ export const ensureDemoUsers = internalMutation({
   },
 });
 
+async function auditLoginFailure(
+  ctx: MutationCtx,
+  user: Doc<"users"> | null,
+) {
+  if (user) {
+    const reason =
+      user.accountStatus === "active" ? "invalid_password" : "account_not_active";
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      action: "UserLoginFailed",
+      entity: "users",
+      entityId: user._id,
+      details: { email: user.email, reason },
+    });
+    return;
+  }
+  await appendAuditEvent(ctx.db, {
+    action: "UserLoginFailed",
+    entity: "users",
+    details: { reason: "unknown_account" },
+  });
+}
+
 export const login = mutation({
   args: {
     email: v.string(),
@@ -92,6 +115,7 @@ export const login = mutation({
       .first();
 
     if (!user || user.accountStatus !== "active") {
+      await auditLoginFailure(ctx, user ?? null);
       return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
@@ -100,6 +124,7 @@ export const login = mutation({
       user.hashedPassword,
     );
     if (!isValidPassword) {
+      await auditLoginFailure(ctx, user);
       return { success: false as const, error: INVALID_CREDENTIALS_MESSAGE };
     }
 
