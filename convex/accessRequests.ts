@@ -228,7 +228,7 @@ async function recordAccessRequest(
         .eq("actorId", user._id)
         .gte("requestedAt", requestedAt - BEHAVIOUR_WINDOW_MS),
     )
-    .take(baseline);
+    .take(baseline + 1);
   const recentRequestCount = recentRows.length;
 
   const requestId = await ctx.db.insert("accessRequests", {
