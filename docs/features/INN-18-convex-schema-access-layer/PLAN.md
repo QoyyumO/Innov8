@@ -81,6 +81,6 @@ Keep workers on `users` (no `workers` table). Optional `facilityId`, `workerId`,
 ## Open questions
 
 - [x] Workers table vs users — **users**, optional fields (INN-30)
-- [x] Unique constraints — Convex indexes are not unique; seed/mutations call `convex/lib/invariants.ts` (`requireUnusedFacilityCode`, `requireUnusedPatientPublicId`, `requireUnusedWorkerId`, `requireUnusedDecisionRequestId`)
+- [x] Unique constraints — Convex indexes are not unique; seed/mutations look up existing rows before insert. Unused `requireUnused*` helpers were removed in INN-65. One decision per request is enforced by `.unique()` on `accessDecisions.by_requestId`.
 - [x] Empty reasons / justification / risk 0–100 — same helpers (`assertDecisionReasons`, `assertNonEmptyString`, `assertRiskScore`)
 - [x] gender / bloodGroup — closed enums plus `unknown` for §14 rows without a coded value
