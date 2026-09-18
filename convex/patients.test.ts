@@ -243,7 +243,7 @@ describe("patient discovery", () => {
     expect(searchAudits).toHaveLength(0);
   });
 
-  test("unknown publicId returns null and does not audit", async () => {
+  test("unknown publicId still writes PatientDiscovered, once per session", async () => {
     const testBackend = createTest();
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
@@ -253,11 +253,50 @@ describe("patient discovery", () => {
     );
     expect(discovery).toBeNull();
 
-    const searchAudits = await testBackend.run(async (ctx) => {
-      const events = await ctx.db.query("auditEvents").take(50);
-      return events.filter((event) => event.action === "PatientSearched");
+    const first = await testBackend.mutation(api.patients.recordPatientDiscovery, {
+      token,
+      publicId: "PAT-000000",
     });
-    expect(searchAudits).toHaveLength(0);
+    const second = await testBackend.mutation(api.patients.recordPatientDiscovery, {
+      token,
+      publicId: "PAT-000000",
+    });
+    expect(first).toEqual({ recorded: true });
+    expect(second).toEqual({ recorded: false });
+
+    const discoveryAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientDiscovered");
+    });
+    expect(discoveryAudits).toHaveLength(1);
+    expect(discoveryAudits[0]?.entity).toBe("patients");
+    expect(discoveryAudits[0]?.entityId).toBe("PAT-000000");
+    expect(discoveryAudits[0]?.details).toEqual({
+      publicId: "PAT-000000",
+      found: false,
+    });
+  });
+
+  test("opening a known publicId writes PatientDiscovered", async () => {
+    const testBackend = createTest();
+    await seedDemoPatient(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+
+    const first = await testBackend.mutation(api.patients.recordPatientDiscovery, {
+      token,
+      publicId: "  PAT-002391  ",
+    });
+    expect(first).toEqual({ recorded: true });
+
+    const discoveryAudits = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(50);
+      return events.filter((event) => event.action === "PatientDiscovered");
+    });
+    expect(discoveryAudits).toHaveLength(1);
+    expect(discoveryAudits[0]?.details).toEqual({
+      publicId: "PAT-002391",
+      found: true,
+    });
   });
 
   test("missing or bad token does not return patient data", async () => {
@@ -282,6 +321,13 @@ describe("patient discovery", () => {
       { token: "not-a-session", publicId: "PAT-002391" },
     );
     expect(discovery).toBeNull();
+
+    await expect(
+      testBackend.mutation(api.patients.recordPatientDiscovery, {
+        token: "not-a-session",
+        publicId: "PAT-002391",
+      }),
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
   });
 
   test("patient role cannot search or discover records", async () => {
@@ -301,5 +347,12 @@ describe("patient discovery", () => {
       { token, publicId: "PAT-002391" },
     );
     expect(discovery).toBeNull();
+
+    await expect(
+      testBackend.mutation(api.patients.recordPatientDiscovery, {
+        token,
+        publicId: "PAT-002391",
+      }),
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
   });
 });

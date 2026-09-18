@@ -44,6 +44,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-68** — Sidebar destinations follow role (clinician vs security/admin vs patient). Mixed patient + clinical roles see the clinician dashboard.
 - **INN-63** — SecurityAlerts filtered by status are ordered by `createdAt` (index `by_status_createdAt`), matching the unfiltered list.
 - **INN-67** — Seeded AuditEvents, including `SecurityAlertRaised`, go through `appendAuditEvent`. The alert audit names the SecurityAlert, not the Decision.
+- **INN-69** — Looking up a Patient by publicId on the detail page is audited as `PatientDiscovered` (one row per Session and publicId, including misses).
 
 ## Next (live demo path)
 
