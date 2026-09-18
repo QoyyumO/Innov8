@@ -14,6 +14,7 @@ import {
 import { requireClinicianSession, userRole } from "./lib/roles";
 import { requireSession } from "./lib/session";
 import {
+  assertRecordTypesAllowedForRoles,
   normalizeRecordTypes,
   resolveAccessTarget,
 } from "./lib/services/accessControlService";
@@ -356,6 +357,7 @@ export const createAccessRequest = mutation({
   returns: createResultValidator,
   handler: async (ctx, args) => {
     const sessionContext = await requireClinicianSession(ctx, args.token);
+    assertRecordTypesAllowedForRoles(sessionContext.user.roles, args.recordTypes);
     return await recordAccessRequest(ctx, sessionContext, {
       publicId: args.publicId,
       purpose: args.purpose,

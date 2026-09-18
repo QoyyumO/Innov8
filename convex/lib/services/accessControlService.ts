@@ -5,6 +5,8 @@ import {
   NO_INDEXED_RECORDS_MESSAGE,
   NO_RECORD_TYPES_CODE,
   NO_RECORD_TYPES_MESSAGE,
+  RECORD_TYPE_NOT_ALLOWED_CODE,
+  RECORD_TYPE_NOT_ALLOWED_MESSAGE,
   NO_SOURCE_FACILITY_CODE,
   NO_SOURCE_FACILITY_MESSAGE,
   PATIENT_NOT_FOUND_CODE,
@@ -14,6 +16,7 @@ import {
 } from "../accessRequestMessages";
 import { throwAppError } from "../appError";
 import { RecordType } from "../domain";
+import { isRecordTypeAllowedForRoles } from "../recordTypeAccess";
 
 /**
  * Access control service (INN-37).
@@ -58,6 +61,18 @@ export function normalizeRecordTypes(recordTypes: RecordType[]): RecordType[] {
     throwAppError(NO_RECORD_TYPES_CODE, NO_RECORD_TYPES_MESSAGE);
   }
   return uniqueTypes;
+}
+
+export function assertRecordTypesAllowedForRoles(
+  roles: readonly string[],
+  recordTypes: readonly RecordType[],
+): void {
+  const disallowed = recordTypes.find(
+    (recordType) => !isRecordTypeAllowedForRoles(roles, recordType),
+  );
+  if (disallowed !== undefined) {
+    throwAppError(RECORD_TYPE_NOT_ALLOWED_CODE, RECORD_TYPE_NOT_ALLOWED_MESSAGE);
+  }
 }
 
 async function resolveSourceFacilityId(
