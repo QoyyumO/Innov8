@@ -20,6 +20,7 @@ import type * as facilityScopeBackfill from "../facilityScopeBackfill.js";
 import type * as facilityStatsRecount from "../facilityStatsRecount.js";
 import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js";
 import type * as lib_accessWindow from "../lib/accessWindow.js";
+import type * as lib_appError from "../lib/appError.js";
 import type * as lib_authConstants from "../lib/authConstants.js";
 import type * as lib_consentConstants from "../lib/consentConstants.js";
 import type * as lib_dashboardConstants from "../lib/dashboardConstants.js";
@@ -74,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   facilityStatsRecount: typeof facilityStatsRecount;
   "lib/accessRequestMessages": typeof lib_accessRequestMessages;
   "lib/accessWindow": typeof lib_accessWindow;
+  "lib/appError": typeof lib_appError;
   "lib/authConstants": typeof lib_authConstants;
   "lib/consentConstants": typeof lib_consentConstants;
   "lib/dashboardConstants": typeof lib_dashboardConstants;

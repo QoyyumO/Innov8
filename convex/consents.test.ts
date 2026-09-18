@@ -2,6 +2,7 @@
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { loginDemoUser } from "./lib/loginForTests";
@@ -374,7 +375,7 @@ describe("revoking and reviewing consents", () => {
     const lagosAdminToken = await loginDemoUser(testBackend, LAGOS_ADMIN_EMAIL);
     const abeokutaAdminToken = await loginDemoUser(testBackend, ABEOKUTA_ADMIN_EMAIL);
 
-    const revoke = (token: string, consentId: string) =>
+    const revoke = (token: string, consentId: Id<"consents">) =>
       testBackend.mutation(api.consents.revokePatientConsent, { token, consentId });
 
     const first = await recordConsent(testBackend, ibrahimToken);

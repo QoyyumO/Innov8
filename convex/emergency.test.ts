@@ -7,6 +7,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
+import type { AppErrorCode } from "./lib/appError";
 import { appErrorCode } from "./lib/appError.testing";
 import {
   ACCOUNT_SUSPENDED_CODE,
@@ -210,7 +211,7 @@ describe("grantEmergencyAccess", () => {
     ]);
   });
 
-  test.each([
+  test.each<[string, AppErrorCode]>([
     ["", JUSTIFICATION_TOO_SHORT_CODE],
     ["   ", JUSTIFICATION_TOO_SHORT_CODE],
     ["urgent", JUSTIFICATION_TOO_SHORT_CODE],
