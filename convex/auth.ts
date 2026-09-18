@@ -33,10 +33,7 @@ import {
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
-import {
-  linkDemoPatientLogins,
-  repairDemoPatientRoles,
-} from "./lib/demoPatientAccount";
+import { syncDemoPatientLogins } from "./lib/demoPatientAccount";
 import { insertCountedUser } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 
@@ -68,8 +65,7 @@ export const ensureDemoUsers = internalMutation({
       });
     }
 
-    await repairDemoPatientRoles(ctx.db);
-    await linkDemoPatientLogins(ctx.db);
+    await syncDemoPatientLogins(ctx.db);
     return null;
   },
 });

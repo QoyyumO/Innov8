@@ -367,9 +367,16 @@ describe("ensureDemoUsers (INN-85)", () => {
       return {
         roles: chioma?.roles,
         patientId: chioma?.patientId ?? null,
+        department: chioma?.department,
+        workerId: chioma?.workerId,
       };
     });
-    expect(restored).toEqual({ roles: ["patient"], patientId });
+    expect(restored).toEqual({
+      roles: ["patient"],
+      patientId,
+      department: undefined,
+      workerId: undefined,
+    });
   });
 
   test("repairs a dashboard-created doctor Chioma back to the patient login", async () => {
@@ -394,6 +401,9 @@ describe("ensureDemoUsers (INN-85)", () => {
         accountStatus: chioma.accountStatus,
         profile: chioma.profile,
         facilityId: chioma.facilityId,
+        workerId: "WRK-00099",
+        normalPatientVolume: 20,
+        normalAccessHours: { start: "08:00", end: "18:00" },
       });
     });
 
@@ -407,8 +417,55 @@ describe("ensureDemoUsers (INN-85)", () => {
       return {
         roles: chioma?.roles,
         patientId: chioma?.patientId ?? null,
+        department: chioma?.department,
+        workerId: chioma?.workerId,
+        normalPatientVolume: chioma?.normalPatientVolume,
+        normalAccessHours: chioma?.normalAccessHours,
       };
     });
-    expect(repaired).toEqual({ roles: ["patient"], patientId });
+    expect(repaired).toEqual({
+      roles: ["patient"],
+      patientId,
+      department: undefined,
+      workerId: undefined,
+      normalPatientVolume: undefined,
+      normalAccessHours: undefined,
+    });
+  });
+
+  test("clears a leftover department on an existing patient Chioma", async () => {
+    const testBackend = createTest();
+    const patientId = await insertDemoPatient(testBackend);
+    await ensureDemoUsersForTests(testBackend);
+
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Expected Chioma after ensureDemoUsers");
+      }
+      await ctx.db.patch(chioma._id, { department: "Cardiology" });
+    });
+
+    await ensureDemoUsersForTests(testBackend);
+
+    const cleared = await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      return {
+        roles: chioma?.roles,
+        patientId: chioma?.patientId ?? null,
+        department: chioma?.department,
+      };
+    });
+    expect(cleared).toEqual({
+      roles: ["patient"],
+      patientId,
+      department: undefined,
+    });
   });
 });

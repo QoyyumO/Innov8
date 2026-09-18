@@ -6,7 +6,7 @@ export const DEMO_PASSWORD = "password123";
 /** Chioma's patient-role demo login (linked to PAT-002391 by seed, INN-46). */
 export const CHIOMA_EMAIL = "chioma@patient.innov8.ng";
 
-export const DEMO_USERS: Array<{
+export type DemoUserSeed = {
   email: string;
   roles: UserRole[];
   hospital: string;
@@ -14,7 +14,17 @@ export const DEMO_USERS: Array<{
   profile: { firstName: string; lastName: string };
   /** When set, seed / `ensureDemoUsers` links this login to that patient row. */
   publicId?: string;
-}> = [
+};
+
+export type DemoPatientUserSeed = DemoUserSeed & { publicId: string };
+
+export function demoPatientUsers(): DemoPatientUserSeed[] {
+  return DEMO_USERS.filter(
+    (demoUser): demoUser is DemoPatientUserSeed => demoUser.publicId !== undefined,
+  );
+}
+
+export const DEMO_USERS: DemoUserSeed[] = [
   {
     email: "ibrahim@fmc.abuja.ng",
     roles: ["doctor"],

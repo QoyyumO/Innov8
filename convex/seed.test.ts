@@ -154,10 +154,19 @@ describe("demo-scale seed", () => {
         .query("patients")
         .withIndex("by_publicId", (query) => query.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
         .unique();
-      return { patientId: chioma?.patientId ?? null, demoId: demoPatient?._id ?? null };
+      return {
+        patientId: chioma?.patientId ?? null,
+        demoId: demoPatient?._id ?? null,
+        department: chioma?.department,
+        workerId: chioma?.workerId,
+        roles: chioma?.roles,
+      };
     });
     expect(linked.patientId).toBe(linked.demoId);
     expect(linked.patientId).not.toBeNull();
+    expect(linked.roles).toEqual(["patient"]);
+    expect(linked.department).toBeUndefined();
+    expect(linked.workerId).toBeUndefined();
     vi.useRealTimers();
   });
 
