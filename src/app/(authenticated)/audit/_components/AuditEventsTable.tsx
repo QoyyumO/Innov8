@@ -232,8 +232,8 @@ export function AuditEventsTable({ canFilterByActor, actorId, actorLabel }: Audi
         <EmptyState
           title="No audit events"
           description={
-            action
-              ? `Nothing recorded for “${AUDIT_ACTION_LABELS[action]}” yet.`
+            action || trimmedPublicId || facilityId || outcome || fromDate || toDate
+              ? "Nothing matches these filters."
               : "Nothing has been recorded yet."
           }
           icon={<DocsIcon className="h-12 w-12 text-brand-500" />}
