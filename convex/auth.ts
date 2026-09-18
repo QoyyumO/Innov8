@@ -29,7 +29,7 @@ import {
   generateSessionToken,
   publicUser,
   requireSession,
-  SESSION_DURATION_MS,
+  PERSISTENT_SESSION_DURATION_MS,
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
@@ -422,7 +422,7 @@ export const changePassword = mutation({
     });
     const sessionLength = session.expiresAt - session.createdAt;
     const ttlKind =
-      sessionLength > SESSION_DURATION_MS * 2 ? "persistent" : "default";
+      sessionLength >= PERSISTENT_SESSION_DURATION_MS ? "persistent" : "default";
     const nextSession = await createSession(ctx, user._id, ttlKind);
     await deleteOtherUserSessions(ctx, user._id, nextSession.token);
     await appendAuditEvent(ctx.db, {
