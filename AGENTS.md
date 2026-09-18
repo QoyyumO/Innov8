@@ -118,6 +118,7 @@ Domain map: `Innov8_DDD.md`. SIMS `DDD_Proposal.md` is a method reference only �
 - **INN-65** dead uniqueness helpers — `convex/lib/invariants.ts` keeps `assertNonEmptyString` / `assertDecisionReasons` / `assertRiskScore`. The unused `requireUnused*` exports are gone; one decision per request is still enforced by `.unique()` on `accessDecisions.by_requestId`.
 - **INN-68** role-aware nav — the sidebar only links to destinations the signed-in role can use. A mixed patient + clinical account gets the clinician dashboard. Login uses `toUserFacingError`; password length comes from `MIN_PASSWORD_LENGTH`.
 - **INN-63** alert list order — `securityAlerts` uses `by_status_createdAt` so filtered `/security` tabs order by `createdAt`, the same as the unfiltered list. Unused `by_severity` is gone.
+- **INN-67** seed audit — `seedAccessEvent` writes history only through `appendAuditEvent`. Seeded `SecurityAlertRaised` rows use the alert id as `entityId`, matching the live alert service.
 
 **Next:** Remaining review-found bugs after INN-60. Do **not** revive canceled tickets INN-5–INN-17 or INN-34; file new Innov8 issues. Check Linear for the current assignee before starting a ticket.
 

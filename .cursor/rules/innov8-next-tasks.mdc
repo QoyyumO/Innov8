@@ -50,6 +50,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-65](https://linear.app/innov8-health/issue/INN-65) remove unused `requireUnused*` helpers from `invariants.ts`
 - [INN-68](https://linear.app/innov8-health/issue/INN-68) role-filter the sidebar; clinician dashboard wins over patient; auth-form errors
 - [INN-63](https://linear.app/innov8-health/issue/INN-63) status-filtered security alerts order by `createdAt`
+- [INN-67](https://linear.app/innov8-health/issue/INN-67) seed `SecurityAlertRaised` `entityId` is the alert, via `appendAuditEvent`
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 

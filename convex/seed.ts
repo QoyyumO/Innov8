@@ -610,8 +610,9 @@ async function seedAccessEvent(
       actorId: args.worker._id,
       action: "SecurityAlertRaised",
       entity: "securityAlerts",
-      entityId: decisionId,
+      entityId: alertId,
       details: {
+        decisionId,
         outcome: args.outcome,
         riskScore: args.riskScore,
       },
