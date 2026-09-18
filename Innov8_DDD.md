@@ -33,7 +33,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-54** — Login failures return a form error (no overlay); Keep me logged in is a 7-day session; seed non-harvest `recordCount` is 1.
 - **INN-44** — Step-up on VERIFY: the requester re-enters their password to turn the Decision into ALLOW; three failures turn it into BLOCK with a SecurityAlert. Audited as `StepUpCompleted` / `StepUpFailed`.
 - **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
-- **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan.
+- **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan. Paid-plan restore steps: `convex/README-seeding.md` (INN-73).
 - **INN-52** — Facility scope for hospital admins: AuditEvents and SecurityAlerts are indexed by the facilities they involve (actor's facility, request source/target), so a hospital admin reviews only their facility's activity. Security officers and system admins keep the exchange-wide view.
 - **INN-45** — ConsentService: a Consent lets one Facility request a Patient's records held at another; missing consent makes a single-patient, non-emergency cross-facility Decision VERIFY. Recorded by clinicians, revoked by reviewers, audited as `ConsentRecorded` / `ConsentRevoked`.
 - **INN-53** — FacilityStats: stored worker and patient totals per Facility, updated whenever a user or patient is created or changes facility.

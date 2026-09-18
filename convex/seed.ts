@@ -441,6 +441,8 @@ export const seedPatientsBatch = internalMutation({
     batchSize: v.optional(v.number()),
     total: v.optional(v.number()),
     continueToEvents: v.optional(v.boolean()),
+    eventCount: v.optional(v.number()),
+    workerCount: v.optional(v.number()),
   },
   returns: v.object({ cursor: v.number(), done: v.boolean() }),
   handler: async (ctx, args) => {
@@ -448,6 +450,8 @@ export const seedPatientsBatch = internalMutation({
     const batchSize = args.batchSize ?? SEED_PATIENT_BATCH_SIZE;
     const total = args.total ?? SEED_PATIENT_COUNT;
     const continueToEvents = args.continueToEvents ?? false;
+    const eventCount = args.eventCount ?? SEED_ACCESS_EVENT_COUNT;
+    const workerCount = args.workerCount ?? SEED_WORKER_COUNT;
     const facilities = await loadFacilities(ctx);
     const end = Math.min(cursor + batchSize, total);
 
@@ -476,6 +480,8 @@ export const seedPatientsBatch = internalMutation({
         batchSize,
         total,
         continueToEvents,
+        eventCount,
+        workerCount,
       });
     } else {
       // Rebuild stored totals after the last patient write, not during wipe
@@ -485,9 +491,9 @@ export const seedPatientsBatch = internalMutation({
         await ctx.scheduler.runAfter(0, internal.seed.seedAccessEventsBatch, {
           cursor: 0,
           batchSize: SEED_ACCESS_EVENT_BATCH_SIZE,
-          total: SEED_ACCESS_EVENT_COUNT,
+          total: eventCount,
           patientCount: total,
-          workerCount: SEED_WORKER_COUNT,
+          workerCount,
         });
       }
     }
