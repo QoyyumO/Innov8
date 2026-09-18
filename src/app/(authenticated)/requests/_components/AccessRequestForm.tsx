@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FunctionReturnType } from "convex/server";
@@ -18,6 +18,8 @@ import type { Purpose, RecordType } from "../../../../../convex/lib/domain";
 import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
 import {
+  OUTCOME_ALERT_VARIANTS,
+  OUTCOME_LABELS,
   PURPOSE_OPTIONS,
   RECORD_TYPE_LABELS,
 } from "../../_components/accessLabels";
@@ -57,6 +59,15 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<CreateAccessRequestResult | null>(null);
+  const resultRegionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!result) {
+      return;
+    }
+    resultRegionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    resultRegionRef.current?.focus();
+  }, [result]);
 
   const toggleRecordType = (recordType: RecordType, isChecked: boolean) => {
     setUncheckedRecordTypes((current) =>
@@ -170,10 +181,21 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
         <Button type="submit" disabled={isSubmitting || !sessionToken}>
           {isSubmitting ? "Evaluating…" : "Submit request"}
         </Button>
+        {result && (
+          <Alert
+            variant={OUTCOME_ALERT_VARIANTS[result.outcome]}
+            title={`${OUTCOME_LABELS[result.outcome]} — ${result.riskScore}/100`}
+            message="Full reasons are in the decision below."
+          />
+        )}
       </form>
 
       {result && (
-        <div className="space-y-4 border-t border-gray-100 pt-6 dark:border-gray-800">
+        <div
+          ref={resultRegionRef}
+          tabIndex={-1}
+          className="space-y-4 border-t border-gray-100 pt-6 outline-none dark:border-gray-800"
+        >
           <DecisionResult
             publicId={result.publicId}
             targetFacilityName={result.targetFacility.name}
