@@ -105,6 +105,7 @@ export type ConsentCheck = Infer<typeof consentCheck>;
 export const auditAction = v.union(
   v.literal("UserLoggedIn"),
   v.literal("UserLoggedOut"),
+  v.literal("UserLoginFailed"),
   v.literal("PasswordChanged"),
   v.literal("PasswordReset"),
   v.literal("ProfileUpdated"),

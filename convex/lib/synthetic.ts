@@ -238,12 +238,17 @@ export const DEMO_PATIENT_INDEX = 2391;
 export const DEMO_PATIENT_DOB_MS = Date.UTC(1988, 3, 12);
 
 /**
- * Demo-scale seed defaults. Historical §14 volumes (500 workers, 10k patients,
- * 100k events) overflow the Convex free plan — do not use them as defaults.
+ * Demo-scale seed defaults. Historical §14 volumes overflow the Convex
+ * free plan — do not use SECTION_14_* as defaults.
  */
 export const SEED_WORKER_COUNT = 24;
 export const SEED_PATIENT_COUNT = 200;
 export const SEED_ACCESS_EVENT_COUNT = 200;
+
+/** Full §14 volumes for a paid-plan or throwaway preview only (INN-73). */
+export const SECTION_14_WORKER_COUNT = 500;
+export const SECTION_14_PATIENT_COUNT = 10_000;
+export const SECTION_14_ACCESS_EVENT_COUNT = 100_000;
 export const SEED_PATIENT_BATCH_SIZE = 50;
 export const SEED_ACCESS_EVENT_BATCH_SIZE = 50;
 export const SEED_CLEAR_BATCH_SIZE = 100;
