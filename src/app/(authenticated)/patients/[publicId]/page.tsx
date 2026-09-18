@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { useAuth } from "@/hooks/useAuth";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
@@ -24,12 +25,27 @@ export default function PatientDiscoveryPage() {
       : "";
   const router = useRouter();
   const { sessionToken } = useAuth();
+  const recordPatientDiscovery = useMutation(api.patients.recordPatientDiscovery);
   const discovery = useQuery(
     api.patients.getPatientDiscovery,
     sessionToken && publicId !== ""
       ? { token: sessionToken, publicId }
       : "skip",
   );
+
+  useEffect(() => {
+    if (!sessionToken || publicId === "") {
+      return;
+    }
+    const recordDiscovery = async () => {
+      try {
+        await recordPatientDiscovery({ token: sessionToken, publicId });
+      } catch {
+        // The page still shows identity from the query; the trail is best-effort.
+      }
+    };
+    recordDiscovery();
+  }, [sessionToken, publicId, recordPatientDiscovery]);
 
   const isLoading =
     sessionToken !== null && publicId !== "" && discovery === undefined;

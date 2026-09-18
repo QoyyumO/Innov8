@@ -109,6 +109,7 @@ export const auditAction = v.union(
   v.literal("PasswordReset"),
   v.literal("ProfileUpdated"),
   v.literal("PatientSearched"),
+  v.literal("PatientDiscovered"),
   v.literal("AccessRequested"),
   v.literal("AccessAllowed"),
   v.literal("AccessChallenged"),

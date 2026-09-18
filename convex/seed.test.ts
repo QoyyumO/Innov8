@@ -159,4 +159,58 @@ describe("demo-scale seed", () => {
     expect(linked.patientId).not.toBeNull();
     vi.useRealTimers();
   });
+
+  test("seeded SecurityAlertRaised rows point at the alert, not the decision", async () => {
+    vi.useFakeTimers();
+    const testBackend = createTest();
+    await testBackend.mutation(internal.seed.seedFacilities, {});
+    await testBackend.mutation(internal.seed.seedHealthcareWorkers, {
+      count: SEED_WORKER_COUNT,
+    });
+    await testBackend.mutation(internal.seed.seedPatientsBatch, {
+      cursor: 0,
+      batchSize: 10,
+      total: 5,
+    });
+    await testBackend.finishAllScheduledFunctions(vi.runAllTimers);
+    await testBackend.mutation(internal.seed.seedAccessEventsBatch, {
+      cursor: 0,
+      batchSize: 1,
+      total: 1,
+      patientCount: 5,
+      workerCount: SEED_WORKER_COUNT,
+    });
+
+    const check = await testBackend.run(async (ctx) => {
+      const events = await ctx.db.query("auditEvents").take(20);
+      const raised = events.filter((event) => event.action === "SecurityAlertRaised");
+      const alerts = await ctx.db.query("securityAlerts").take(20);
+      return {
+        raised: raised.map((event) => ({
+          entityId: event.entityId,
+          decisionId: event.details.decisionId,
+          isAlertId: event.entityId
+            ? ctx.db.normalizeId("securityAlerts", event.entityId) === event.entityId
+            : false,
+        })),
+        alertIds: alerts.map((alert) => alert._id),
+      };
+    });
+
+    expect(check.raised.length).toBeGreaterThan(0);
+    for (const event of check.raised) {
+      expect(event.isAlertId).toBe(true);
+      expect(check.alertIds).toContain(event.entityId);
+    }
+
+    const again = await testBackend.mutation(internal.seed.seedAccessEventsBatch, {
+      cursor: 0,
+      batchSize: 1,
+      total: 1,
+      patientCount: 5,
+      workerCount: SEED_WORKER_COUNT,
+    });
+    expect(again.skipped).toBeGreaterThan(0);
+    vi.useRealTimers();
+  });
 });

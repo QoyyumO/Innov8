@@ -29,6 +29,7 @@ import {
   generateSessionToken,
   publicUser,
   requireSession,
+  PERSISTENT_SESSION_DURATION_MS,
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
@@ -298,6 +299,7 @@ export const resetPassword = mutation({
 
     await ctx.db.patch(user._id, {
       hashedPassword: await hashPassword(args.newPassword),
+      sessionsInvalidatedAt: Date.now(),
     });
     await ctx.db.patch(tokenRow._id, { usedAt: Date.now() });
     await deleteAllUserSessions(ctx, user._id);
@@ -389,6 +391,7 @@ export const changePassword = mutation({
   },
   returns: v.object({
     success: v.literal(true),
+    token: v.string(),
   }),
   handler: async (ctx, args) => {
     const { user, session } = await requireSession(ctx, args.token);
@@ -412,19 +415,25 @@ export const changePassword = mutation({
       );
     }
 
+    const sessionsInvalidatedAt = Date.now();
     await ctx.db.patch(user._id, {
       hashedPassword: await hashPassword(args.newPassword),
+      sessionsInvalidatedAt,
     });
-    await deleteOtherUserSessions(ctx, user._id, args.token);
+    const sessionLength = session.expiresAt - session.createdAt;
+    const ttlKind =
+      sessionLength >= PERSISTENT_SESSION_DURATION_MS ? "persistent" : "default";
+    const nextSession = await createSession(ctx, user._id, ttlKind);
+    await deleteOtherUserSessions(ctx, user._id, nextSession.token);
     await appendAuditEvent(ctx.db, {
       actorId: user._id,
-      sessionId: session._id,
+      sessionId: nextSession.sessionId,
       action: "PasswordChanged",
       entity: "users",
       entityId: user._id,
       details: {},
     });
-    return { success: true as const };
+    return { success: true as const, token: nextSession.token };
   },
 });
 

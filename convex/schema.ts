@@ -40,6 +40,8 @@ export default defineSchema({
       }),
     ),
     normalPatientVolume: v.optional(v.number()),
+    /** Sessions with createdAt earlier than this are dead (INN-70). */
+    sessionsInvalidatedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_workerId", ["workerId"])
@@ -203,7 +205,8 @@ export default defineSchema({
     .index("by_action_createdAt", ["action", "createdAt"])
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"])
-    .index("by_patientId_createdAt", ["patientId", "createdAt"]),
+    .index("by_patientId_createdAt", ["patientId", "createdAt"])
+    .index("by_sessionId_action_entityId", ["sessionId", "action", "entityId"]),
 
   // INN-45: a patient's consent for one facility to request their records.
   // `patientFacilityId` is where the patient's records are held, so hospital
