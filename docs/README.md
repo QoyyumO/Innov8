@@ -43,7 +43,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-59-auth-error-wrapped-messages](features/INN-59-auth-error-wrapped-messages/PLAN.md) | Recover wrapped session/permission messages on the client | Done on `main` ([#39](https://github.com/QoyyumO/Innov8/pull/39)) |
 | [INN-71-risk-device-location-behaviour](features/INN-71-risk-device-location-behaviour/PLAN.md) | Explainable location and 24h behaviour factors in risk scoring | Done on `main` ([#40](https://github.com/QoyyumO/Innov8/pull/40)) |
 | [INN-74-break-glass-ttl-deep-dive-note](features/INN-74-break-glass-ttl-deep-dive-note/PLAN.md) | Keep 15-minute break-glass; note §8's 30-minute example | In review ([#43](https://github.com/QoyyumO/Innov8/pull/43)) |
-| [INN-75-decision-latency-evaluation](features/INN-75-decision-latency-evaluation/PLAN.md) | Decision-engine p50/p95 + §15 evaluation notes | This branch |
+| [INN-75-decision-latency-evaluation](features/INN-75-decision-latency-evaluation/PLAN.md) | Decision-engine p50/p95 + §15 evaluation notes | In review ([#44](https://github.com/QoyyumO/Innov8/pull/44)) |
 | [INN-72-audit-failed-login-attempts](features/INN-72-audit-failed-login-attempts/PLAN.md) | Audit failed login attempts (`UserLoginFailed`) | In review ([#41](https://github.com/QoyyumO/Innov8/pull/41)) |
 | [INN-73-paid-plan-section-14-seed-runbook](features/INN-73-paid-plan-section-14-seed-runbook/PLAN.md) | Paid-plan runbook for full §14 seed volumes | In review ([#42](https://github.com/QoyyumO/Innov8/pull/42)) |
 

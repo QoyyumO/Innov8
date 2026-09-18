@@ -10,14 +10,20 @@ Re-run: `npx vitest run convex/decisionEvaluation.test.ts`
 
 - Engine only: `scoreAccessRequest` in `convex/lib/services/riskScoringService.ts`.
 - Cases in `convex/lib/decisionEvaluation.ts`: **normal** (Ibrahim treatment, 1 record), **harvest** (500 records), **VERIFY** (same as normal plus missing consent).
-- 50 warmup calls, then 2,000 timed calls per case. Percentiles are nearest-rank on those samples.
-- CI asserts normal p95 **< 1000 ms** (`NFR04_P95_TARGET_MS`).
+- 50 warmup calls, then 2,000 timed calls **per case**. Percentiles are nearest-rank on those samples.
+- CI asserts p50 and p95 **< 1000 ms** for every labelled case (`NFR04_P95_TARGET_MS`).
 
 ## Latency (2026-09-18, Windows, Node via Vitest)
 
-2,000 timed normal scores finished in the same test file in **9 ms** wall time (including harvest/VERIFY outcome checks). Mean engine time is on the order of **0.01 ms**. p50 and p95 are **well under 1 ms** — orders of magnitude inside NFR-04.
+One run of `convex/decisionEvaluation.test.ts` (50 warmup + 2,000 timed calls per case):
 
-Harvest and VERIFY inputs use the same function; they are not slower in a way that matters next to the 1-second target.
+| Case | Outcome | p50 (ms) | p95 (ms) | max (ms) |
+| --- | --- | --- | --- | --- |
+| normal (Ibrahim treatment, 1 record) | ALLOW 8 | 0.0014 | 0.0036 | 0.0747 |
+| harvest (500 records) | BLOCK 94 | 0.0014 | 0.0025 | 0.5602 |
+| VERIFY (missing consent) | VERIFY 43 | 0.0017 | 0.0033 | 0.6896 |
+
+p95 is **orders of magnitude inside** the 1-second NFR-04 target. These figures will move with the machine and timer resolution; they are evidence that the engine is not near 1s, not a production SLO.
 
 ## Detection and false positives
 
@@ -25,8 +31,8 @@ Harvest and VERIFY inputs use the same function; they are not slower in a way th
 | --- | --- | --- |
 | Ibrahim treatment, 1 record | ALLOW 8 | Demo true negative for “attack” |
 | 500-record harvest | BLOCK 94 | Harvest rule fires; detection rate 100% in this synthetic case |
-| Missing cross-facility consent | VERIFY | Intended challenge, not a harvest BLOCK |
-| After-hours hospital admin, administrative purpose | Not BLOCK | Extra scrutiny (role + purpose + hours). Not a harvest false positive |
+| Missing cross-facility consent | VERIFY 43 | Intended challenge, not a harvest BLOCK |
+| After-hours hospital admin, administrative purpose | VERIFY 55 | Role + purpose + hours. Not a harvest false positive |
 
 Access-control **accuracy** here means the engine matches those labelled demo cases. It is not a labelled clinical dataset.
 
