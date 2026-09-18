@@ -15,13 +15,14 @@ Stacked on INN-78.
 - [x] Server allow-list per role (pharmacist: medications + allergies; laboratory: diagnoses until a lab type exists)
 - [x] UI hides types the role cannot request
 - [x] Doctors/nurses keep all four types
-- [x] Tests: Chinedu/Aisha refused for out-of-role types; Fatima still allowed all four
+- [x] Tests: Fatima may request all four; Chinedu/Aisha refused for out-of-role types
+- [x] Harvest demo (`simulateBulkHarvest`) still uses the four types; it is a volume attack, not a pharmacist chart request
 
 ---
 
 ## Implementation
 
-`convex/lib/recordTypeAccess.ts` (client-safe) + assert in `recordAccessRequest` / harvest / new emergency grants.
+`convex/lib/recordTypeAccess.ts` (client-safe). `createAccessRequest` and new (unlinked) break-glass grants assert the allow-list. Harvest does not.
 
 ---
 
