@@ -11,10 +11,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { toUserFacingError } from "@/lib/userFacingError";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
-import {
-  STEP_UP_MAX_FAILURES,
-  findStepUpInputError,
-} from "../../../../../convex/lib/stepUpConstants";
+import { STEP_UP_MAX_FAILURES } from "../../../../../convex/lib/stepUpConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 
 type StepUpVerificationProps = {
@@ -104,10 +101,8 @@ export function StepUpVerification({
       }
     } catch (error) {
       console.error("Error completing verification:", error);
-      const message = error instanceof Error ? error.message : "";
       setErrorMessage(
-        findStepUpInputError(message) ??
-          toUserFacingError(error, "Verification could not be completed. Try again."),
+        toUserFacingError(error, "Verification could not be completed. Try again."),
       );
     } finally {
       setIsSubmitting(false);

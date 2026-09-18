@@ -2,7 +2,11 @@ import { query, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage, PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { isAuthAppError, throwAppError } from "./lib/appError";
+import {
+  PERMISSION_DENIED_CODE,
+  PERMISSION_DENIED_MESSAGE,
+} from "./lib/authConstants";
 import { AuditAction, auditAction, auditDetails } from "./lib/domain";
 import { resolveReviewerScope } from "./lib/facilityScope";
 import { requireSession } from "./lib/session";
@@ -151,7 +155,7 @@ export const listAuditEvents = query({
     try {
       user = (await requireSession(ctx, args.token)).user;
     } catch (error) {
-      if (error instanceof Error && isAuthErrorMessage(error.message)) {
+      if (isAuthAppError(error)) {
         return EMPTY_PAGE;
       }
       throw error;
@@ -166,7 +170,7 @@ export const listAuditEvents = query({
         return EMPTY_PAGE;
       }
       if (!isReviewer && requestedActorId !== user._id) {
-        throw new Error(PERMISSION_DENIED_MESSAGE);
+        throwAppError(PERMISSION_DENIED_CODE, PERMISSION_DENIED_MESSAGE);
       }
       actorId = requestedActorId;
     }

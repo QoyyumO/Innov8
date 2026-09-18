@@ -2,10 +2,12 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError, throwAppError } from "./lib/appError";
 import { recordType } from "./lib/domain";
 import {
+  EMERGENCY_GRANT_NOT_FOUND_CODE,
   EMERGENCY_GRANT_NOT_FOUND_MESSAGE,
+  EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE,
   EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE,
 } from "./lib/emergencyConstants";
 import { requireClinicianSession } from "./lib/roles";
@@ -63,7 +65,7 @@ export const grantEmergencyAccess = mutation({
         ? undefined
         : (ctx.db.normalizeId("accessRequests", args.requestId) ?? undefined);
     if (args.requestId !== undefined && linkedRequestId === undefined) {
-      throw new Error(EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE);
+      throwAppError(EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE, EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE);
     }
 
     const now = Date.now();
@@ -97,7 +99,7 @@ export const getActiveEmergencyAccess = query({
     try {
       userId = (await requireClinicianSession(ctx, args.token)).user._id;
     } catch (error) {
-      if (error instanceof Error && isAuthErrorMessage(error.message)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -136,7 +138,7 @@ export const revokeEmergencyAccess = mutation({
     const sessionContext = await requireSession(ctx, args.token);
     const grantId = ctx.db.normalizeId("emergencyAccess", args.grantId);
     if (!grantId) {
-      throw new Error(EMERGENCY_GRANT_NOT_FOUND_MESSAGE);
+      throwAppError(EMERGENCY_GRANT_NOT_FOUND_CODE, EMERGENCY_GRANT_NOT_FOUND_MESSAGE);
     }
     return await revokeGrant(ctx.db, sessionContext, grantId, Date.now());
   },

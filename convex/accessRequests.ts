@@ -2,7 +2,7 @@ import { mutation, MutationCtx, query, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError } from "./lib/appError";
 import {
   consentCheck,
   decisionOutcome,
@@ -111,10 +111,6 @@ const HARVEST_RECORD_TYPES: readonly RecordType[] = [
   "medications",
   "diagnoses",
 ];
-
-function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
-}
 
 async function loadFacilityRef(
   ctx: QueryCtx,
@@ -375,7 +371,7 @@ export const listMyAccessRequests = query({
       const { user } = await requireClinicianSession(ctx, args.token);
       viewerId = user._id;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return { page: [], isDone: true, continueCursor: "" };
       }
       throw error;
@@ -417,7 +413,7 @@ export const getAccessRequest = query({
     try {
       viewer = (await requireSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;

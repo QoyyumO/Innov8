@@ -9,7 +9,6 @@ import Alert from "@/components/ui/alert/Alert";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { toUserFacingError } from "@/lib/userFacingError";
-import { findEmergencyInputError } from "../../../../../convex/lib/emergencyConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 import { describeGrantStatus, isGrantLive } from "../../_components/emergencyLabels";
 
@@ -43,10 +42,8 @@ export function EmergencyGrantCard({ grant, canRevoke }: EmergencyGrantCardProps
       await revokeEmergencyAccess({ token: sessionToken, grantId: grant.grantId });
     } catch (error) {
       console.error("Error revoking emergency access:", error);
-      const message = error instanceof Error ? error.message : "";
       setErrorMessage(
-        findEmergencyInputError(message) ??
-          toUserFacingError(error, "Emergency access could not be ended. Try again."),
+        toUserFacingError(error, "Emergency access could not be ended. Try again."),
       );
     } finally {
       setIsRevoking(false);

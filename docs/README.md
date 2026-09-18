@@ -33,5 +33,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-66-harden-verify-password](features/INN-66-harden-verify-password/PLAN.md) | `verifyPassword`: no throw on a malformed hash, compare without short-circuiting | Done on `main` ([#29](https://github.com/QoyyumO/Innov8/pull/29)) |
 | [INN-64-expire-sessions](features/INN-64-expire-sessions/PLAN.md) | Sessions delete themselves at `expiresAt`; bounded cleanup (with INN-61) | In review ([#31](https://github.com/QoyyumO/Innov8/pull/31)) |
 | [INN-58-audit-account-security-mutations](https://github.com/QoyyumO/Innov8/pull/30) | Audit logout, password change, reset, and profile update | In review ([#30](https://github.com/QoyyumO/Innov8/pull/30)) |
+| [INN-60-throw-convexerror-for-validation](features/INN-60-throw-convexerror-for-validation/PLAN.md) | Throw `ConvexError` so validation messages survive in production | This branch |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

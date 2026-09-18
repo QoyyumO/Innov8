@@ -2,13 +2,23 @@ import { internalMutation, mutation, query, MutationCtx } from "./_generated/ser
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import {
+  CURRENT_PASSWORD_INCORRECT_CODE,
+  CURRENT_PASSWORD_INCORRECT_MESSAGE,
   INVALID_CREDENTIALS_MESSAGE,
   MIN_PASSWORD_LENGTH,
+  PASSWORD_TOO_SHORT_CODE,
+  PASSWORD_TOO_SHORT_MESSAGE,
+  PASSWORD_UNCHANGED_CODE,
+  PASSWORD_UNCHANGED_MESSAGE,
+  PROFILE_FIELD_REQUIRED_CODE,
+  PROFILE_FIELD_TOO_LONG_CODE,
   RESET_GENERIC_MESSAGE,
+  RESET_INVALID_TOKEN_CODE,
   RESET_INVALID_TOKEN_MESSAGE,
   RESET_REQUEST_COOLDOWN_MS,
   RESET_TOKEN_TTL_MS,
 } from "./lib/authConstants";
+import { throwAppError } from "./lib/appError";
 import { hashPassword, sha256Hex, verifyPassword } from "./lib/password";
 import { publicUserValidator } from "./lib/publicUser";
 import {
@@ -273,19 +283,17 @@ export const resetPassword = mutation({
       tokenRow.usedAt !== undefined ||
       tokenRow.expiresAt < Date.now()
     ) {
-      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
+      throwAppError(RESET_INVALID_TOKEN_CODE, RESET_INVALID_TOKEN_MESSAGE);
     }
 
     const user = await ctx.db.get(tokenRow.userId);
     const emailLower = args.email.toLowerCase().trim();
     if (!user || user.email !== emailLower || user.accountStatus !== "active") {
-      throw new Error(RESET_INVALID_TOKEN_MESSAGE);
+      throwAppError(RESET_INVALID_TOKEN_CODE, RESET_INVALID_TOKEN_MESSAGE);
     }
 
     if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
-      throw new Error(
-        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-      );
+      throwAppError(PASSWORD_TOO_SHORT_CODE, PASSWORD_TOO_SHORT_MESSAGE);
     }
 
     await ctx.db.patch(user._id, {
@@ -329,10 +337,10 @@ export const logout = mutation({
 function normalizeName(value: string, field: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error(`${field} is required`);
+    throwAppError(PROFILE_FIELD_REQUIRED_CODE, `${field} is required`);
   }
   if (trimmed.length > 80) {
-    throw new Error(`${field} is too long`);
+    throwAppError(PROFILE_FIELD_TOO_LONG_CODE, `${field} is too long`);
   }
   return trimmed;
 }
@@ -386,13 +394,11 @@ export const changePassword = mutation({
     const { user, session } = await requireSession(ctx, args.token);
 
     if (args.newPassword.length < MIN_PASSWORD_LENGTH) {
-      throw new Error(
-        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-      );
+      throwAppError(PASSWORD_TOO_SHORT_CODE, PASSWORD_TOO_SHORT_MESSAGE);
     }
 
     if (args.currentPassword === args.newPassword) {
-      throw new Error("New password must be different from current password");
+      throwAppError(PASSWORD_UNCHANGED_CODE, PASSWORD_UNCHANGED_MESSAGE);
     }
 
     const isValidPassword = await verifyPassword(
@@ -400,7 +406,10 @@ export const changePassword = mutation({
       user.hashedPassword,
     );
     if (!isValidPassword) {
-      throw new Error("Current password is incorrect");
+      throwAppError(
+        CURRENT_PASSWORD_INCORRECT_CODE,
+        CURRENT_PASSWORD_INCORRECT_MESSAGE,
+      );
     }
 
     await ctx.db.patch(user._id, {

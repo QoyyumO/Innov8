@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/table";
 import { DocsIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
-import { findConsentInputError } from "../../../../../convex/lib/consentConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 
 const HEADER_CELL_CLASS =
@@ -47,10 +46,8 @@ export function ConsentsTable() {
       await revokePatientConsent({ token: sessionToken, consentId });
     } catch (error) {
       console.error("Error revoking consent:", error);
-      const message = error instanceof Error ? error.message : "";
       setErrorMessage(
-        findConsentInputError(message) ??
-          toUserFacingError(error, "Consent could not be revoked. Try again."),
+        toUserFacingError(error, "Consent could not be revoked. Try again."),
       );
     } finally {
       setRevokingId(null);

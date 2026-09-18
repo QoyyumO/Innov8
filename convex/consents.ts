@@ -1,11 +1,11 @@
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAppErrorCode, isAuthAppError } from "./lib/appError";
 import {
-  NO_INDEXED_RECORDS_MESSAGE,
-  NO_SOURCE_FACILITY_MESSAGE,
-  PATIENT_NOT_FOUND_MESSAGE,
+  NO_INDEXED_RECORDS_CODE,
+  NO_SOURCE_FACILITY_CODE,
+  PATIENT_NOT_FOUND_CODE,
 } from "./lib/accessRequestMessages";
 import { CONSENT_LIST_LIMIT } from "./lib/consentConstants";
 import { consentStatus } from "./lib/domain";
@@ -36,18 +36,11 @@ const consentViewValidator = v.object({
   revokedAt: v.union(v.null(), v.number()),
 });
 
-function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
-}
-
 function isConsentContextError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
   return (
-    error.message.includes(PATIENT_NOT_FOUND_MESSAGE) ||
-    error.message.includes(NO_SOURCE_FACILITY_MESSAGE) ||
-    error.message.includes(NO_INDEXED_RECORDS_MESSAGE)
+    isAppErrorCode(error, PATIENT_NOT_FOUND_CODE) ||
+    isAppErrorCode(error, NO_SOURCE_FACILITY_CODE) ||
+    isAppErrorCode(error, NO_INDEXED_RECORDS_CODE)
   );
 }
 
@@ -128,7 +121,7 @@ export const getConsentStatus = query({
     try {
       user = (await requireClinicianSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -208,7 +201,7 @@ export const listConsents = query({
       user = (await requireSession(ctx, args.token)).user;
       requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return [];
       }
       throw error;

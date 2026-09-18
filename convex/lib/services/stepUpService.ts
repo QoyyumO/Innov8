@@ -3,13 +3,17 @@ import { Doc, Id } from "../../_generated/dataModel";
 import { allowedUntil } from "../accessWindow";
 import { verifyPassword } from "../password";
 import {
+  STEP_UP_CONSENT_REQUIRED_CODE,
+  STEP_UP_CONSENT_REQUIRED_MESSAGE,
   STEP_UP_ESCALATED_REASON,
   STEP_UP_MAX_FAILURES,
+  STEP_UP_NOT_ELIGIBLE_CODE,
   STEP_UP_NOT_ELIGIBLE_MESSAGE,
+  STEP_UP_PASSWORD_REQUIRED_CODE,
   STEP_UP_PASSWORD_REQUIRED_MESSAGE,
-  STEP_UP_CONSENT_REQUIRED_MESSAGE,
   STEP_UP_VERIFIED_REASON,
 } from "../stepUpConstants";
+import { throwAppError } from "../appError";
 import { raiseBlockAlert } from "./alertService";
 import { appendAuditEvent } from "./auditLogService";
 import { findActiveConsent } from "./consentService";
@@ -59,7 +63,7 @@ async function requireChallengedRequest(
     (request.recordCount ?? 1) !== 1 ||
     decision.outcome !== "VERIFY"
   ) {
-    throw new Error(STEP_UP_NOT_ELIGIBLE_MESSAGE);
+    throwAppError(STEP_UP_NOT_ELIGIBLE_CODE, STEP_UP_NOT_ELIGIBLE_MESSAGE);
   }
   return { request, decision };
 }
@@ -73,13 +77,13 @@ export async function completeStepUp(
 ): Promise<StepUpResult> {
   const { request, decision } = await requireChallengedRequest(db, user, requestId);
   if (password.trim() === "") {
-    throw new Error(STEP_UP_PASSWORD_REQUIRED_MESSAGE);
+    throwAppError(STEP_UP_PASSWORD_REQUIRED_CODE, STEP_UP_PASSWORD_REQUIRED_MESSAGE);
   }
   if (
     decision.factors?.consent === "missing" &&
     !(await findActiveConsent(db, request.patientId, request.sourceFacilityId, now))
   ) {
-    throw new Error(STEP_UP_CONSENT_REQUIRED_MESSAGE);
+    throwAppError(STEP_UP_CONSENT_REQUIRED_CODE, STEP_UP_CONSENT_REQUIRED_MESSAGE);
   }
   const patient = await db.get(request.patientId);
   const patientPublicId = patient?.publicId ?? "Unknown patient";

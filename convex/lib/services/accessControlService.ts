@@ -1,12 +1,18 @@
 import { DatabaseReader } from "../../_generated/server";
 import { Doc, Id } from "../../_generated/dataModel";
 import {
+  NO_INDEXED_RECORDS_CODE,
   NO_INDEXED_RECORDS_MESSAGE,
+  NO_RECORD_TYPES_CODE,
   NO_RECORD_TYPES_MESSAGE,
+  NO_SOURCE_FACILITY_CODE,
   NO_SOURCE_FACILITY_MESSAGE,
+  PATIENT_NOT_FOUND_CODE,
   PATIENT_NOT_FOUND_MESSAGE,
+  RECORDS_NOT_HELD_CODE,
   RECORDS_NOT_HELD_PREFIX,
 } from "../accessRequestMessages";
+import { throwAppError } from "../appError";
 import { RecordType } from "../domain";
 
 /**
@@ -49,7 +55,7 @@ export function normalizePublicId(publicId: string): string {
 export function normalizeRecordTypes(recordTypes: RecordType[]): RecordType[] {
   const uniqueTypes = [...new Set(recordTypes)];
   if (uniqueTypes.length === 0) {
-    throw new Error(NO_RECORD_TYPES_MESSAGE);
+    throwAppError(NO_RECORD_TYPES_CODE, NO_RECORD_TYPES_MESSAGE);
   }
   return uniqueTypes;
 }
@@ -67,7 +73,7 @@ async function resolveSourceFacilityId(
     .withIndex("by_name", (query) => query.eq("name", user.hospital))
     .first();
   if (!facilityByName) {
-    throw new Error(NO_SOURCE_FACILITY_MESSAGE);
+    throwAppError(NO_SOURCE_FACILITY_CODE, NO_SOURCE_FACILITY_MESSAGE);
   }
   return facilityByName._id;
 }
@@ -101,7 +107,7 @@ async function resolveTargetIndex(
     .withIndex("by_patientId", (query) => query.eq("patientId", patient._id))
     .take(RECORD_INDEX_LOOKUP_LIMIT);
   if (!firstIndex) {
-    throw new Error(NO_INDEXED_RECORDS_MESSAGE);
+    throwAppError(NO_INDEXED_RECORDS_CODE, NO_INDEXED_RECORDS_MESSAGE);
   }
   return firstIndex;
 }
@@ -119,21 +125,22 @@ export async function resolveAccessTarget(
     )
     .unique();
   if (!patient) {
-    throw new Error(PATIENT_NOT_FOUND_MESSAGE);
+    throwAppError(PATIENT_NOT_FOUND_CODE, PATIENT_NOT_FOUND_MESSAGE);
   }
 
   const sourceFacilityId = await resolveSourceFacilityId(db, user);
   const targetIndex = await resolveTargetIndex(db, patient);
   const targetFacilityDoc = await db.get(targetIndex.facilityId);
   if (!targetFacilityDoc) {
-    throw new Error(NO_INDEXED_RECORDS_MESSAGE);
+    throwAppError(NO_INDEXED_RECORDS_CODE, NO_INDEXED_RECORDS_MESSAGE);
   }
 
   const missingTypes = recordTypes.filter(
     (recordType) => !targetIndex.recordTypes.includes(recordType),
   );
   if (missingTypes.length > 0) {
-    throw new Error(
+    throwAppError(
+      RECORDS_NOT_HELD_CODE,
       `${RECORDS_NOT_HELD_PREFIX}${targetFacilityDoc.name}: ${missingTypes
         .map((recordType) => RECORD_TYPE_LABELS[recordType])
         .join(", ")}`,

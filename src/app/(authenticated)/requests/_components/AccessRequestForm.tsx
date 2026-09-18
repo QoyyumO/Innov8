@@ -17,7 +17,6 @@ import { toUserFacingError } from "@/lib/userFacingError";
 import type { Purpose, RecordType } from "../../../../../convex/lib/domain";
 import { DEMO_PATIENT_PUBLIC_ID } from "../../../../../convex/lib/demoIds";
 import { SESSION_EXPIRED_MESSAGE } from "../../../../../convex/lib/authConstants";
-import { findAccessRequestInputError } from "../../../../../convex/lib/accessRequestMessages";
 import {
   PURPOSE_OPTIONS,
   RECORD_TYPES,
@@ -31,11 +30,7 @@ type CreateAccessRequestResult = FunctionReturnType<
 >;
 
 function toRequestError(error: unknown): string {
-  const message = error instanceof Error ? error.message : "";
-  return (
-    findAccessRequestInputError(message) ??
-    toUserFacingError(error, "The request could not be submitted. Try again.")
-  );
+  return toUserFacingError(error, "The request could not be submitted. Try again.");
 }
 
 type AccessRequestFormProps = {

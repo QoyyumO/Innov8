@@ -21,7 +21,6 @@ import {
 import { AlertIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
 import type { AlertStatus } from "../../../../../convex/lib/domain";
-import { findEmergencyInputError } from "../../../../../convex/lib/emergencyConstants";
 import { OUTCOME_BADGE_COLORS, formatRequestTime } from "../../_components/accessLabels";
 import {
   ALERT_SEVERITY_BADGE_COLORS,
@@ -68,10 +67,8 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
       await mutate({ token: sessionToken, alertId });
     } catch (error) {
       console.error(`Error trying to ${action} alert:`, error);
-      const message = error instanceof Error ? error.message : "";
-      const alreadyMatch = message.match(/Alert is already \w+/);
       setErrorMessage(
-        alreadyMatch?.[0] ?? toUserFacingError(error, "The alert could not be updated. Try again."),
+        toUserFacingError(error, "The alert could not be updated. Try again."),
       );
     } finally {
       setPendingAction(null);
@@ -88,10 +85,8 @@ export function AlertsTable({ status, pageSize = 10, compact = false }: AlertsTa
       await revokeEmergencyAccess({ token: sessionToken, grantId });
     } catch (error) {
       console.error("Error revoking emergency access:", error);
-      const message = error instanceof Error ? error.message : "";
       setErrorMessage(
-        findEmergencyInputError(message) ??
-          toUserFacingError(error, "Emergency access could not be revoked. Try again."),
+        toUserFacingError(error, "Emergency access could not be revoked. Try again."),
       );
     } finally {
       setRevokingGrantId(null);

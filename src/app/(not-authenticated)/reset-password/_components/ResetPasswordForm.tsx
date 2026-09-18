@@ -11,6 +11,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import Alert from "@/components/ui/alert/Alert";
+import { toUserFacingError } from "@/lib/userFacingError";
 
 export function ResetPasswordForm() {
   const resetPassword = useMutation(api.auth.resetPassword);
@@ -92,9 +93,7 @@ export function ResetPasswordForm() {
       }, 1500);
     } catch (error) {
       setApiError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again.",
+        toUserFacingError(error, "An unexpected error occurred. Please try again."),
       );
     } finally {
       setIsLoading(false);

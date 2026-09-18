@@ -7,7 +7,12 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError.testing";
+import {
+  ACCOUNT_SUSPENDED_CODE,
+  PERMISSION_DENIED_CODE,
+  SESSION_EXPIRED_CODE,
+} from "./lib/authConstants";
 import type { RecordType } from "./lib/domain";
 import { ALLOW_EXPIRED_REASON, ALLOW_VALIDITY_MS } from "./lib/accessWindow";
 
@@ -332,12 +337,8 @@ describe("viewAuthorisedSummary refusals", () => {
     const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
     const request = await createRequest(testBackend, ibrahimToken);
 
-    await expect(viewSummary(testBackend, securityToken, request.requestId)).rejects.toThrow(
-      PERMISSION_DENIED_MESSAGE,
-    );
-    await expect(viewSummary(testBackend, undefined, request.requestId)).rejects.toThrow(
-      /session has expired/,
-    );
+    await expect(viewSummary(testBackend, securityToken, request.requestId)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
+    await expect(viewSummary(testBackend, undefined, request.requestId)).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
   });
 
   test("suspended requester is rejected", async () => {
@@ -348,7 +349,7 @@ describe("viewAuthorisedSummary refusals", () => {
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     await testBackend.run((ctx) => ctx.db.patch(user!._id, { accountStatus: "suspended" }));
 
-    await expect(viewSummary(testBackend, token, request.requestId)).rejects.toThrow(/suspended/);
+    await expect(viewSummary(testBackend, token, request.requestId)).rejects.toSatisfy(appErrorCode(ACCOUNT_SUSPENDED_CODE));
   });
 
   test("malformed and unknown request ids return null", async () => {

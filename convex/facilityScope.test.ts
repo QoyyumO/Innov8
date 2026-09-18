@@ -7,7 +7,9 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { loginDemoUser } from "./lib/loginForTests";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError.testing";
+import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
+import { ALERT_NOT_FOUND_CODE } from "./lib/services/alertService";
 import { startOfLagosDay } from "./lib/dashboardConstants";
 import { hashPassword } from "./lib/password";
 import type { UserRole } from "./lib/roles";
@@ -244,7 +246,7 @@ describe("hospital admin scope (INN-52)", () => {
         token: adminToken,
         alertId: aishaAlert.alertId,
       }),
-    ).rejects.toThrow("Alert not found");
+    ).rejects.toSatisfy(appErrorCode(ALERT_NOT_FOUND_CODE));
 
     await testBackend.mutation(api.alerts.acknowledgeAlert, {
       token: adminToken,
@@ -299,7 +301,7 @@ describe("hospital admin scope (INN-52)", () => {
         token: adminToken,
         grantId: flows.aishaGrant.grantId,
       }),
-    ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     await testBackend.mutation(api.emergency.revokeEmergencyAccess, {
       token: adminToken,
       grantId: flows.ibrahimGrant.grantId,

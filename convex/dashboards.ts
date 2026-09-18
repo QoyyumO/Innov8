@@ -1,7 +1,7 @@
 import { query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { isAuthErrorMessage } from "./lib/authConstants";
+import { isAuthAppError } from "./lib/appError";
 import {
   ACTIVE_GRANT_LIMIT,
   AUDIT_TODAY_COUNT_LIMIT,
@@ -114,10 +114,6 @@ const facilityViewValidator = v.object({
   patientCount: v.number(),
 });
 
-function isAuthError(error: unknown): boolean {
-  return error instanceof Error && isAuthErrorMessage(error.message);
-}
-
 const ACCESS_PURPOSES: readonly Purpose[] = [
   "treatment",
   "emergency",
@@ -228,7 +224,7 @@ export const getClinicianDashboard = query({
     try {
       user = (await requireClinicianSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -519,7 +515,7 @@ export const getSecurityDashboard = query({
       user = (await requireSession(ctx, args.token)).user;
       requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -603,7 +599,7 @@ export const getPatientDashboard = query({
     try {
       user = (await requirePatientSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -669,7 +665,7 @@ export const listFacilities = query({
     try {
       await requireSession(ctx, args.token);
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return [];
       }
       throw error;

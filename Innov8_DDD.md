@@ -39,10 +39,11 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-53** — FacilityStats: stored worker and patient totals per Facility, updated whenever a user or patient is created or changes facility.
 - **INN-46** — Patient portal: a User with role `patient` is linked to one Patient via `users.patientId` (seeded Chioma → PAT-002391). `getPatientDashboard` returns that identity, home Facility, and a bounded list of AuditEvents that name them. Clinician sessions cannot read it as the patient.
 - **INN-57** — Demo Users are created by seed (`internal.auth.ensureDemoUsers`). Public login does not insert users; a suspended demo account stays suspended.
+- **INN-60** — User-facing validation throws `ConvexError({ code, message })` so production keeps the payload. The client reads `error.data`, not a substring of `error.message`.
 
 ## Next (live demo path)
 
-The MVP demo path is live end to end. INN-64 / INN-61 are in progress (sessions delete themselves at `expiresAt`, so expiry is reactive, and the cleanup queries are bounded). INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
+The MVP demo path is live end to end. INN-60 (typed `ConvexError` for validation) is this branch. INN-5–INN-17 and INN-34 stay **Canceled**; open new tickets instead of reviving those ids.
 
 ## Entities (MVP)
 

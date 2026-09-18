@@ -7,8 +7,14 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError.testing";
 import {
+  PERMISSION_DENIED_CODE,
+  SESSION_EXPIRED_CODE,
+} from "./lib/authConstants";
+import {
+  ALERT_INVALID_STATUS_CODE,
+  ALERT_NOT_FOUND_CODE,
   BLOCK_ALERT_TITLE,
   HARVEST_ALERT_TITLE,
   raiseBlockAlert,
@@ -288,13 +294,11 @@ describe("simulateBulkHarvest", () => {
     const patientToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
 
     for (const token of [securityToken, patientToken]) {
-      await expect(simulateHarvest(testBackend, token)).rejects.toThrow(
-        PERMISSION_DENIED_MESSAGE,
-      );
+      await expect(simulateHarvest(testBackend, token)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     }
     await expect(
       testBackend.mutation(api.accessRequests.simulateBulkHarvest, { publicId: "PAT-002391" }),
-    ).rejects.toThrow(/session has expired/);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
     expect(await storedAlerts(testBackend)).toHaveLength(0);
   });
 
@@ -516,14 +520,14 @@ describe("acknowledgeAlert and closeAlert", () => {
 
     await expect(
       testBackend.mutation(api.alerts.acknowledgeAlert, { token: securityToken, alertId }),
-    ).rejects.toThrow("Alert is already acknowledged");
+    ).rejects.toSatisfy(appErrorCode(ALERT_INVALID_STATUS_CODE));
     await testBackend.mutation(api.alerts.closeAlert, { token: securityToken, alertId });
     await expect(
       testBackend.mutation(api.alerts.closeAlert, { token: securityToken, alertId }),
-    ).rejects.toThrow("Alert is already closed");
+    ).rejects.toSatisfy(appErrorCode(ALERT_INVALID_STATUS_CODE));
     await expect(
       testBackend.mutation(api.alerts.acknowledgeAlert, { token: securityToken, alertId }),
-    ).rejects.toThrow("Alert is already closed");
+    ).rejects.toSatisfy(appErrorCode(ALERT_INVALID_STATUS_CODE));
 
     const transitionEvents = await testBackend.run(async (ctx) =>
       (await ctx.db.query("auditEvents").take(100)).filter(
@@ -542,14 +546,14 @@ describe("acknowledgeAlert and closeAlert", () => {
     for (const token of [ibrahimToken, fatimaToken]) {
       await expect(
         testBackend.mutation(api.alerts.acknowledgeAlert, { token, alertId }),
-      ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+      ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
       await expect(
         testBackend.mutation(api.alerts.closeAlert, { token, alertId }),
-      ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+      ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     }
     await expect(
       testBackend.mutation(api.alerts.closeAlert, { alertId }),
-    ).rejects.toThrow(/session has expired/);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
     const [alert] = await storedAlerts(testBackend);
     expect(alert.status).toBe("open");
     const actions = await testBackend.run(async (ctx) =>
@@ -568,7 +572,7 @@ describe("acknowledgeAlert and closeAlert", () => {
     for (const alertId of ["nope", "", requestId as string]) {
       await expect(
         testBackend.mutation(api.alerts.acknowledgeAlert, { token: securityToken, alertId }),
-      ).rejects.toThrow("Alert not found");
+      ).rejects.toSatisfy(appErrorCode(ALERT_NOT_FOUND_CODE));
     }
   });
 });

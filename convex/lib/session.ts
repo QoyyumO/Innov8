@@ -3,9 +3,12 @@ import { Doc, Id } from "../_generated/dataModel";
 import { Scheduler } from "convex/server";
 import { internal } from "../_generated/api";
 import {
+  ACCOUNT_SUSPENDED_CODE,
   ACCOUNT_SUSPENDED_MESSAGE,
+  SESSION_EXPIRED_CODE,
   SESSION_EXPIRED_MESSAGE,
 } from "./authConstants";
+import { throwAppError } from "./appError";
 
 export const SESSION_DURATION_MS = 30 * 60 * 1000;
 export const PERSISTENT_SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -107,21 +110,21 @@ export async function requireSession(
   token: string | undefined,
 ): Promise<{ user: Doc<"users">; session: Doc<"sessions"> }> {
   if (!token) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
+    throwAppError(SESSION_EXPIRED_CODE, SESSION_EXPIRED_MESSAGE);
   }
 
   const session = await getUnexpiredSession(ctx.db, token);
   if (!session) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
+    throwAppError(SESSION_EXPIRED_CODE, SESSION_EXPIRED_MESSAGE);
   }
 
   const user = await ctx.db.get(session.userId);
   if (!user) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
+    throwAppError(SESSION_EXPIRED_CODE, SESSION_EXPIRED_MESSAGE);
   }
 
   if (user.accountStatus !== "active") {
-    throw new Error(ACCOUNT_SUSPENDED_MESSAGE);
+    throwAppError(ACCOUNT_SUSPENDED_CODE, ACCOUNT_SUSPENDED_MESSAGE);
   }
 
   return { user, session };
@@ -143,12 +146,12 @@ export function publicUser(user: Doc<"users">) {
 export async function requireSessionUser(db: DatabaseReader, token: string) {
   const userId = await validateSessionToken(db, token);
   if (!userId) {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
+    throwAppError(SESSION_EXPIRED_CODE, SESSION_EXPIRED_MESSAGE);
   }
 
   const user = await db.get(userId);
   if (!user || user.accountStatus !== "active") {
-    throw new Error(SESSION_EXPIRED_MESSAGE);
+    throwAppError(SESSION_EXPIRED_CODE, SESSION_EXPIRED_MESSAGE);
   }
 
   return user;

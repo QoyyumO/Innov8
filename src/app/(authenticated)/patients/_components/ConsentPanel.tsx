@@ -17,7 +17,6 @@ import {
   CONSENT_DURATION_MS,
   CONSENT_NOTE_MAX_LENGTH,
   CONSENT_NOTE_MIN_LENGTH,
-  findConsentInputError,
 } from "../../../../../convex/lib/consentConstants";
 import { formatRequestTime } from "../../_components/accessLabels";
 
@@ -115,10 +114,8 @@ export function ConsentPanel({ publicId }: { publicId: string }) {
       setIsConfirmed(false);
     } catch (error) {
       console.error("Error recording consent:", error);
-      const message = error instanceof Error ? error.message : "";
       setErrorMessage(
-        findConsentInputError(message) ??
-          toUserFacingError(error, "Consent could not be recorded. Try again."),
+        toUserFacingError(error, "Consent could not be recorded. Try again."),
       );
     } finally {
       setIsSubmitting(false);

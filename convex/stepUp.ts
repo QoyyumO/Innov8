@@ -1,7 +1,11 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { throwAppError } from "./lib/appError";
 import { requireClinicianSession } from "./lib/roles";
-import { STEP_UP_NOT_ELIGIBLE_MESSAGE } from "./lib/stepUpConstants";
+import {
+  STEP_UP_NOT_ELIGIBLE_CODE,
+  STEP_UP_NOT_ELIGIBLE_MESSAGE,
+} from "./lib/stepUpConstants";
 import { completeStepUp } from "./lib/services/stepUpService";
 
 /**
@@ -23,7 +27,7 @@ export const completeVerification = mutation({
     const sessionContext = await requireClinicianSession(ctx, args.token);
     const requestId = ctx.db.normalizeId("accessRequests", args.requestId);
     if (!requestId) {
-      throw new Error(STEP_UP_NOT_ELIGIBLE_MESSAGE);
+      throwAppError(STEP_UP_NOT_ELIGIBLE_CODE, STEP_UP_NOT_ELIGIBLE_MESSAGE);
     }
     return await completeStepUp(ctx.db, sessionContext, requestId, args.password, Date.now());
   },

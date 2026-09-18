@@ -7,14 +7,20 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
-import { PERMISSION_DENIED_MESSAGE } from "./lib/authConstants";
+import { appErrorCode } from "./lib/appError.testing";
+import {
+  ACCOUNT_SUSPENDED_CODE,
+  PERMISSION_DENIED_CODE,
+  SESSION_EXPIRED_CODE,
+} from "./lib/authConstants";
 import {
   EMERGENCY_ACCESS_TTL_MS,
-  EMERGENCY_ALREADY_ACTIVE_MESSAGE,
-  EMERGENCY_GRANT_ALREADY_ENDED_MESSAGE,
-  EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE,
-  JUSTIFICATION_TOO_LONG_MESSAGE,
-  JUSTIFICATION_TOO_SHORT_MESSAGE,
+  EMERGENCY_ALREADY_ACTIVE_CODE,
+  EMERGENCY_GRANT_ALREADY_ENDED_CODE,
+  EMERGENCY_GRANT_NOT_FOUND_CODE,
+  EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE,
+  JUSTIFICATION_TOO_LONG_CODE,
+  JUSTIFICATION_TOO_SHORT_CODE,
 } from "./lib/emergencyConstants";
 import { EMERGENCY_ALERT_TITLE } from "./lib/services/alertService";
 import type { RecordType } from "./lib/domain";
@@ -205,16 +211,18 @@ describe("grantEmergencyAccess", () => {
   });
 
   test.each([
-    ["", JUSTIFICATION_TOO_SHORT_MESSAGE],
-    ["   ", JUSTIFICATION_TOO_SHORT_MESSAGE],
-    ["urgent", JUSTIFICATION_TOO_SHORT_MESSAGE],
-    ["x".repeat(501), JUSTIFICATION_TOO_LONG_MESSAGE],
-  ])("rejects justification %j", async (justification, message) => {
+    ["", JUSTIFICATION_TOO_SHORT_CODE],
+    ["   ", JUSTIFICATION_TOO_SHORT_CODE],
+    ["urgent", JUSTIFICATION_TOO_SHORT_CODE],
+    ["x".repeat(501), JUSTIFICATION_TOO_LONG_CODE],
+  ])("rejects justification %j", async (justification, code) => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
-    await expect(breakGlass(testBackend, token, { justification })).rejects.toThrow(message);
+    await expect(breakGlass(testBackend, token, { justification })).rejects.toSatisfy(
+      appErrorCode(code),
+    );
     const grants = await testBackend.run((ctx) => ctx.db.query("emergencyAccess").take(5));
     expect(grants).toHaveLength(0);
   });
@@ -225,7 +233,7 @@ describe("grantEmergencyAccess", () => {
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
 
     await breakGlass(testBackend, token);
-    await expect(breakGlass(testBackend, token)).rejects.toThrow(EMERGENCY_ALREADY_ACTIVE_MESSAGE);
+    await expect(breakGlass(testBackend, token)).rejects.toSatisfy(appErrorCode(EMERGENCY_ALREADY_ACTIVE_CODE));
     const other = await breakGlass(testBackend, token, { publicId: "PAT-000777" });
     expect(other.publicId).toBe("PAT-000777");
   });
@@ -251,14 +259,14 @@ describe("grantEmergencyAccess", () => {
     await seedDemoWorld(testBackend);
     for (const email of [SECURITY_EMAIL, ADMIN_EMAIL, CHIOMA_EMAIL]) {
       const token = await loginDemoUser(testBackend, email);
-      await expect(breakGlass(testBackend, token)).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+      await expect(breakGlass(testBackend, token)).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     }
-    await expect(breakGlass(testBackend, undefined)).rejects.toThrow(/session has expired/);
+    await expect(breakGlass(testBackend, undefined)).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
 
     const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const user = await testBackend.query(api.auth.getCurrentUser, { token });
     await testBackend.run((ctx) => ctx.db.patch(user!._id, { accountStatus: "suspended" }));
-    await expect(breakGlass(testBackend, token)).rejects.toThrow(/suspended/);
+    await expect(breakGlass(testBackend, token)).rejects.toSatisfy(appErrorCode(ACCOUNT_SUSPENDED_CODE));
   });
 });
 
@@ -334,16 +342,14 @@ describe("linking to an existing request", () => {
     await setDecisionOutcome(testBackend, ibrahimBlocked.requestId, "BLOCK");
 
     for (const requestId of [allowed.requestId, harvest.requestId, fatimaBlocked.requestId, "not-an-id"]) {
-      await expect(breakGlass(testBackend, ibrahimToken, { requestId })).rejects.toThrow(
-        EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE,
-      );
+      await expect(breakGlass(testBackend, ibrahimToken, { requestId })).rejects.toSatisfy(appErrorCode(EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE));
     }
     await expect(
       breakGlass(testBackend, ibrahimToken, {
         requestId: ibrahimBlocked.requestId,
         publicId: "PAT-000777",
       }),
-    ).rejects.toThrow(EMERGENCY_REQUEST_NOT_ELIGIBLE_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(EMERGENCY_REQUEST_NOT_ELIGIBLE_CODE));
 
     const grants = await testBackend.run((ctx) => ctx.db.query("emergencyAccess").take(5));
     expect(grants).toHaveLength(0);
@@ -464,7 +470,7 @@ describe("revokeEmergencyAccess", () => {
         token: fatimaToken,
         grantId: first.grantId,
       }),
-    ).rejects.toThrow(PERMISSION_DENIED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
     await testBackend.mutation(api.emergency.revokeEmergencyAccess, {
       token: securityToken,
       grantId: first.grantId,
@@ -474,7 +480,7 @@ describe("revokeEmergencyAccess", () => {
         token: securityToken,
         grantId: first.grantId,
       }),
-    ).rejects.toThrow(EMERGENCY_GRANT_ALREADY_ENDED_MESSAGE);
+    ).rejects.toSatisfy(appErrorCode(EMERGENCY_GRANT_ALREADY_ENDED_CODE));
 
     const second = await breakGlass(testBackend, ibrahimToken);
     await testBackend.mutation(api.emergency.revokeEmergencyAccess, {
@@ -500,11 +506,11 @@ describe("revokeEmergencyAccess", () => {
     for (const grantId of ["nope", patientIds[0] as string]) {
       await expect(
         testBackend.mutation(api.emergency.revokeEmergencyAccess, { token, grantId }),
-      ).rejects.toThrow("Emergency access not found");
+      ).rejects.toSatisfy(appErrorCode(EMERGENCY_GRANT_NOT_FOUND_CODE));
     }
     await expect(
       testBackend.mutation(api.emergency.revokeEmergencyAccess, { grantId: grant.grantId }),
-    ).rejects.toThrow(/session has expired/);
+    ).rejects.toSatisfy(appErrorCode(SESSION_EXPIRED_CODE));
   });
 });
 
