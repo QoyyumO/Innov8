@@ -44,12 +44,13 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-56](https://linear.app/innov8-health/issue/INN-56) audit patient searches that reach an index, hit or miss
 - [INN-57](https://linear.app/innov8-health/issue/INN-57) public `login` verifies a password and never re-seeds demo users
 - [INN-62](https://linear.app/innov8-health/issue/INN-62) dashboards read the newest break-glass grant, not the oldest
+- [INN-66](https://linear.app/innov8-health/issue/INN-66) `verifyPassword` never throws on a malformed stored hash
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
 ### Next
 
-[INN-66](https://linear.app/innov8-health/issue/INN-66) harden `verifyPassword`: no throw on a malformed stored hash, compare without short-circuiting (this branch).
+[INN-64](https://linear.app/innov8-health/issue/INN-64) + [INN-61](https://linear.app/innov8-health/issue/INN-61) sessions expire themselves and the cleanup queries are bounded (this branch).
 
 When a ticket changes what works, update this file, `AGENTS.md`, `Innov8_DDD.md`, `docs/README.md`, and the README "What works today" table in the same PR.
 

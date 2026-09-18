@@ -93,7 +93,7 @@ export const login = mutation({
     }
 
     const { token, sessionId } = await createSession(
-      ctx.db,
+      ctx,
       user._id,
       args.keepMeLoggedIn ? "persistent" : "default",
     );
@@ -138,14 +138,22 @@ export const getCurrentUser = query({
   },
 });
 
+/**
+ * `createPasswordResetToken` clears this user's tokens before every insert and
+ * is the only writer, so at most one row per user exists. The bound is what
+ * replaces the old `.collect()` (INN-64) and is defence in case that invariant
+ * ever changes - not a paging loop, which would be pretending.
+ */
+const RESET_TOKEN_LOOKUP_LIMIT = 100;
+
 async function deleteUserResetTokens(
   ctx: MutationCtx,
   userId: Id<"users">,
 ): Promise<void> {
   const tokens = await ctx.db
     .query("passwordResetTokens")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_userId", (query) => query.eq("userId", userId))
+    .take(RESET_TOKEN_LOOKUP_LIMIT);
 
   for (const tokenRow of tokens) {
     await ctx.db.delete(tokenRow._id);
@@ -156,13 +164,21 @@ async function hasRecentResetToken(
   ctx: MutationCtx,
   userId: Id<"users">,
 ): Promise<boolean> {
-  const tokens = await ctx.db
+  // `_creationTime` is monotonic, so only the newest row can be inside the
+  // cooldown - reading one beats reading every token the user was ever issued.
+  // `by_userId` is pinned by eq(), leaving `_creationTime` as the ordering
+  // field, so desc + first is the newest. Today at most one row exists
+  // anyway (see above); the ordering is what keeps this right if that changes.
+  const newest = await ctx.db
     .query("passwordResetTokens")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_userId", (query) => query.eq("userId", userId))
+    .order("desc")
+    .first();
 
-  const cooldownCutoff = Date.now() - RESET_REQUEST_COOLDOWN_MS;
-  return tokens.some((tokenRow) => tokenRow._creationTime > cooldownCutoff);
+  if (!newest) {
+    return false;
+  }
+  return newest._creationTime > Date.now() - RESET_REQUEST_COOLDOWN_MS;
 }
 
 async function createPasswordResetToken(
@@ -276,7 +292,7 @@ export const resetPassword = mutation({
       hashedPassword: await hashPassword(args.newPassword),
     });
     await ctx.db.patch(tokenRow._id, { usedAt: Date.now() });
-    await deleteAllUserSessions(ctx.db, user._id);
+    await deleteAllUserSessions(ctx, user._id);
     return { success: true as const };
   },
 });
@@ -356,7 +372,7 @@ export const changePassword = mutation({
     await ctx.db.patch(user._id, {
       hashedPassword: await hashPassword(args.newPassword),
     });
-    await deleteOtherUserSessions(ctx.db, user._id, args.token);
+    await deleteOtherUserSessions(ctx, user._id, args.token);
     return { success: true };
   },
 });
