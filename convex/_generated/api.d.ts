@@ -28,6 +28,7 @@ import type * as lib_consentConstants from "../lib/consentConstants.js";
 import type * as lib_dashboardConstants from "../lib/dashboardConstants.js";
 import type * as lib_decisionEvaluation from "../lib/decisionEvaluation.js";
 import type * as lib_demoIds from "../lib/demoIds.js";
+import type * as lib_demoPatientAccount from "../lib/demoPatientAccount.js";
 import type * as lib_demoUsers from "../lib/demoUsers.js";
 import type * as lib_domain from "../lib/domain.js";
 import type * as lib_emergencyConstants from "../lib/emergencyConstants.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   "lib/dashboardConstants": typeof lib_dashboardConstants;
   "lib/decisionEvaluation": typeof lib_decisionEvaluation;
   "lib/demoIds": typeof lib_demoIds;
+  "lib/demoPatientAccount": typeof lib_demoPatientAccount;
   "lib/demoUsers": typeof lib_demoUsers;
   "lib/domain": typeof lib_domain;
   "lib/emergencyConstants": typeof lib_emergencyConstants;

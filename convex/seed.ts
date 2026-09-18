@@ -13,6 +13,7 @@ import {
   patchCountedUser,
 } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
+import { syncDemoPatientLogins } from "./lib/demoPatientAccount";
 import {
   DEMO_PASSWORD,
   DEMO_USERS,
@@ -135,6 +136,7 @@ export const seedHealthcareWorkers = internalMutation({
     let skipped = 0;
 
     for (const demoUser of DEMO_USERS) {
+      const isPatientLogin = demoUser.publicId !== undefined;
       const workerSeed = DEMO_WORKER_SEEDS.find(
         (seed) => seed.email === demoUser.email,
       );
@@ -147,28 +149,33 @@ export const seedHealthcareWorkers = internalMutation({
         .withIndex("by_email", (q) => q.eq("email", demoUser.email))
         .first();
 
-      const workerFields: {
-        facilityId?: Id<"facilities">;
-        workerId?: string;
-        normalAccessHours?: { start: string; end: string };
-        normalPatientVolume?: number;
-      } = {};
-      if (matchedFacility) {
-        workerFields.facilityId = matchedFacility._id;
-      }
-      if (workerSeed) {
-        workerFields.workerId = workerSeed.workerId;
-        workerFields.normalAccessHours = workerSeed.normalAccessHours;
-        workerFields.normalPatientVolume = workerSeed.normalPatientVolume;
-      }
-
       if (!existing) {
         throw new Error(
           `Demo user ${demoUser.email} missing after ensureDemoUsers`,
         );
       }
 
-      await patchCountedUser(ctx.db, existing, workerFields);
+      if (isPatientLogin) {
+        if (matchedFacility && existing.facilityId !== matchedFacility._id) {
+          await patchCountedUser(ctx.db, existing, { facilityId: matchedFacility._id });
+        }
+      } else {
+        const workerFields: {
+          facilityId?: Id<"facilities">;
+          workerId?: string;
+          normalAccessHours?: { start: string; end: string };
+          normalPatientVolume?: number;
+        } = {};
+        if (matchedFacility) {
+          workerFields.facilityId = matchedFacility._id;
+        }
+        if (workerSeed) {
+          workerFields.workerId = workerSeed.workerId;
+          workerFields.normalAccessHours = workerSeed.normalAccessHours;
+          workerFields.normalPatientVolume = workerSeed.normalPatientVolume;
+        }
+        await patchCountedUser(ctx.db, existing, workerFields);
+      }
       updated += 1;
     }
 
@@ -225,31 +232,11 @@ export const seedHealthcareWorkers = internalMutation({
       inserted += 1;
     }
 
-    const demoPatient = await ctx.db
-      .query("patients")
-      .withIndex("by_publicId", (query) => query.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
-      .first();
-    if (demoPatient) {
-      await linkChiomaPatientAccount(ctx, demoPatient._id);
-    }
+    await syncDemoPatientLogins(ctx.db);
 
     return { inserted, updated, skipped };
   },
 });
-
-async function linkChiomaPatientAccount(
-  ctx: MutationCtx,
-  patientId: Id<"patients">,
-) {
-  const chioma = await ctx.db
-    .query("users")
-    .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
-    .unique();
-  if (!chioma || chioma.patientId === patientId) {
-    return;
-  }
-  await patchCountedUser(ctx.db, chioma, { patientId });
-}
 
 async function unlinkChiomaPatientAccount(ctx: MutationCtx) {
   const chioma = await ctx.db
@@ -416,7 +403,7 @@ async function upsertSyntheticPatient(
   if (isDemoPatient) {
     const abuja = requireFacility(facilities, "FMC-ABJ");
     await ensureDemoConsent(ctx, patientId, abuja._id, lagos._id);
-    await linkChiomaPatientAccount(ctx, patientId);
+    await syncDemoPatientLogins(ctx.db);
   }
 
   const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);

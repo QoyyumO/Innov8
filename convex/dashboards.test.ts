@@ -556,25 +556,11 @@ describe("listFacilities", () => {
 });
 
 describe("getPatientDashboard", () => {
-  async function linkChioma(testBackend: TestBackend, patientId: Id<"patients">) {
-    await testBackend.run(async (ctx) => {
-      const chioma = await ctx.db
-        .query("users")
-        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
-        .unique();
-      if (!chioma) {
-        throw new Error("Missing Chioma demo user");
-      }
-      await ctx.db.patch(chioma._id, { patientId });
-    });
-  }
-
   test("Chioma sees PAT-002391 and events that name her, not another patient", async () => {
     const testBackend = createTest();
     const world = await seedDemoWorld(testBackend);
     const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
     const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
-    await linkChioma(testBackend, world.patientId);
     await walkDemo(testBackend, ibrahimToken);
 
     const otherPatientId = await testBackend.run(async (ctx) => {
@@ -637,9 +623,29 @@ describe("getPatientDashboard", () => {
     expect(
       await testBackend.query(api.dashboards.getPatientDashboard, { token: ibrahimToken }),
     ).toBeNull();
+    expect(await testBackend.query(api.dashboards.getPatientDashboard, {})).toBeNull();
+
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Missing Chioma demo user");
+      }
+      await ctx.db.replace(chioma._id, {
+        email: chioma.email,
+        hashedPassword: chioma.hashedPassword,
+        roles: chioma.roles,
+        hospital: chioma.hospital,
+        department: chioma.department,
+        accountStatus: chioma.accountStatus,
+        profile: chioma.profile,
+        facilityId: chioma.facilityId,
+      });
+    });
     expect(
       await testBackend.query(api.dashboards.getPatientDashboard, { token: chiomaToken }),
     ).toBeNull();
-    expect(await testBackend.query(api.dashboards.getPatientDashboard, {})).toBeNull();
   });
 });

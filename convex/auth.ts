@@ -33,6 +33,7 @@ import {
   validateSessionToken,
 } from "./lib/session";
 import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
+import { syncDemoPatientLogins } from "./lib/demoPatientAccount";
 import { insertCountedUser } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
 
@@ -58,12 +59,13 @@ export const ensureDemoUsers = internalMutation({
         hashedPassword,
         roles: user.roles,
         hospital: user.hospital,
-        department: user.department,
+        ...(user.department ? { department: user.department } : {}),
         accountStatus: "active",
         profile: user.profile,
       });
     }
 
+    await syncDemoPatientLogins(ctx.db);
     return null;
   },
 });
