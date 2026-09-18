@@ -45,6 +45,7 @@ describe("demo-scale seed", () => {
         "allergies",
         "medications",
         "diagnoses",
+        "lab_results",
       ]),
     );
 

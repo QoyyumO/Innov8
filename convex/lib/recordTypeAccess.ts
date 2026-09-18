@@ -4,9 +4,9 @@ import { RecordType } from "./domain";
  * Which clinical sections a clinician role may request (INN-79).
  * Safe to import from the Next.js client.
  *
- * Doctors and nurses keep the Track C four types. Pharmacists get
- * medications and allergies. Laboratory staff get diagnoses until a
- * dedicated lab/results type exists. Do not invent a full EMR.
+ * Doctors and nurses get the Track C four types plus lab results (INN-80).
+ * Pharmacists get medications and allergies. Laboratory staff get diagnoses
+ * and lab results. Do not invent a full EMR.
  */
 
 const ALL_RECORD_TYPES: readonly RecordType[] = [
@@ -14,10 +14,11 @@ const ALL_RECORD_TYPES: readonly RecordType[] = [
   "allergies",
   "medications",
   "diagnoses",
+  "lab_results",
 ];
 
 const PHARMACIST_RECORD_TYPES: readonly RecordType[] = ["allergies", "medications"];
-const LABORATORY_RECORD_TYPES: readonly RecordType[] = ["diagnoses"];
+const LABORATORY_RECORD_TYPES: readonly RecordType[] = ["diagnoses", "lab_results"];
 
 export function allowedRecordTypesForRoles(
   roles: readonly string[],

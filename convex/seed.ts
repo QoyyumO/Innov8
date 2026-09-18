@@ -36,7 +36,9 @@ import {
   LAST_NAMES,
   MEDICATIONS,
   NORMAL_PURPOSES,
+  LAB_RESULTS,
   RECORD_TYPES,
+  TRACK_C_RECORD_TYPES,
   SEED_ACCESS_EVENT_BATCH_SIZE,
   SEED_ACCESS_EVENT_COUNT,
   SEED_CLEAR_BATCH_SIZE,
@@ -308,6 +310,7 @@ async function upsertRecordIndexAndSummary(
     medications: string[];
     diagnoses: string[];
     conditions: string[];
+    labResults: string[];
     updatedAt: number;
   },
 ) {
@@ -344,6 +347,7 @@ async function upsertRecordIndexAndSummary(
       medications: args.medications,
       diagnoses: args.diagnoses,
       conditions: args.conditions,
+      labResults: args.labResults,
       updatedAt: args.updatedAt,
     });
   } else {
@@ -355,6 +359,7 @@ async function upsertRecordIndexAndSummary(
       medications: args.medications,
       diagnoses: args.diagnoses,
       conditions: args.conditions,
+      labResults: args.labResults,
       updatedAt: args.updatedAt,
     });
   }
@@ -431,6 +436,9 @@ async function upsertSyntheticPatient(
     medications,
     diagnoses: [condition],
     conditions: [condition],
+    labResults: isDemoPatient
+      ? ["HbA1c 6.4% (synthetic Lagos panel)"]
+      : [pick(rand, LAB_RESULTS)],
     updatedAt,
   });
 }
@@ -648,7 +656,7 @@ async function seedDemoScenarioEvents(ctx: MutationCtx) {
     worker: ibrahim,
     patient: demoPatient,
     purpose: "treatment",
-    recordTypes: [...RECORD_TYPES],
+    recordTypes: [...TRACK_C_RECORD_TYPES],
     requestedAt: DEMO_ALLOW_REQUESTED_AT,
     outcome: "ALLOW",
     riskScore: 8,
@@ -663,7 +671,7 @@ async function seedDemoScenarioEvents(ctx: MutationCtx) {
     worker: ibrahim,
     patient: demoPatient,
     purpose: "administrative",
-    recordTypes: [...RECORD_TYPES],
+    recordTypes: [...TRACK_C_RECORD_TYPES],
     recordCount: 500,
     location: "off-site",
     requestedAt: DEMO_BLOCK_REQUESTED_AT,
@@ -797,6 +805,7 @@ const CLEAR_TABLES = [
   "auditEvents",
   "securityAlerts",
   "emergencyAccess",
+  "clinicalNotes",
   "accessDecisions",
   "accessRequests",
   "clinicalSummaries",

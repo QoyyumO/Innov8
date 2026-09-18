@@ -32,6 +32,7 @@ const ALL_RECORD_TYPES = [
   "allergies",
   "medications",
   "diagnoses",
+  "lab_results",
 ] as const;
 
 type TestBackend = ReturnType<typeof createTest>;
@@ -430,8 +431,8 @@ describe("getAccessRequest", () => {
   });
 });
 
-describe("record types by clinician role (INN-79)", () => {
-  test("Fatima (nurse) may request all four types; Chinedu and Aisha cannot request out-of-role types", async () => {
+describe("record types by clinician role (INN-79 / INN-80)", () => {
+  test("Fatima (nurse) may request the five types; Chinedu and Aisha cannot request out-of-role types", async () => {
     const testBackend = createTest();
     await seedDemoWorld(testBackend);
     const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
@@ -475,5 +476,21 @@ describe("record types by clinician role (INN-79)", () => {
         recordTypes: ["diagnoses"],
       }),
     ).resolves.toMatchObject({ recordTypes: ["diagnoses"] });
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: aishaToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["lab_results"],
+      }),
+    ).resolves.toMatchObject({ recordTypes: ["lab_results"] });
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: chineduToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["lab_results"],
+      }),
+    ).rejects.toSatisfy(appErrorCode(RECORD_TYPE_NOT_ALLOWED_CODE));
   });
 });

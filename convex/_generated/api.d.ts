@@ -12,6 +12,7 @@ import type * as accessRequests from "../accessRequests.js";
 import type * as alerts from "../alerts.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
+import type * as clinicalNotes from "../clinicalNotes.js";
 import type * as consents from "../consents.js";
 import type * as crons from "../crons.js";
 import type * as dashboards from "../dashboards.js";
@@ -22,6 +23,7 @@ import type * as lib_accessRequestMessages from "../lib/accessRequestMessages.js
 import type * as lib_accessWindow from "../lib/accessWindow.js";
 import type * as lib_appError from "../lib/appError.js";
 import type * as lib_authConstants from "../lib/authConstants.js";
+import type * as lib_clinicalNoteConstants from "../lib/clinicalNoteConstants.js";
 import type * as lib_consentConstants from "../lib/consentConstants.js";
 import type * as lib_dashboardConstants from "../lib/dashboardConstants.js";
 import type * as lib_decisionEvaluation from "../lib/decisionEvaluation.js";
@@ -35,6 +37,7 @@ import type * as lib_invariants from "../lib/invariants.js";
 import type * as lib_loginForTests from "../lib/loginForTests.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_publicUser from "../lib/publicUser.js";
+import type * as lib_recordTypeAccess from "../lib/recordTypeAccess.js";
 import type * as lib_riskConstants from "../lib/riskConstants.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_searchLimits from "../lib/searchLimits.js";
@@ -42,6 +45,7 @@ import type * as lib_services_accessControlService from "../lib/services/accessC
 import type * as lib_services_alertService from "../lib/services/alertService.js";
 import type * as lib_services_auditFacilityService from "../lib/services/auditFacilityService.js";
 import type * as lib_services_auditLogService from "../lib/services/auditLogService.js";
+import type * as lib_services_clinicalNoteService from "../lib/services/clinicalNoteService.js";
 import type * as lib_services_consentService from "../lib/services/consentService.js";
 import type * as lib_services_emergencyAccessService from "../lib/services/emergencyAccessService.js";
 import type * as lib_services_patientDiscoveryService from "../lib/services/patientDiscoveryService.js";
@@ -68,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   alerts: typeof alerts;
   audit: typeof audit;
   auth: typeof auth;
+  clinicalNotes: typeof clinicalNotes;
   consents: typeof consents;
   crons: typeof crons;
   dashboards: typeof dashboards;
@@ -78,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   "lib/accessWindow": typeof lib_accessWindow;
   "lib/appError": typeof lib_appError;
   "lib/authConstants": typeof lib_authConstants;
+  "lib/clinicalNoteConstants": typeof lib_clinicalNoteConstants;
   "lib/consentConstants": typeof lib_consentConstants;
   "lib/dashboardConstants": typeof lib_dashboardConstants;
   "lib/decisionEvaluation": typeof lib_decisionEvaluation;
@@ -91,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   "lib/loginForTests": typeof lib_loginForTests;
   "lib/password": typeof lib_password;
   "lib/publicUser": typeof lib_publicUser;
+  "lib/recordTypeAccess": typeof lib_recordTypeAccess;
   "lib/riskConstants": typeof lib_riskConstants;
   "lib/roles": typeof lib_roles;
   "lib/searchLimits": typeof lib_searchLimits;
@@ -98,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   "lib/services/alertService": typeof lib_services_alertService;
   "lib/services/auditFacilityService": typeof lib_services_auditFacilityService;
   "lib/services/auditLogService": typeof lib_services_auditLogService;
+  "lib/services/clinicalNoteService": typeof lib_services_clinicalNoteService;
   "lib/services/consentService": typeof lib_services_consentService;
   "lib/services/emergencyAccessService": typeof lib_services_emergencyAccessService;
   "lib/services/patientDiscoveryService": typeof lib_services_patientDiscoveryService;

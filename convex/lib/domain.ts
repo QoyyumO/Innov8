@@ -30,6 +30,7 @@ export const recordType = v.union(
   v.literal("allergies"),
   v.literal("medications"),
   v.literal("diagnoses"),
+  v.literal("lab_results"),
 );
 
 export type RecordType = Infer<typeof recordType>;
@@ -127,6 +128,7 @@ export const auditAction = v.union(
   v.literal("ConsentRecorded"),
   v.literal("ConsentRevoked"),
   v.literal("StepUpFailed"),
+  v.literal("ClinicalNoteAppended"),
 );
 
 export type AuditAction = Infer<typeof auditAction>;

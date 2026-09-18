@@ -22,11 +22,13 @@ const SECURITY_EMAIL = "security@innov8.ng";
 const LAGOS_SUMMARY = "Lagos: stable hypertension, reviewed quarterly";
 const ABUJA_SUMMARY = "ABUJA-ONLY note that must never be released";
 const LAGOS_CONDITION = "LAGOS-CONDITION-NOT-A-RECORD-TYPE";
+const LAGOS_LAB = "LAGOS-LAB-HBA1C-SYNTHETIC";
 const ALL_RECORD_TYPES: RecordType[] = [
   "medical_summary",
   "allergies",
   "medications",
   "diagnoses",
+  "lab_results",
 ];
 
 type TestBackend = ReturnType<typeof createTest>;
@@ -86,6 +88,7 @@ async function seedDemoWorld(
         medications: ["Lisinopril 10mg"],
         diagnoses: ["Hypertension"],
         conditions: [LAGOS_CONDITION],
+        labResults: [LAGOS_LAB],
         updatedAt: 1_700_000_000_000,
       });
     }
@@ -97,6 +100,7 @@ async function seedDemoWorld(
       medications: ["ABUJA-MED"],
       diagnoses: ["ABUJA-DIAGNOSIS"],
       conditions: [],
+      labResults: ["ABUJA-LAB"],
       updatedAt: Date.now(),
     });
     return { abujaId, lagosId, patientId };
@@ -172,6 +176,7 @@ function assertNoSummaryText(payload: unknown) {
     "Lisinopril",
     "Hypertension",
     LAGOS_CONDITION,
+    LAGOS_LAB,
     "ABUJA-",
   ]) {
     expect(serialized).not.toContain(secret);
@@ -206,6 +211,7 @@ describe("viewAuthorisedSummary after ALLOW", () => {
         allergies: ["Penicillin"],
         medications: ["Lisinopril 10mg"],
         diagnoses: ["Hypertension"],
+        labResults: [LAGOS_LAB],
       },
       summaryUpdatedAt: 1_700_000_000_000,
     });
@@ -213,6 +219,32 @@ describe("viewAuthorisedSummary after ALLOW", () => {
     expect(serialized).not.toContain("ABUJA-");
     expect(serialized).not.toContain(ABUJA_SUMMARY);
     expect(serialized).not.toContain(LAGOS_CONDITION);
+    expect(serialized).not.toContain("ABUJA-LAB");
+  });
+
+  test("lab results are returned only when requested, never conditions", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const token = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+
+    const labsOnly = await createRequest(testBackend, token, ["lab_results"]);
+    const labsView = await viewSummary(testBackend, token, labsOnly.requestId);
+    expect(labsView).toMatchObject({
+      status: "authorised",
+      sections: { labResults: [LAGOS_LAB] },
+    });
+    expect(JSON.stringify(labsView)).not.toContain(LAGOS_CONDITION);
+    expect(JSON.stringify(labsView)).not.toContain(LAGOS_SUMMARY);
+
+    const fourTypes = await createRequest(testBackend, token, [
+      "medical_summary",
+      "allergies",
+      "medications",
+      "diagnoses",
+    ]);
+    const fourView = await viewSummary(testBackend, token, fourTypes.requestId);
+    expect(JSON.stringify(fourView)).not.toContain(LAGOS_LAB);
+    expect(JSON.stringify(fourView)).not.toContain(LAGOS_CONDITION);
   });
 
   test("only the requested record types are returned", async () => {

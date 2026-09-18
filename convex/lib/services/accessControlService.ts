@@ -35,6 +35,7 @@ export const RECORD_TYPE_LABELS: Record<RecordType, string> = {
   allergies: "allergies",
   medications: "medications",
   diagnoses: "diagnoses",
+  lab_results: "lab results",
 };
 
 export type FacilitySummary = {

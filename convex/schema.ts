@@ -109,8 +109,23 @@ export default defineSchema({
     medications: v.array(v.string()),
     diagnoses: v.array(v.string()),
     conditions: v.array(v.string()),
+    /** INN-80: optional so rows seeded before lab_results still load. */
+    labResults: v.optional(v.array(v.string())),
     updatedAt: v.number(),
   }).index("by_patientId_facilityId", ["patientId", "facilityId"]),
+
+  /** INN-81: append-only synthetic notes after ALLOW. Not a chart editor. */
+  clinicalNotes: defineTable({
+    requestId: v.id("accessRequests"),
+    patientId: v.id("patients"),
+    actorId: v.id("users"),
+    sessionId: v.id("sessions"),
+    sourceFacilityId: v.id("facilities"),
+    body: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_requestId_createdAt", ["requestId", "createdAt"])
+    .index("by_patientId_createdAt", ["patientId", "createdAt"]),
 
   accessRequests: defineTable({
     actorId: v.id("users"),

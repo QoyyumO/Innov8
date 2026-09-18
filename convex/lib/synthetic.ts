@@ -161,11 +161,23 @@ export const ALLERGIES = [
   "Latex",
 ] as const;
 
-export const RECORD_TYPES: readonly RecordType[] = [
+/** Demo harvest and Ibrahim's seeded ALLOW/BLOCK keep the original four (INN-39). */
+export const TRACK_C_RECORD_TYPES: readonly RecordType[] = [
   "medical_summary",
   "allergies",
   "medications",
   "diagnoses",
+];
+
+export const RECORD_TYPES: readonly RecordType[] = [
+  ...TRACK_C_RECORD_TYPES,
+  "lab_results",
+];
+
+export const LAB_RESULTS: readonly string[] = [
+  "HbA1c 6.4% (synthetic)",
+  "Creatinine 88 µmol/L (synthetic)",
+  "FBC within reference range (synthetic)",
 ];
 
 export const PURPOSES: readonly Purpose[] = [
