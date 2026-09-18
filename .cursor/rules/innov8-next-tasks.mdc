@@ -51,6 +51,8 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-68](https://linear.app/innov8-health/issue/INN-68) role-filter the sidebar; clinician dashboard wins over patient; auth-form errors
 - [INN-63](https://linear.app/innov8-health/issue/INN-63) status-filtered security alerts order by `createdAt`
 - [INN-67](https://linear.app/innov8-health/issue/INN-67) seed `SecurityAlertRaised` `entityId` is the alert, via `appendAuditEvent`
+- [INN-69](https://linear.app/innov8-health/issue/INN-69) patient detail lookups write `PatientDiscovered` (including misses)
+- [INN-70](https://linear.app/innov8-health/issue/INN-70) `users.sessionsInvalidatedAt` makes log-out-everywhere O(1)
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 

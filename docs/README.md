@@ -37,6 +37,8 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-65-remove-dead-requireunused-helpers](features/INN-65-remove-dead-requireunused-helpers/PLAN.md) | Remove unused `requireUnused*` uniqueness helpers | Done on `main` ([#33](https://github.com/QoyyumO/Innov8/pull/33)) |
 | [INN-68-role-filter-sidebar-and-auth-forms](features/INN-68-role-filter-sidebar-and-auth-forms/PLAN.md) | Role-filter the sidebar and tidy auth-form errors | Done on `main` ([#35](https://github.com/QoyyumO/Innov8/pull/35)) |
 | [INN-63-status-filtered-alerts-newest-first](features/INN-63-status-filtered-alerts-newest-first/PLAN.md) | Status-filtered `/security` alerts order by `createdAt` | Done on `main` ([#34](https://github.com/QoyyumO/Innov8/pull/34)) |
-| [INN-67-seed-audit-alert-entityid](features/INN-67-seed-audit-alert-entityid/PLAN.md) | Seed `SecurityAlertRaised` `entityId` is the alert | This branch |
+| [INN-67-seed-audit-alert-entityid](features/INN-67-seed-audit-alert-entityid/PLAN.md) | Seed `SecurityAlertRaised` `entityId` is the alert | This stack ([#36](https://github.com/QoyyumO/Innov8/pull/36)) |
+| [INN-69-audit-patient-discovery](features/INN-69-audit-patient-discovery/PLAN.md) | Audit patient detail lookups (`PatientDiscovered`) | This stack ([#37](https://github.com/QoyyumO/Innov8/pull/37)) |
+| [INN-70-sessions-invalidated-at](features/INN-70-sessions-invalidated-at/PLAN.md) | O(1) log-out-everywhere via `sessionsInvalidatedAt` | This branch |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).

@@ -210,7 +210,7 @@ describe("session cleanup is bounded (INN-64)", () => {
       Date.now() + 60_000,
     );
 
-    await testBackend.mutation(api.auth.changePassword, {
+    const changed = await testBackend.mutation(api.auth.changePassword, {
       token: keep.token,
       currentPassword: DEMO_PASSWORD,
       newPassword: "another-new-password",
@@ -220,9 +220,12 @@ describe("session cleanup is bounded (INN-64)", () => {
       async (ctx) => await ctx.db.query("sessions").take(10),
     );
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].token).toBe(keep.token);
+    expect(remaining[0].token).toBe(changed.token);
     expect(
       await testBackend.query(api.auth.getCurrentUser, { token: keep.token }),
+    ).toBeNull();
+    expect(
+      await testBackend.query(api.auth.getCurrentUser, { token: changed.token }),
     ).not.toBeNull();
   });
 
@@ -257,6 +260,37 @@ describe("session cleanup is bounded (INN-64)", () => {
     expect(await countSessions(testBackend)).toBe(0);
   });
 
+  test("a session created before the stamp is rejected even while its row still exists", async () => {
+    vi.useFakeTimers();
+    const testBackend = createTest();
+    const loginResult = await loginDemoSession(testBackend, IBRAHIM_EMAIL);
+    const expiresAt = Date.now() + 60_000;
+    const overCap = SESSION_CLEANUP_BATCH * SESSION_CLEANUP_MAX_PAGES + 50;
+    await insertSessions(testBackend, loginResult._id, overCap, expiresAt);
+
+    const issued = await testBackend.mutation(
+      internal.auth.issuePasswordResetToken,
+      { email: IBRAHIM_EMAIL },
+    );
+    await testBackend.mutation(api.auth.resetPassword, {
+      email: IBRAHIM_EMAIL,
+      resetToken: issued!.resetToken,
+      newPassword: "a-brand-new-password",
+    });
+
+    expect(await countSessions(testBackend)).toBeGreaterThan(0);
+    expect(
+      await testBackend.query(api.auth.getCurrentUser, {
+        token: loginResult.token,
+      }),
+    ).toBeNull();
+    expect(
+      await testBackend.query(api.auth.getCurrentUser, {
+        token: `stale-0-${expiresAt}`,
+      }),
+    ).toBeNull();
+  });
+
   test("a password change past the page cap defers the rest and keeps the caller's", async () => {
     // Drain only jobs that are already due. Running *all* timers would also
     // fire the caller's own 30-minute expiry - correct behaviour, but not
@@ -267,7 +301,7 @@ describe("session cleanup is bounded (INN-64)", () => {
     const overCap = SESSION_CLEANUP_BATCH * SESSION_CLEANUP_MAX_PAGES + 50;
     await insertSessions(testBackend, keep._id, overCap, Date.now() + 60_000);
 
-    await testBackend.mutation(api.auth.changePassword, {
+    const changed = await testBackend.mutation(api.auth.changePassword, {
       token: keep.token,
       currentPassword: DEMO_PASSWORD,
       newPassword: "another-new-password",
@@ -282,7 +316,7 @@ describe("session cleanup is bounded (INN-64)", () => {
       async (ctx) => await ctx.db.query("sessions").take(10),
     );
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].token).toBe(keep.token);
+    expect(remaining[0].token).toBe(changed.token);
   });
 
   test("a purge beyond the page cap is continued by a scheduled job", async () => {

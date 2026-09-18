@@ -44,6 +44,8 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-68** — Sidebar destinations follow role (clinician vs security/admin vs patient). Mixed patient + clinical roles see the clinician dashboard.
 - **INN-63** — SecurityAlerts filtered by status are ordered by `createdAt` (index `by_status_createdAt`), matching the unfiltered list.
 - **INN-67** — Seeded AuditEvents, including `SecurityAlertRaised`, go through `appendAuditEvent`. The alert audit names the SecurityAlert, not the Decision.
+- **INN-69** — Looking up a Patient by publicId on the detail page is audited as `PatientDiscovered` (one row per Session and publicId, including misses).
+- **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in.
 
 ## Next (live demo path)
 
@@ -52,7 +54,7 @@ The MVP demo path is live end to end. Remaining work is review-found bugs after 
 ## Entities (MVP)
 
 - **Facility**: code, name, city (FMC Lagos, FMC Abuja, optional Abeokuta)
-- **User**: existing users table (email, roles, hospital, department, profile, accountStatus, optional `patientId` for the patient portal)
+- **User**: existing users table (email, roles, hospital, department, profile, accountStatus, optional `patientId` for the patient portal, optional `sessionsInvalidatedAt`)
 - **Session**: existing sessions table (30-minute TTL, or 7 days when Keep me logged in is checked)
 - **PasswordResetToken**: userId, tokenHash, expiresAt, usedAt (INN-47)
 - **Patient**: publicId (`PAT-002391`), homeFacilityId, demographics (synthetic), identifiers for search

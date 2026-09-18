@@ -33,8 +33,8 @@ const patientDiscoveryValidator = patientSearchHitValidator.extend({
 
 /**
  * Search writes `PatientSearched`, so it is a mutation.
- * Discovery is a query so the detail page can use `useQuery` without
- * auditing twice on React Strict Mode remounts.
+ * Discovery stays a query so the detail page can live-update; the page also
+ * calls `recordPatientDiscovery` once per session and publicId (INN-69).
  */
 export const searchPatients = mutation({
   args: {
@@ -90,5 +90,55 @@ export const getPatientDiscovery = query({
     }
 
     return await getPatientDiscoveryByPublicId(ctx.db, args.publicId);
+  },
+});
+
+/**
+ * One `PatientDiscovered` row per session and publicId, including misses
+ * (INN-69). Dedup is server-side so a Strict Mode remount does not double-write.
+ */
+export const recordPatientDiscovery = mutation({
+  args: {
+    token: v.optional(v.string()),
+    publicId: v.string(),
+  },
+  returns: v.object({ recorded: v.boolean() }),
+  handler: async (ctx, args) => {
+    const { user, session } = await requireClinicianSession(ctx, args.token);
+    const publicId = args.publicId.trim();
+    if (publicId === "") {
+      return { recorded: false };
+    }
+
+    // Touch the session row first so a remount that races this mutation
+    // retries (OCC) and then sees the audit we are about to write.
+    await ctx.db.patch(session._id, { expiresAt: session.expiresAt });
+
+    const existing = await ctx.db
+      .query("auditEvents")
+      .withIndex("by_sessionId_action_entityId", (query) =>
+        query
+          .eq("sessionId", session._id)
+          .eq("action", "PatientDiscovered")
+          .eq("entityId", publicId),
+      )
+      .first();
+    if (existing) {
+      return { recorded: false };
+    }
+
+    const discovery = await getPatientDiscoveryByPublicId(ctx.db, publicId);
+    await appendAuditEvent(ctx.db, {
+      actorId: user._id,
+      sessionId: session._id,
+      action: "PatientDiscovered",
+      entity: "patients",
+      entityId: publicId,
+      details: {
+        publicId,
+        found: discovery !== null,
+      },
+    });
+    return { recorded: true };
   },
 });

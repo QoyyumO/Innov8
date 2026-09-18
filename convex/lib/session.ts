@@ -85,6 +85,15 @@ async function getUnexpiredSession(
     return null;
   }
 
+  const user = await db.get(session.userId);
+  if (
+    user !== null &&
+    user.sessionsInvalidatedAt !== undefined &&
+    session.createdAt < user.sessionsInvalidatedAt
+  ) {
+    return null;
+  }
+
   return session;
 }
 
