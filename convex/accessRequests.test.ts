@@ -16,11 +16,14 @@ import {
 import {
   NO_RECORD_TYPES_CODE,
   PATIENT_NOT_FOUND_CODE,
+  RECORD_TYPE_NOT_ALLOWED_CODE,
   RECORDS_NOT_HELD_CODE,
 } from "./lib/accessRequestMessages";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const FATIMA_EMAIL = "fatima@fmc.abuja.ng";
+const CHINEDU_EMAIL = "chinedu@fmc.lagos.ng";
+const AISHA_EMAIL = "aisha@fmc.lagos.ng";
 const SECURITY_EMAIL = "security@innov8.ng";
 const CHIOMA_EMAIL = "chioma@patient.innov8.ng";
 const SECRET_SUMMARY = "SECRET clinical summary must never leak";
@@ -424,5 +427,53 @@ describe("getAccessRequest", () => {
       });
       expect(result).toBeNull();
     }
+  });
+});
+
+describe("record types by clinician role (INN-79)", () => {
+  test("Fatima (nurse) may request all four types; Chinedu and Aisha cannot request out-of-role types", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const fatimaToken = await loginDemoUser(testBackend, FATIMA_EMAIL);
+    const chineduToken = await loginDemoUser(testBackend, CHINEDU_EMAIL);
+    const aishaToken = await loginDemoUser(testBackend, AISHA_EMAIL);
+
+    await expect(requestTreatment(testBackend, fatimaToken)).resolves.toMatchObject({
+      recordTypes: [...ALL_RECORD_TYPES],
+    });
+
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: chineduToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["medical_summary"],
+      }),
+    ).rejects.toSatisfy(appErrorCode(RECORD_TYPE_NOT_ALLOWED_CODE));
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: chineduToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["medications", "allergies"],
+      }),
+    ).resolves.toMatchObject({ recordTypes: ["medications", "allergies"] });
+
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: aishaToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["medications"],
+      }),
+    ).rejects.toSatisfy(appErrorCode(RECORD_TYPE_NOT_ALLOWED_CODE));
+    await expect(
+      testBackend.mutation(api.accessRequests.createAccessRequest, {
+        token: aishaToken,
+        publicId: "PAT-002391",
+        purpose: "treatment",
+        recordTypes: ["diagnoses"],
+      }),
+    ).resolves.toMatchObject({ recordTypes: ["diagnoses"] });
   });
 });

@@ -116,12 +116,15 @@ async function requestAccess(
   testBackend: TestBackend,
   token: string,
   purpose: "treatment" | "follow-up" | "referral" | "administrative" = "treatment",
+  recordTypes: Array<"allergies" | "medications" | "diagnoses" | "medical_summary"> = [
+    "allergies",
+  ],
 ) {
   return await testBackend.mutation(api.accessRequests.createAccessRequest, {
     token,
     publicId: "PAT-002391",
     purpose,
-    recordTypes: ["allergies"],
+    recordTypes,
   });
 }
 
@@ -221,7 +224,9 @@ describe("consent in access decisions (INN-45)", () => {
     expect(emergencyPurpose.factors.consent).toBe("not_required");
     expect(emergencyPurpose.outcome).toBe("ALLOW");
 
-    const sameFacility = await requestAccess(testBackend, aishaToken);
+    const sameFacility = await requestAccess(testBackend, aishaToken, "treatment", [
+      "diagnoses",
+    ]);
     expect(sameFacility).toMatchObject({ outcome: "ALLOW" });
     expect(sameFacility.factors.consent).toBe("not_required");
     await expect(recordConsent(testBackend, aishaToken)).rejects.toSatisfy(appErrorCode(CONSENT_NOT_NEEDED_CODE));

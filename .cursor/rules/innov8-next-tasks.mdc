@@ -62,6 +62,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-76](https://linear.app/innov8-health/issue/INN-76) judges dry-run: VERIFY, `/security` queue, Chioma portal, `/facilities`
 - [INN-77](https://linear.app/innov8-health/issue/INN-77) patient-owned consent grant and revoke
 - [INN-78](https://linear.app/innov8-health/issue/INN-78) audit investigation filters (patient, facility, decision, date)
+- [INN-79](https://linear.app/innov8-health/issue/INN-79) restrict record types by clinician role
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 

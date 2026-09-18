@@ -47,6 +47,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-76-judges-demo-script](features/INN-76-judges-demo-script/PLAN.md) | Judges dry-run: VERIFY, security queue, patient portal, facilities | In review ([#45](https://github.com/QoyyumO/Innov8/pull/45)) |
 | [INN-77-patient-owned-consent](features/INN-77-patient-owned-consent/PLAN.md) | Patient-owned consent grant and revoke | In review ([#46](https://github.com/QoyyumO/Innov8/pull/46)) |
 | [INN-78-audit-investigation-filters](features/INN-78-audit-investigation-filters/PLAN.md) | Audit investigation filters (patient, facility, decision, date) | In review ([#47](https://github.com/QoyyumO/Innov8/pull/47)) |
+| [INN-79-restrict-record-types-by-role](features/INN-79-restrict-record-types-by-role/PLAN.md) | Restrict record types by clinician role | In review ([#48](https://github.com/QoyyumO/Innov8/pull/48)) |
 | [INN-72-audit-failed-login-attempts](features/INN-72-audit-failed-login-attempts/PLAN.md) | Audit failed login attempts (`UserLoginFailed`) | In review ([#41](https://github.com/QoyyumO/Innov8/pull/41)) |
 | [INN-73-paid-plan-section-14-seed-runbook](features/INN-73-paid-plan-section-14-seed-runbook/PLAN.md) | Paid-plan runbook for full §14 seed volumes | In review ([#42](https://github.com/QoyyumO/Innov8/pull/42)) |
 
