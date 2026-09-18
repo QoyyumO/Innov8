@@ -41,6 +41,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-57** — Demo Users are created by seed (`internal.auth.ensureDemoUsers`). Public login does not insert users; a suspended demo account stays suspended.
 - **INN-60** — User-facing validation throws `ConvexError({ code, message })` so production keeps the payload. The client reads `error.data`, not a substring of `error.message`.
 - **INN-65** — Unused `requireUnused*` uniqueness helpers were removed from `invariants.ts`. Seed still skips duplicate facility codes, patient public ids, and worker ids by lookup. One Decision per AccessRequest is still enforced by `.unique()` on `accessDecisions.by_requestId`.
+- **INN-68** — Sidebar destinations follow role (clinician vs security/admin vs patient). Mixed patient + clinical roles see the clinician dashboard.
 
 ## Next (live demo path)
 

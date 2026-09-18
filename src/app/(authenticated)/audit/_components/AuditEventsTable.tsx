@@ -10,7 +10,6 @@ import Button from "@/components/ui/button/Button";
 import EmptyState from "@/components/empty-state/EmptyState";
 import Loading from "@/components/loading/Loading";
 import Label from "@/components/form/Label";
-import Select from "@/components/form/Select";
 import {
   Table,
   TableBody,
@@ -40,13 +39,19 @@ const ACTION_OPTIONS = [
   ...AUDIT_ACTIONS.map((action) => ({ value: action, label: AUDIT_ACTION_LABELS[action] })),
 ];
 
+function actorDisplayName(actor: { name: string; email: string }): string {
+  return actor.name || actor.email || "Unknown actor";
+}
+
 type AuditEventsTableProps = {
   /** Security officers and admins can open one person's trail. */
   canFilterByActor: boolean;
   actorId?: string;
+  /** Display name from the audit link, so an empty action filter still names the person. */
+  actorLabel?: string;
 };
 
-export function AuditEventsTable({ canFilterByActor, actorId }: AuditEventsTableProps) {
+export function AuditEventsTable({ canFilterByActor, actorId, actorLabel }: AuditEventsTableProps) {
   const { sessionToken } = useAuth();
   const [action, setAction] = useState<AuditAction | undefined>(undefined);
   const { results, status, loadMore } = usePaginatedQuery(
@@ -55,28 +60,35 @@ export function AuditEventsTable({ canFilterByActor, actorId }: AuditEventsTable
     { initialNumItems: PAGE_SIZE },
   );
 
-  const handleActionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    setAction(value === ALL_ACTIONS ? undefined : (value as AuditAction));
-  };
-
-  const filteredActorName = actorId ? results[0]?.actor?.name : undefined;
+  const matchingActor = actorId
+    ? results.find((event) => event.actor?.actorId === actorId)?.actor
+    : undefined;
+  const filteredActorName = actorLabel ?? (matchingActor ? actorDisplayName(matchingActor) : undefined);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="w-full max-w-xs">
           <Label htmlFor="audit-action-filter">Action</Label>
-          <Select
+          <select
             id="audit-action-filter"
-            options={ACTION_OPTIONS}
-            defaultValue={ALL_ACTIONS}
-            onChange={handleActionChange}
-          />
+            value={action ?? ALL_ACTIONS}
+            onChange={(event) => {
+              const value = event.target.value;
+              setAction(value === ALL_ACTIONS ? undefined : (value as AuditAction));
+            }}
+            className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+          >
+            {ACTION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         {actorId && (
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Showing events by {filteredActorName ?? "one person"} ·{" "}
+            Showing events by {filteredActorName ?? "this person"} ·{" "}
             <Link
               href="/audit"
               className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
@@ -140,13 +152,13 @@ export function AuditEventsTable({ canFilterByActor, actorId }: AuditEventsTable
                         <>
                           {canFilterByActor && event.actor.actorId !== actorId ? (
                             <Link
-                              href={`/audit?actorId=${encodeURIComponent(event.actor.actorId)}`}
+                              href={`/audit?actorId=${encodeURIComponent(event.actor.actorId)}&actorName=${encodeURIComponent(actorDisplayName(event.actor))}`}
                               className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
                             >
-                              {event.actor.name}
+                              {actorDisplayName(event.actor)}
                             </Link>
                           ) : (
-                            <span className="font-medium">{event.actor.name}</span>
+                            <span className="font-medium">{actorDisplayName(event.actor)}</span>
                           )}
                           <span className="block text-xs text-gray-500 dark:text-gray-400">
                             {event.actor.hospital}

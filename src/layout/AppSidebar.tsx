@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '../context/SidebarContext';
 import { useAuth } from '@/hooks/useAuth';
-import { isClinician } from '@/services/permissions';
+import { isAdmin, isClinician, isSecurityOfficer } from '@/services/permissions';
 import {
   ChevronDownIcon,
   GridIcon,
@@ -30,19 +30,25 @@ const AppSidebar: React.FC = () => {
   const { user } = useAuth();
 
   const navItems: NavItem[] = useMemo(() => {
-    const clinicianSearch: NavItem[] =
-      user && isClinician(user.roles)
-        ? [{ icon: <UserIcon />, name: 'Patient search', path: '/patients' }]
-        : [];
-    return [
-      { icon: <GridIcon />, name: 'Dashboard', path: '/' },
-      ...clinicianSearch,
-      { icon: <FileIcon />, name: 'Access requests', path: '/requests' },
-      { icon: <AlertIcon />, name: 'Emergency', path: '/emergency' },
-      { icon: <DocsIcon />, name: 'Audit trail', path: '/audit' },
-      { icon: <LockIcon />, name: 'Security', path: '/security' },
-      { icon: <GroupIcon />, name: 'Facilities', path: '/facilities' },
-    ];
+    const roles = user?.roles ?? [];
+    const clinician = isClinician(roles);
+    const canReview = isSecurityOfficer(roles) || isAdmin(roles);
+    const items: NavItem[] = [{ icon: <GridIcon />, name: 'Dashboard', path: '/' }];
+    if (clinician) {
+      items.push(
+        { icon: <UserIcon />, name: 'Patient search', path: '/patients' },
+        { icon: <FileIcon />, name: 'Access requests', path: '/requests' },
+        { icon: <AlertIcon />, name: 'Emergency', path: '/emergency' },
+      );
+    }
+    items.push({ icon: <DocsIcon />, name: 'Audit trail', path: '/audit' });
+    if (canReview) {
+      items.push(
+        { icon: <LockIcon />, name: 'Security', path: '/security' },
+        { icon: <GroupIcon />, name: 'Facilities', path: '/facilities' },
+      );
+    }
+    return items;
   }, [user]);
 
   const renderMenuItems = (
