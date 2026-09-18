@@ -66,7 +66,7 @@ export function ConsentsTable() {
     return (
       <EmptyState
         title="No consents recorded"
-        description="Clinicians record a patient's consent on the patient page before requesting records held at another facility."
+          description="Clinicians record consent on the patient page, and patients can grant or revoke their own consent on their dashboard."
         icon={<DocsIcon className="h-12 w-12 text-brand-500" />}
       />
     );

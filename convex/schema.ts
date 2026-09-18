@@ -228,6 +228,7 @@ export default defineSchema({
   })
     .index("by_patientId_facilityId", ["patientId", "facilityId"])
     .index("by_patientId_facilityId_status", ["patientId", "facilityId", "status"])
+    .index("by_patientId_grantedAt", ["patientId", "grantedAt"])
     .index("by_grantedAt", ["grantedAt"])
     .index("by_facilityId_grantedAt", ["facilityId", "grantedAt"])
     .index("by_patientFacilityId_grantedAt", ["patientFacilityId", "grantedAt"]),

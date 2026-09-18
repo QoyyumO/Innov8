@@ -19,11 +19,14 @@ import {
   CONSENT_NOTE_TOO_SHORT_CODE,
   CONSENT_NOT_FOUND_CODE,
   CONSENT_NOT_NEEDED_CODE,
+  FACILITY_NOT_FOUND_CODE,
+  PATIENT_NOT_LINKED_CODE,
 } from "./lib/consentConstants";
 import { hashPassword } from "./lib/password";
 import { STEP_UP_CONSENT_REQUIRED_CODE } from "./lib/stepUpConstants";
 import type { UserRole } from "./lib/roles";
 
+const CHIOMA_EMAIL = "chioma@patient.innov8.ng";
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const AISHA_EMAIL = "aisha@fmc.lagos.ng";
 const SECURITY_EMAIL = "security@innov8.ng";
@@ -74,7 +77,7 @@ async function seedWorld(testBackend: TestBackend) {
       city: "Lagos",
       status: "active",
     });
-    await ctx.db.insert("facilities", {
+    const abeokutaId = await ctx.db.insert("facilities", {
       code: "FMC-ABK",
       name: "FMC Abeokuta",
       city: "Abeokuta",
@@ -105,7 +108,7 @@ async function seedWorld(testBackend: TestBackend) {
       conditions: [],
       updatedAt: Date.now(),
     });
-    return { abujaId, lagosId, patientId };
+    return { abujaId, lagosId, abeokutaId, patientId };
   });
 }
 
@@ -479,5 +482,150 @@ describe("demo seed", () => {
       recordTypes: ["allergies"],
     });
     expect(otherPatient.factors.consent).not.toBe("active");
+  });
+});
+
+describe("patient-owned consent (INN-77)", () => {
+  async function linkChioma(testBackend: TestBackend, patientId: Id<"patients">) {
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Missing Chioma demo user");
+      }
+      await ctx.db.patch(chioma._id, { patientId });
+    });
+  }
+
+  test("Chioma lists, grants, and revokes her consents; Ibrahim cannot", async () => {
+    const testBackend = createTest();
+    const ids = await seedWorld(testBackend);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    const chiomaToken = await loginDemoUser(testBackend, CHIOMA_EMAIL);
+
+    expect(await testBackend.query(api.consents.listMyConsents, { token: chiomaToken })).toEqual(
+      [],
+    );
+    await expect(
+      testBackend.mutation(api.consents.grantMyConsent, {
+        token: chiomaToken,
+        facilityId: ids.abujaId,
+        note: NOTE,
+      }),
+    ).rejects.toSatisfy(appErrorCode(PATIENT_NOT_LINKED_CODE));
+
+    await linkChioma(testBackend, ids.patientId);
+    expect(await testBackend.query(api.consents.listMyConsents, { token: ibrahimToken })).toEqual(
+      [],
+    );
+    await expect(
+      testBackend.mutation(api.consents.grantMyConsent, {
+        token: ibrahimToken,
+        facilityId: ids.abeokutaId,
+        note: NOTE,
+      }),
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
+
+    const granted = await testBackend.mutation(api.consents.grantMyConsent, {
+      token: chiomaToken,
+      facilityId: ids.abujaId,
+      note: NOTE,
+    });
+    const mine = await testBackend.query(api.consents.listMyConsents, { token: chiomaToken });
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({
+      consentId: granted.consentId,
+      facility: "FMC Abuja",
+      patientFacility: "FMC Lagos",
+      status: "active",
+    });
+    expect((await requestAccess(testBackend, ibrahimToken)).outcome).toBe("ALLOW");
+
+    await expect(
+      testBackend.mutation(api.consents.grantMyConsent, {
+        token: chiomaToken,
+        facilityId: ids.lagosId,
+        note: NOTE,
+      }),
+    ).rejects.toSatisfy(appErrorCode(CONSENT_NOT_NEEDED_CODE));
+    await expect(
+      testBackend.mutation(api.consents.grantMyConsent, {
+        token: chiomaToken,
+        facilityId: ids.abujaId,
+        note: NOTE,
+      }),
+    ).rejects.toSatisfy(appErrorCode(CONSENT_ALREADY_ACTIVE_CODE));
+
+    const missingFacilityId = await testBackend.run(async (ctx) => {
+      const extraId = await ctx.db.insert("facilities", {
+        code: "FMC-XXX",
+        name: "Gone",
+        city: "Nowhere",
+        status: "active",
+      });
+      await ctx.db.delete(extraId);
+      return extraId;
+    });
+    await expect(
+      testBackend.mutation(api.consents.grantMyConsent, {
+        token: chiomaToken,
+        facilityId: missingFacilityId,
+        note: NOTE,
+      }),
+    ).rejects.toSatisfy(appErrorCode(FACILITY_NOT_FOUND_CODE));
+
+    await expect(
+      testBackend.mutation(api.consents.revokeMyConsent, {
+        token: ibrahimToken,
+        consentId: granted.consentId,
+      }),
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
+
+    const revoked = await testBackend.mutation(api.consents.revokeMyConsent, {
+      token: chiomaToken,
+      consentId: granted.consentId,
+    });
+    expect(revoked.consentId).toBe(granted.consentId);
+    expect((await requestAccess(testBackend, ibrahimToken)).outcome).toBe("VERIFY");
+
+    const chiomaUser = await testBackend.query(api.auth.getCurrentUser, { token: chiomaToken });
+    const events = await testBackend.run(async (ctx) =>
+      (await ctx.db.query("auditEvents").take(300)).filter(
+        (event) =>
+          event.action === "ConsentRecorded" || event.action === "ConsentRevoked",
+      ),
+    );
+    expect(events.every((event) => event.actorId === chiomaUser!._id)).toBe(true);
+
+    const otherPatientId = await testBackend.run(async (ctx) =>
+      ctx.db.insert("patients", {
+        publicId: "PAT-000001",
+        homeFacilityId: ids.lagosId,
+        profile: { firstName: "Other", lastName: "Patient" },
+        dateOfBirth: Date.UTC(1990, 0, 1),
+        gender: "male",
+        bloodGroup: "A+",
+        searchName: "other patient",
+      }),
+    );
+    const foreignConsentId = await testBackend.run(async (ctx) =>
+      ctx.db.insert("consents", {
+        patientId: otherPatientId,
+        facilityId: ids.abujaId,
+        patientFacilityId: ids.lagosId,
+        status: "active",
+        note: NOTE,
+        grantedAt: Date.now(),
+        expiresAt: Date.now() + CONSENT_DURATION_MS,
+      }),
+    );
+    await expect(
+      testBackend.mutation(api.consents.revokeMyConsent, {
+        token: chiomaToken,
+        consentId: foreignConsentId,
+      }),
+    ).rejects.toSatisfy(appErrorCode(PERMISSION_DENIED_CODE));
   });
 });

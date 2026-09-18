@@ -45,6 +45,7 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-74-break-glass-ttl-deep-dive-note](features/INN-74-break-glass-ttl-deep-dive-note/PLAN.md) | Keep 15-minute break-glass; note §8's 30-minute example | In review ([#43](https://github.com/QoyyumO/Innov8/pull/43)) |
 | [INN-75-decision-latency-evaluation](features/INN-75-decision-latency-evaluation/PLAN.md) | Decision-engine p50/p95 + §15 evaluation notes | In review ([#44](https://github.com/QoyyumO/Innov8/pull/44)) |
 | [INN-76-judges-demo-script](features/INN-76-judges-demo-script/PLAN.md) | Judges dry-run: VERIFY, security queue, patient portal, facilities | In review ([#45](https://github.com/QoyyumO/Innov8/pull/45)) |
+| [INN-77-patient-owned-consent](features/INN-77-patient-owned-consent/PLAN.md) | Patient-owned consent grant and revoke | This branch |
 | [INN-72-audit-failed-login-attempts](features/INN-72-audit-failed-login-attempts/PLAN.md) | Audit failed login attempts (`UserLoginFailed`) | In review ([#41](https://github.com/QoyyumO/Innov8/pull/41)) |
 | [INN-73-paid-plan-section-14-seed-runbook](features/INN-73-paid-plan-section-14-seed-runbook/PLAN.md) | Paid-plan runbook for full §14 seed volumes | In review ([#42](https://github.com/QoyyumO/Innov8/pull/42)) |
 

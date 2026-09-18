@@ -22,6 +22,7 @@ import { EyeIcon } from "@/icons";
 import { PURPOSE_LABELS, formatRequestTime } from "./accessLabels";
 import { AUDIT_ACTION_BADGE_COLORS, AUDIT_ACTION_LABELS } from "./auditLabels";
 import { WelcomeCard } from "./DashboardWidgets";
+import { PatientConsentPanel } from "./PatientConsentPanel";
 
 const HEADER_CELL_CLASS =
   "px-4 py-3 text-left text-sm font-medium text-gray-500 whitespace-nowrap";
@@ -100,6 +101,15 @@ export default function PatientDashboard() {
           title="Your records stay at your facility"
           message="Innov8 does not copy your records. Clinicians at other hospitals must request access for a stated purpose, and every request is audited."
         />
+
+        {dashboard && (
+          <ComponentCard
+            title="Who may request your records"
+            desc="Grant or revoke consent for a participating hospital. Break-glass emergency access does not need this."
+          >
+            <PatientConsentPanel homeFacilityCode={dashboard.homeFacility.code} />
+          </ComponentCard>
+        )}
 
         <ComponentCard
           title="Who accessed your records"

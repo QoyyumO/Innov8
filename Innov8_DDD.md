@@ -35,7 +35,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-50** — Acknowledge and close of SecurityAlerts are audited as `SecurityAlertAcknowledged` / `SecurityAlertClosed` (officer as actor).
 - **INN-55** — Demo-scale seed (24 workers, 200 patients plus PAT-002391, 200 access events) and batched wipe. Historical §14 10k/100k volumes must not be run on the Convex free plan. Paid-plan restore steps: `convex/README-seeding.md` (INN-73).
 - **INN-52** — Facility scope for hospital admins: AuditEvents and SecurityAlerts are indexed by the facilities they involve (actor's facility, request source/target), so a hospital admin reviews only their facility's activity. Security officers and system admins keep the exchange-wide view.
-- **INN-45** — ConsentService: a Consent lets one Facility request a Patient's records held at another; missing consent makes a single-patient, non-emergency cross-facility Decision VERIFY. Recorded by clinicians, revoked by reviewers, audited as `ConsentRecorded` / `ConsentRevoked`.
+- **INN-45** — ConsentService: a Consent lets one Facility request a Patient's records held at another; missing consent makes a single-patient, non-emergency cross-facility Decision VERIFY. Recorded by clinicians or the Patient, revoked by reviewers or the Patient, audited as `ConsentRecorded` / `ConsentRevoked`.
 - **INN-53** — FacilityStats: stored worker and patient totals per Facility, updated whenever a user or patient is created or changes facility.
 - **INN-46** — Patient portal: a User with role `patient` is linked to one Patient via `users.patientId` (seeded Chioma → PAT-002391). `getPatientDashboard` returns that identity, home Facility, and a bounded list of AuditEvents that name them. Clinician sessions cannot read it as the patient.
 - **INN-57** — Demo Users are created by seed (`internal.auth.ensureDemoUsers`). Public login does not insert users; a suspended demo account stays suspended.
@@ -49,6 +49,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in.
 - **INN-75** — Decision-engine measurement: `scoreAccessRequest` p95 vs the 1-second NFR-04 **target** (not a production SLO). Notes: `docs/features/INN-75-decision-latency-evaluation/EVALUATION.md`.
 - **INN-76** — Judges dry-run after the seven Ibrahim steps: VERIFY/step-up, `/security` queue, Chioma's portal, `/facilities` (root `README.md`).
+- **INN-77** — Patient-owned consent: a linked Patient User lists, grants, and revokes Consents for their `users.patientId`. Break-glass still needs no consent. Seed still pre-grants FMC Abuja for PAT-002391.
 - **INN-72** — Failed login writes `UserLoginFailed` (wrong password, inactive account, or unknown email). The client message stays generic; unknown emails are not stored on the row.
 - **INN-71** — Risk scoring adds explainable location mismatch and 24-hour request-volume vs baseline. Device is not scored. Clinical after-hours is a reason with no extra points so Ibrahim treatment stays 8; harvest stays 94.
 
