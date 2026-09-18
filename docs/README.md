@@ -47,8 +47,8 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-76-judges-demo-script](features/INN-76-judges-demo-script/PLAN.md) | Judges dry-run: VERIFY, security queue, patient portal, facilities | In review ([#45](https://github.com/QoyyumO/Innov8/pull/45)) |
 | [INN-77-patient-owned-consent](features/INN-77-patient-owned-consent/PLAN.md) | Patient-owned consent grant and revoke | In review ([#46](https://github.com/QoyyumO/Innov8/pull/46)) |
 | [INN-78-audit-investigation-filters](features/INN-78-audit-investigation-filters/PLAN.md) | Audit investigation filters (patient, facility, decision, date) | In review ([#47](https://github.com/QoyyumO/Innov8/pull/47)) |
-| [INN-83-request-flow-loading](features/INN-83-request-flow-loading/PLAN.md) | Request-flow loading and keep the decision in view | In review ([#52](https://github.com/QoyyumO/Innov8/pull/52)) |
+| [INN-86-document-password-change-stay-signed-in](features/INN-86-document-password-change-stay-signed-in/PLAN.md) | Document password-change stay-signed-in vs log-out | In review ([#54](https://github.com/QoyyumO/Innov8/pull/54)) |
 | [INN-72-audit-failed-login-attempts](features/INN-72-audit-failed-login-attempts/PLAN.md) | Audit failed login attempts (`UserLoginFailed`) | In review ([#41](https://github.com/QoyyumO/Innov8/pull/41)) |
 | [INN-73-paid-plan-section-14-seed-runbook](features/INN-73-paid-plan-section-14-seed-runbook/PLAN.md) | Paid-plan runbook for full §14 seed volumes | In review ([#42](https://github.com/QoyyumO/Innov8/pull/42)) |
 
-How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
+How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md). Deployed QA expected results: [`qa/TEST-FINDINGS.md`](qa/TEST-FINDINGS.md).
