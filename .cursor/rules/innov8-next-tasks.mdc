@@ -57,6 +57,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-71](https://linear.app/innov8-health/issue/INN-71) risk: location mismatch + 24h request volume vs baseline (device not scored)
 - [INN-72](https://linear.app/innov8-health/issue/INN-72) audit failed login attempts (`UserLoginFailed`)
 - [INN-73](https://linear.app/innov8-health/issue/INN-73) paid-plan runbook for full §14 seed volumes
+- [INN-74](https://linear.app/innov8-health/issue/INN-74) break-glass stays 15 minutes; README notes §8's 30-minute example
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
