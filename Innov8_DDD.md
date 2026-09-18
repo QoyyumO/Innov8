@@ -46,7 +46,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-63** — SecurityAlerts filtered by status are ordered by `createdAt` (index `by_status_createdAt`), matching the unfiltered list.
 - **INN-67** — Seeded AuditEvents, including `SecurityAlertRaised`, go through `appendAuditEvent`. The alert audit names the SecurityAlert, not the Decision.
 - **INN-69** — Looking up a Patient by publicId on the detail page is audited as `PatientDiscovered` (one row per Session and publicId, including misses).
-- **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in.
+- **INN-70** — Password reset and password change stamp `users.sessionsInvalidatedAt`. Older Sessions fail immediately; paged deletion is housekeeping. Password change returns a new Session so the actor stays signed in (INN-86).
 - **INN-75** — Decision-engine measurement: `scoreAccessRequest` p95 vs the 1-second NFR-04 **target** (not a production SLO). Notes: `docs/features/INN-75-decision-latency-evaluation/EVALUATION.md`.
 - **INN-76** — Judges dry-run after the seven Ibrahim steps: VERIFY/step-up, `/security` queue, Chioma's portal, `/facilities` (root `README.md`).
 - **INN-77** — Patient-owned consent: a linked Patient User lists, grants, and revokes Consents for their `users.patientId`. Break-glass still needs no consent. Seed still pre-grants FMC Abuja for PAT-002391.
