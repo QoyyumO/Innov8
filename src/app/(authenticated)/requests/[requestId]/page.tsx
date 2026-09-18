@@ -14,6 +14,7 @@ import { FileIcon } from "@/icons";
 import { isGrantLive } from "../../_components/emergencyLabels";
 import { DecisionResult } from "../_components/DecisionResult";
 import { AuthorisedSummary } from "../_components/AuthorisedSummary";
+import { ClinicalNotePanel } from "../_components/ClinicalNotePanel";
 import { EmergencyGrantCard } from "../_components/EmergencyGrantCard";
 
 export default function AccessRequestDetailPage() {
@@ -117,6 +118,20 @@ export default function AccessRequestDetailPage() {
                   request.recordCount === 1 ? request.decision?.stepUpAttemptsLeft : undefined
                 }
                 isMissingConsent={request.decision?.factors?.consent === "missing"}
+              />
+            </ComponentCard>
+          )}
+
+          {request.canAppendClinicalNote &&
+            (request.decision?.allowedUntil === undefined ||
+              request.decision.allowedUntil > now) && (
+            <ComponentCard
+              title="Append clinical note"
+              desc="Audited write after ALLOW. Not a full chart editor."
+            >
+              <ClinicalNotePanel
+                requestId={request.requestId}
+                originatingFacility={request.sourceFacility.name}
               />
             </ComponentCard>
           )}

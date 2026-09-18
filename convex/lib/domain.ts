@@ -128,6 +128,7 @@ export const auditAction = v.union(
   v.literal("ConsentRecorded"),
   v.literal("ConsentRevoked"),
   v.literal("StepUpFailed"),
+  v.literal("ClinicalNoteAppended"),
 );
 
 export type AuditAction = Infer<typeof auditAction>;
