@@ -18,6 +18,7 @@ import {
   normalizeRecordTypes,
   resolveAccessTarget,
 } from "./lib/services/accessControlService";
+import { TRACK_C_RECORD_TYPES } from "./lib/synthetic";
 import { HARVEST_RECORD_COUNT } from "./lib/riskConstants";
 import { allowWindowStart, allowedUntil } from "./lib/accessWindow";
 import { evaluateConsent } from "./lib/services/consentService";
@@ -112,13 +113,8 @@ const AUDIT_ACTION_BY_OUTCOME = {
 const UNKNOWN_FACILITY = { code: "UNKNOWN", name: "Unknown facility" };
 /** One patient per createAccessRequest. Harvest volume is INN-39. */
 const SINGLE_PATIENT_RECORD_COUNT = 1;
-/** A bulk export asks for every record type. */
-const HARVEST_RECORD_TYPES: readonly RecordType[] = [
-  "medical_summary",
-  "allergies",
-  "medications",
-  "diagnoses",
-];
+/** Harvest is a volume attack: original four types, not lab_results (INN-80). */
+const HARVEST_RECORD_TYPES = TRACK_C_RECORD_TYPES;
 
 async function loadFacilityRef(
   ctx: QueryCtx,
