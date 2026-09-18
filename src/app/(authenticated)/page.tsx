@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import {
   isAdmin,
+  isClinician,
   isLaboratory,
   isNurse,
   isPatient,
@@ -18,8 +19,17 @@ export default function Dashboard() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
 
-  if (isPatient(roles)) {
-    return <PatientDashboard />;
+  if (isClinician(roles)) {
+    if (isNurse(roles)) {
+      return <ClinicianDashboard kind="nurse" />;
+    }
+    if (isPharmacist(roles)) {
+      return <ClinicianDashboard kind="pharmacist" />;
+    }
+    if (isLaboratory(roles)) {
+      return <ClinicianDashboard kind="laboratory" />;
+    }
+    return <ClinicianDashboard kind="doctor" />;
   }
 
   if (isSecurityOfficer(roles)) {
@@ -30,16 +40,8 @@ export default function Dashboard() {
     return <AdminDashboard />;
   }
 
-  if (isNurse(roles)) {
-    return <ClinicianDashboard kind="nurse" />;
-  }
-
-  if (isPharmacist(roles)) {
-    return <ClinicianDashboard kind="pharmacist" />;
-  }
-
-  if (isLaboratory(roles)) {
-    return <ClinicianDashboard kind="laboratory" />;
+  if (isPatient(roles)) {
+    return <PatientDashboard />;
   }
 
   return <ClinicianDashboard kind="doctor" />;

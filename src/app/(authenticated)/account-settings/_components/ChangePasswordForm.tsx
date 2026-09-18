@@ -12,7 +12,11 @@ import EmptyState from "@/components/empty-state/EmptyState";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { toUserFacingError } from "@/lib/userFacingError";
 import { readAppError } from "../../../../../convex/lib/appError";
-import { CURRENT_PASSWORD_INCORRECT_CODE } from "../../../../../convex/lib/authConstants";
+import {
+  CURRENT_PASSWORD_INCORRECT_CODE,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_TOO_SHORT_MESSAGE,
+} from "../../../../../convex/lib/authConstants";
 
 interface ChangePasswordFormProps {
   onSuccess?: () => void;
@@ -66,8 +70,8 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps) {
 
     if (!newPassword) {
       errors.newPassword = "New password is required";
-    } else if (newPassword.length < 6) {
-      errors.newPassword = "Password must be at least 6 characters";
+    } else if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      errors.newPassword = PASSWORD_TOO_SHORT_MESSAGE;
     }
 
     if (!confirmPassword) {

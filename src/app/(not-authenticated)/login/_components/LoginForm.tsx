@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { isValidEmail } from "@/lib/email";
+import { toUserFacingError } from "@/lib/userFacingError";
 import { MIN_PASSWORD_LENGTH } from "../../../../../convex/lib/authConstants";
 import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
@@ -98,9 +99,7 @@ export function LoginForm({
       }
     } catch (error) {
       setApiError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again.",
+        toUserFacingError(error, "An unexpected error occurred. Please try again."),
       );
     } finally {
       setIsLoading(false);

@@ -48,6 +48,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-66](https://linear.app/innov8-health/issue/INN-66) `verifyPassword` never throws on a malformed stored hash
 - [INN-60](https://linear.app/innov8-health/issue/INN-60) `ConvexError({ code, message })` for user-facing validation
 - [INN-65](https://linear.app/innov8-health/issue/INN-65) remove unused `requireUnused*` helpers from `invariants.ts`
+- [INN-68](https://linear.app/innov8-health/issue/INN-68) role-filter the sidebar; clinician dashboard wins over patient; auth-form errors
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 

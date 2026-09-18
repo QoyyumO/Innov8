@@ -12,7 +12,14 @@ import { AuditEventsTable } from "./_components/AuditEventsTable";
 function AuditTrailContent({ canReviewAll }: { canReviewAll: boolean }) {
   const searchParams = useSearchParams();
   const actorId = canReviewAll ? (searchParams.get("actorId") ?? undefined) : undefined;
-  return <AuditEventsTable canFilterByActor={canReviewAll} actorId={actorId} />;
+  const actorLabel = canReviewAll ? (searchParams.get("actorName") ?? undefined) : undefined;
+  return (
+    <AuditEventsTable
+      canFilterByActor={canReviewAll}
+      actorId={actorId}
+      actorLabel={actorLabel}
+    />
+  );
 }
 
 export default function AuditTrailPage() {
