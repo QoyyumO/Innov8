@@ -16,7 +16,7 @@ import {
   STEP_UP_PASSWORD_REQUIRED_CODE,
   STEP_UP_VERIFIED_REASON,
 } from "./lib/stepUpConstants";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";
 const FATIMA_EMAIL = "fatima@fmc.abuja.ng";

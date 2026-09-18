@@ -5,7 +5,7 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
 import { loginDemoUser } from "./lib/loginForTests";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import {
   PERMISSION_DENIED_CODE,
   SESSION_EXPIRED_CODE,

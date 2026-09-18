@@ -10,13 +10,55 @@ import {
  * `ConvexError` keeps `{ code, message }` on the client as `error.data`.
  */
 
+const APP_ERROR_CODES = [
+  "ACCOUNT_SUSPENDED",
+  "ALERT_INVALID_STATUS",
+  "ALERT_NOT_FOUND",
+  "CONSENT_ALREADY_ACTIVE",
+  "CONSENT_ALREADY_ENDED",
+  "CONSENT_NOT_FOUND",
+  "CONSENT_NOT_NEEDED",
+  "CONSENT_NOTE_TOO_LONG",
+  "CONSENT_NOTE_TOO_SHORT",
+  "CURRENT_PASSWORD_INCORRECT",
+  "EMERGENCY_ALREADY_ACTIVE",
+  "EMERGENCY_GRANT_ALREADY_ENDED",
+  "EMERGENCY_GRANT_NOT_FOUND",
+  "EMERGENCY_REQUEST_NOT_ELIGIBLE",
+  "JUSTIFICATION_TOO_LONG",
+  "JUSTIFICATION_TOO_SHORT",
+  "NO_INDEXED_RECORDS",
+  "NO_RECORD_TYPES",
+  "NO_SOURCE_FACILITY",
+  "PASSWORD_TOO_SHORT",
+  "PASSWORD_UNCHANGED",
+  "PATIENT_NOT_FOUND",
+  "PERMISSION_DENIED",
+  "PROFILE_FIELD_REQUIRED",
+  "PROFILE_FIELD_TOO_LONG",
+  "RECORDS_NOT_HELD",
+  "RESET_INVALID_TOKEN",
+  "SESSION_EXPIRED",
+  "STEP_UP_CONSENT_REQUIRED",
+  "STEP_UP_NOT_ELIGIBLE",
+  "STEP_UP_PASSWORD_REQUIRED",
+] as const;
+
+export type AppErrorCode = (typeof APP_ERROR_CODES)[number];
+
+const APP_ERROR_CODE_SET = new Set<string>(APP_ERROR_CODES);
+
 export type AppErrorData = {
-  code: string;
+  code: AppErrorCode;
   message: string;
 };
 
-export function throwAppError(code: string, message: string): never {
+export function throwAppError(code: AppErrorCode, message: string): never {
   throw new ConvexError({ code, message });
+}
+
+function isAppErrorCodeValue(code: string): code is AppErrorCode {
+  return APP_ERROR_CODE_SET.has(code);
 }
 
 function parseAppErrorData(data: unknown): AppErrorData | null {
@@ -32,7 +74,34 @@ function parseAppErrorData(data: unknown): AppErrorData | null {
   if (typeof code !== "string" || typeof message !== "string") {
     return null;
   }
+  if (!isAppErrorCodeValue(code)) {
+    return null;
+  }
   return { code, message };
+}
+
+function parseAppErrorFromMessage(message: string): AppErrorData | null {
+  try {
+    const fromWholeMessage = parseAppErrorData(JSON.parse(message));
+    if (fromWholeMessage) {
+      return fromWholeMessage;
+    }
+  } catch {
+    // Wrapped Convex client text: `[CONVEX M(…)] … Uncaught ConvexError: {…}`
+  }
+  const payloadStart = message.indexOf('{"code":');
+  if (payloadStart === -1) {
+    return null;
+  }
+  const payloadEnd = message.lastIndexOf("}");
+  if (payloadEnd <= payloadStart) {
+    return null;
+  }
+  try {
+    return parseAppErrorData(JSON.parse(message.slice(payloadStart, payloadEnd + 1)));
+  } catch {
+    return null;
+  }
 }
 
 export function readAppError(error: unknown): AppErrorData | null {
@@ -46,25 +115,16 @@ export function readAppError(error: unknown): AppErrorData | null {
     }
   }
   if (error instanceof Error) {
-    try {
-      return parseAppErrorData(JSON.parse(error.message));
-    } catch {
-      return null;
-    }
+    return parseAppErrorFromMessage(error.message);
   }
   return null;
 }
 
-export function isAppErrorCode(error: unknown, code: string): boolean {
+export function isAppErrorCode(error: unknown, code: AppErrorCode): boolean {
   return readAppError(error)?.code === code;
 }
 
-/** Vitest: `await expect(promise).rejects.toSatisfy(appErrorCode(CODE))`. */
-export function appErrorCode(code: string) {
-  return (error: unknown) => isAppErrorCode(error, code);
-}
-
-const AUTH_ERROR_CODES = new Set([
+const AUTH_ERROR_CODES = new Set<string>([
   SESSION_EXPIRED_CODE,
   ACCOUNT_SUSPENDED_CODE,
   PERMISSION_DENIED_CODE,

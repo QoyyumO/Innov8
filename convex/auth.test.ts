@@ -11,7 +11,7 @@ import {
   RESET_GENERIC_MESSAGE,
   RESET_INVALID_TOKEN_CODE,
 } from "./lib/authConstants";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import { ensureDemoUsersForTests, loginDemoSession } from "./lib/loginForTests";
 
 const IBRAHIM_EMAIL = "ibrahim@fmc.abuja.ng";

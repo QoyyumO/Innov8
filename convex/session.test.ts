@@ -19,7 +19,7 @@ import {
 } from "./lib/roles";
 import { PERSISTENT_SESSION_DURATION_MS, publicUser, requireSession } from "./lib/session";
 import { appendAuditEvent } from "./lib/services/auditLogService";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import {
   ACCOUNT_SUSPENDED_CODE,
   SESSION_EXPIRED_CODE,

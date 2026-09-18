@@ -7,7 +7,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
 import { loginDemoUser } from "./lib/loginForTests";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
 import { ALERT_NOT_FOUND_CODE } from "./lib/services/alertService";
 import { startOfLagosDay } from "./lib/dashboardConstants";

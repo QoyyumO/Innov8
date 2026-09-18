@@ -112,10 +112,6 @@ const HARVEST_RECORD_TYPES: readonly RecordType[] = [
   "diagnoses",
 ];
 
-function isAuthError(error: unknown): boolean {
-  return isAuthAppError(error);
-}
-
 async function loadFacilityRef(
   ctx: QueryCtx,
   facilityId: Id<"facilities">,
@@ -375,7 +371,7 @@ export const listMyAccessRequests = query({
       const { user } = await requireClinicianSession(ctx, args.token);
       viewerId = user._id;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return { page: [], isDone: true, continueCursor: "" };
       }
       throw error;
@@ -417,7 +413,7 @@ export const getAccessRequest = query({
     try {
       viewer = (await requireSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;

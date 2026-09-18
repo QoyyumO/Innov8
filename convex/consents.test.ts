@@ -6,7 +6,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { loginDemoUser } from "./lib/loginForTests";
 import { DEMO_PASSWORD } from "./lib/demoUsers";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import { PERMISSION_DENIED_CODE } from "./lib/authConstants";
 import { PATIENT_NOT_FOUND_CODE } from "./lib/accessRequestMessages";
 import {

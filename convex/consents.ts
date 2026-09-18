@@ -36,10 +36,6 @@ const consentViewValidator = v.object({
   revokedAt: v.union(v.null(), v.number()),
 });
 
-function isAuthError(error: unknown): boolean {
-  return isAuthAppError(error);
-}
-
 function isConsentContextError(error: unknown): boolean {
   return (
     isAppErrorCode(error, PATIENT_NOT_FOUND_CODE) ||
@@ -125,7 +121,7 @@ export const getConsentStatus = query({
     try {
       user = (await requireClinicianSession(ctx, args.token)).user;
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return null;
       }
       throw error;
@@ -205,7 +201,7 @@ export const listConsents = query({
       user = (await requireSession(ctx, args.token)).user;
       requireRole(user, AUDIT_REVIEWER_ROLES);
     } catch (error) {
-      if (isAuthError(error)) {
+      if (isAuthAppError(error)) {
         return [];
       }
       throw error;

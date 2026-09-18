@@ -7,7 +7,7 @@ import schema from "./schema";
 import { modules } from "./test.setup";
 import { DEMO_CONSENT_DURATION_MS } from "./lib/consentConstants";
 import { loginDemoUser } from "./lib/loginForTests";
-import { appErrorCode } from "./lib/appError";
+import { appErrorCode } from "./lib/appError.testing";
 import {
   ACCOUNT_SUSPENDED_CODE,
   PERMISSION_DENIED_CODE,

@@ -1,11 +1,7 @@
 import { ConvexError } from "convex/values";
 import { describe, expect, test } from "vitest";
-import {
-  appErrorCode,
-  isAppErrorCode,
-  readAppError,
-  throwAppError,
-} from "./appError";
+import { isAppErrorCode, readAppError, throwAppError } from "./appError";
+import { appErrorCode } from "./appError.testing";
 import { PATIENT_NOT_FOUND_CODE, PATIENT_NOT_FOUND_MESSAGE } from "./accessRequestMessages";
 import { SESSION_EXPIRED_CODE } from "./authConstants";
 
@@ -36,6 +32,18 @@ describe("appError", () => {
         code: PATIENT_NOT_FOUND_CODE,
         message: PATIENT_NOT_FOUND_MESSAGE,
       }),
+    );
+    expect(readAppError(wrapped)).toEqual({
+      code: PATIENT_NOT_FOUND_CODE,
+      message: PATIENT_NOT_FOUND_MESSAGE,
+    });
+  });
+
+  test("readAppError recovers a payload from wrapped Convex client text", () => {
+    const wrapped = new Error(
+      `[CONVEX M(accessRequests:createAccessRequest)] [Request ID: abc] Server Error\nUncaught ConvexError: ${JSON.stringify(
+        { code: PATIENT_NOT_FOUND_CODE, message: PATIENT_NOT_FOUND_MESSAGE },
+      )}\n    at handler (../convex/accessRequests.ts:1:1)`,
     );
     expect(readAppError(wrapped)).toEqual({
       code: PATIENT_NOT_FOUND_CODE,
