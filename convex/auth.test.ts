@@ -4,7 +4,8 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
-import { DEMO_PASSWORD, DEMO_USERS } from "./lib/demoUsers";
+import { DEMO_PASSWORD, DEMO_USERS, CHIOMA_EMAIL } from "./lib/demoUsers";
+import { DEMO_PATIENT_PUBLIC_ID } from "./lib/demoIds";
 import {
   CURRENT_PASSWORD_INCORRECT_CODE,
   INVALID_CREDENTIALS_MESSAGE,
@@ -316,5 +317,98 @@ describe("account mutation audit events", () => {
       ctx.db.query("auditEvents").take(20),
     );
     expect(events.map((event) => event.action)).toEqual(["UserLoggedIn"]);
+  });
+});
+
+describe("ensureDemoUsers (INN-85)", () => {
+  async function insertDemoPatient(testBackend: ReturnType<typeof createTest>) {
+    return await testBackend.run(async (ctx) => {
+      const lagosId = await ctx.db.insert("facilities", {
+        code: "FMC-LOS",
+        name: "FMC Lagos",
+        city: "Lagos",
+        status: "active",
+      });
+      return await ctx.db.insert("patients", {
+        publicId: DEMO_PATIENT_PUBLIC_ID,
+        homeFacilityId: lagosId,
+        profile: { firstName: "Chioma", lastName: "Okonkwo" },
+        dateOfBirth: Date.UTC(1984, 2, 12),
+        gender: "female",
+        bloodGroup: "O+",
+        searchName: "chioma okonkwo",
+      });
+    });
+  }
+
+  test("recreates a deleted Chioma login as a patient linked to PAT-002391", async () => {
+    const testBackend = createTest();
+    const patientId = await insertDemoPatient(testBackend);
+    await ensureDemoUsersForTests(testBackend);
+
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Expected Chioma after ensureDemoUsers");
+      }
+      await ctx.db.delete(chioma._id);
+    });
+
+    await ensureDemoUsersForTests(testBackend);
+
+    const restored = await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      return {
+        roles: chioma?.roles,
+        patientId: chioma?.patientId ?? null,
+      };
+    });
+    expect(restored).toEqual({ roles: ["patient"], patientId });
+  });
+
+  test("repairs a dashboard-created doctor Chioma back to the patient login", async () => {
+    const testBackend = createTest();
+    const patientId = await insertDemoPatient(testBackend);
+    await ensureDemoUsersForTests(testBackend);
+
+    await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      if (!chioma) {
+        throw new Error("Expected Chioma after ensureDemoUsers");
+      }
+      await ctx.db.replace(chioma._id, {
+        email: chioma.email,
+        hashedPassword: chioma.hashedPassword,
+        roles: ["doctor"],
+        hospital: chioma.hospital,
+        department: "Cardiology",
+        accountStatus: chioma.accountStatus,
+        profile: chioma.profile,
+        facilityId: chioma.facilityId,
+      });
+    });
+
+    await ensureDemoUsersForTests(testBackend);
+
+    const repaired = await testBackend.run(async (ctx) => {
+      const chioma = await ctx.db
+        .query("users")
+        .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
+        .unique();
+      return {
+        roles: chioma?.roles,
+        patientId: chioma?.patientId ?? null,
+      };
+    });
+    expect(repaired).toEqual({ roles: ["patient"], patientId });
   });
 });

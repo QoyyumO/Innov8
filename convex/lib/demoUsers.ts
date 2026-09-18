@@ -1,3 +1,4 @@
+import { DEMO_PATIENT_PUBLIC_ID } from "./demoIds";
 import { UserRole } from "./roles";
 
 export const DEMO_PASSWORD = "password123";
@@ -11,6 +12,8 @@ export const DEMO_USERS: Array<{
   hospital: string;
   department?: string;
   profile: { firstName: string; lastName: string };
+  /** When set, seed / `ensureDemoUsers` links this login to that patient row. */
+  publicId?: string;
 }> = [
   {
     email: "ibrahim@fmc.abuja.ng",
@@ -65,7 +68,7 @@ export const DEMO_USERS: Array<{
     email: CHIOMA_EMAIL,
     roles: ["patient"],
     hospital: "FMC Lagos",
-    department: "Cardiology",
+    publicId: DEMO_PATIENT_PUBLIC_ID,
     profile: { firstName: "Chioma", lastName: "Okonkwo" },
   },
 ];

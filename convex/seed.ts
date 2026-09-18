@@ -13,6 +13,7 @@ import {
   patchCountedUser,
 } from "./lib/facilityStats";
 import { appendAuditEvent } from "./lib/services/auditLogService";
+import { linkDemoPatientLogins } from "./lib/demoPatientAccount";
 import {
   DEMO_PASSWORD,
   DEMO_USERS,
@@ -135,6 +136,7 @@ export const seedHealthcareWorkers = internalMutation({
     let skipped = 0;
 
     for (const demoUser of DEMO_USERS) {
+      const isPatientLogin = demoUser.publicId !== undefined;
       const workerSeed = DEMO_WORKER_SEEDS.find(
         (seed) => seed.email === demoUser.email,
       );
@@ -156,7 +158,7 @@ export const seedHealthcareWorkers = internalMutation({
       if (matchedFacility) {
         workerFields.facilityId = matchedFacility._id;
       }
-      if (workerSeed) {
+      if (workerSeed && !isPatientLogin) {
         workerFields.workerId = workerSeed.workerId;
         workerFields.normalAccessHours = workerSeed.normalAccessHours;
         workerFields.normalPatientVolume = workerSeed.normalPatientVolume;
@@ -230,26 +232,12 @@ export const seedHealthcareWorkers = internalMutation({
       .withIndex("by_publicId", (query) => query.eq("publicId", DEMO_PATIENT_PUBLIC_ID))
       .first();
     if (demoPatient) {
-      await linkChiomaPatientAccount(ctx, demoPatient._id);
+      await linkDemoPatientLogins(ctx.db);
     }
 
     return { inserted, updated, skipped };
   },
 });
-
-async function linkChiomaPatientAccount(
-  ctx: MutationCtx,
-  patientId: Id<"patients">,
-) {
-  const chioma = await ctx.db
-    .query("users")
-    .withIndex("by_email", (query) => query.eq("email", CHIOMA_EMAIL))
-    .unique();
-  if (!chioma || chioma.patientId === patientId) {
-    return;
-  }
-  await patchCountedUser(ctx.db, chioma, { patientId });
-}
 
 async function unlinkChiomaPatientAccount(ctx: MutationCtx) {
   const chioma = await ctx.db
@@ -416,7 +404,7 @@ async function upsertSyntheticPatient(
   if (isDemoPatient) {
     const abuja = requireFacility(facilities, "FMC-ABJ");
     await ensureDemoConsent(ctx, patientId, abuja._id, lagos._id);
-    await linkChiomaPatientAccount(ctx, patientId);
+    await linkDemoPatientLogins(ctx.db);
   }
 
   const condition = isDemoPatient ? "Hypertension" : pick(rand, CONDITIONS);
