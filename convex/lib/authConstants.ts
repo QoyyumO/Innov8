@@ -15,7 +15,7 @@ export const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
 export const PERMISSION_DENIED_MESSAGE =
   "You do not have permission to perform this action";
 
-/** Auth messages list queries used to match by exact equality (INN-59: substring). */
+/** Known auth messages. `findAuthErrorMessage` matches them as substrings of a (possibly wrapped) client error. */
 export const AUTH_ERROR_MESSAGES = [
   SESSION_EXPIRED_MESSAGE,
   ACCOUNT_SUSPENDED_MESSAGE,
