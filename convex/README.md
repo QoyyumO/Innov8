@@ -15,7 +15,7 @@ All backend code lives here. There are no Next.js API routes. Read `_generated/a
 | `dashboards.ts` | `getClinicianDashboard`, `getSecurityDashboard` (queries; `since` = start of the Lagos day), `getPatientDashboard` (query), `listFacilities` (with worker / patient totals) | Clinicians see their own summary; security officers and system admins see the exchange; hospital admins see their facility; Chioma (patient role, linked by `users.patientId`) sees PAT-002391 identity + bounded access history; any signed-in user lists facilities. All bounded |
 | `consents.ts` | `getConsentStatus` (query), `recordPatientConsent` (mutation, audited), `revokePatientConsent` (mutation, audited), `listConsents` (query) | Clinicians check and record consent for their facility (30 days); security officers and admins (scoped) list and revoke |
 | `stepUp.ts` | `completeVerification` (mutation, audited `StepUpCompleted` / `StepUpFailed`) | Requester's own single-patient VERIFY request; password re-entry → ALLOW; 3 failures → BLOCK + alert |
-| `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes; holder, security officers, and admins can revoke |
+| `emergency.ts` | `grantEmergencyAccess` (mutation, audited), `getActiveEmergencyAccess` (query), `revokeEmergencyAccess` (mutation, audited) | Clinicians grant; server-fixed 15 minutes (deep dive §8 examples 30; MVP uses 15); holder, security officers, and admins can revoke |
 
 ## Internal functions
 

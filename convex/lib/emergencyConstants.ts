@@ -3,7 +3,8 @@
  * import from the Next.js client.
  */
 
-/** Fixed on the server; clients cannot choose how long access lasts. */
+/** Fixed on the server at 15 minutes; clients cannot choose the length.
+ * Deep dive §8 examples 30 minutes; the MVP uses 15 (INN-74). */
 export const EMERGENCY_ACCESS_TTL_MS = 15 * 60 * 1000;
 export const JUSTIFICATION_MIN_LENGTH = 10;
 export const JUSTIFICATION_MAX_LENGTH = 500;
