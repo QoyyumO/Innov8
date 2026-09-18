@@ -30,6 +30,7 @@ export const recordType = v.union(
   v.literal("allergies"),
   v.literal("medications"),
   v.literal("diagnoses"),
+  v.literal("lab_results"),
 );
 
 export type RecordType = Infer<typeof recordType>;

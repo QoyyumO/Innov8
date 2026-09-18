@@ -109,6 +109,8 @@ export default defineSchema({
     medications: v.array(v.string()),
     diagnoses: v.array(v.string()),
     conditions: v.array(v.string()),
+    /** INN-80: optional so rows seeded before lab_results still load. */
+    labResults: v.optional(v.array(v.string())),
     updatedAt: v.number(),
   }).index("by_patientId_facilityId", ["patientId", "facilityId"]),
 

@@ -88,7 +88,13 @@ function renderSection(recordType: RecordType, sections: Sections) {
   if (recordType === "medications") {
     return <SectionList items={sections.medications ?? []} />;
   }
-  return <SectionList items={sections.diagnoses ?? []} />;
+  if (recordType === "diagnoses") {
+    return <SectionList items={sections.diagnoses ?? []} />;
+  }
+  if (recordType === "lab_results") {
+    return <SectionList items={sections.labResults ?? []} />;
+  }
+  return <SectionList items={[]} />;
 }
 
 /**

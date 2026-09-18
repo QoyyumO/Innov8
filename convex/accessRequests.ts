@@ -378,7 +378,8 @@ export const createAccessRequest = mutation({
  * Demo step 6 (INN-39): the signed-in clinician suddenly asks for a bulk
  * export. The server fixes the volume at HARVEST_RECORD_COUNT and stores one
  * request row (the §14 seed convention), so the client never picks a count
- * or a score. The risk engine blocks it and the alert service reports it.
+ * or a score. Record types stay the original four (INN-80); this is a volume
+ * attack, not a lab-chart request.
  */
 export const simulateBulkHarvest = mutation({
   args: {

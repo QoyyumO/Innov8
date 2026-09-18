@@ -19,6 +19,7 @@ const sectionsValidator = v.object({
   allergies: v.optional(v.array(v.string())),
   medications: v.optional(v.array(v.string())),
   diagnoses: v.optional(v.array(v.string())),
+  labResults: v.optional(v.array(v.string())),
 });
 
 const viewResultValidator = v.union(

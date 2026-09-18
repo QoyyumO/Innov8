@@ -9,6 +9,7 @@ export const RECORD_TYPES: RecordType[] = [
   "allergies",
   "medications",
   "diagnoses",
+  "lab_results",
 ];
 
 export const RECORD_TYPE_LABELS: Record<RecordType, string> = {
@@ -16,6 +17,7 @@ export const RECORD_TYPE_LABELS: Record<RecordType, string> = {
   allergies: "Allergies",
   medications: "Medications",
   diagnoses: "Diagnoses",
+  lab_results: "Lab results",
 };
 
 export const PURPOSE_OPTIONS: { value: Purpose; label: string; hint: string }[] = [

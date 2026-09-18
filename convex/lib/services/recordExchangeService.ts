@@ -23,6 +23,7 @@ export type AuthorisedSections = {
   allergies?: string[];
   medications?: string[];
   diagnoses?: string[];
+  labResults?: string[];
 };
 
 export type ViewAuthorisation =
@@ -112,6 +113,8 @@ export function pickAuthorisedSections(
       sections.medications = [...summary.medications];
     } else if (recordType === "diagnoses") {
       sections.diagnoses = [...summary.diagnoses];
+    } else if (recordType === "lab_results") {
+      sections.labResults = [...(summary.labResults ?? [])];
     }
   }
   return sections;

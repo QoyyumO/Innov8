@@ -24,7 +24,7 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-47** — password reset tokens (hashed, single-use, 15 min); sessions 30 min by default, 7 days with Keep me logged in (INN-54); suspended accounts rejected on every call.
 - **INN-38** — `RiskScoringService` (`convex/lib/services/riskScoringService.ts`): pure, explainable `RiskBreakdown` (`scoreAccessRequest` return type) with reasons and a factors snapshot. Treatment by Ibrahim → 8 ALLOW; ≥ 500-record harvest → 94 BLOCK.
 - **INN-37** — `AccessControlService` (`convex/lib/services/accessControlService.ts`) + `convex/accessRequests.ts`: AccessRequest and Decision aggregates are live; `AccessRequested` and outcome events are audited. Record types are role-limited (INN-79).
-- **INN-40** — `RecordExchangeService` (`convex/lib/services/recordExchangeService.ts`) + `convex/records.ts`: permitted fields only, target facility only, after ALLOW or a live emergency grant; `RecordViewed` audited.
+- **INN-40** — `RecordExchangeService` (`convex/lib/services/recordExchangeService.ts`) + `convex/records.ts`: permitted fields only, target facility only, after ALLOW or a live emergency grant; `RecordViewed` audited. `lab_results` added in INN-80.
 - **INN-39** — `AlertService` (`convex/lib/services/alertService.ts`) + `convex/alerts.ts`: every BLOCK raises a high-severity SecurityAlert and `SecurityAlertRaised`; officers acknowledge/close (status only, never deleted).
 - **INN-41** — `EmergencyAccessService` (`convex/lib/services/emergencyAccessService.ts`) + `convex/emergency.ts`: justified, server-fixed 15-minute grants (deep dive §8 examples 30 minutes; MVP uses 15, INN-74); `EmergencyGranted`, medium SecurityAlert, scheduled `EmergencyExpired`, early `EmergencyRevoked`. A request's grant, not its decision, governs record release once one exists.
 - **INN-42** — AuditEvent read model (`convex/audit.ts`): role-scoped, paginated, newest-first by `createdAt`; still append-only (no update/delete path). Logout, password change, password reset, and profile update are audited (INN-58). Failed login is audited as `UserLoginFailed` (INN-72). Reviewers filter by patient, facility, decision outcome, and date (INN-78).
@@ -51,7 +51,8 @@ Linear: [Innov8 workspace](https://linear.app/innov8-health) · project **Track 
 - **INN-76** — Judges dry-run after the seven Ibrahim steps: VERIFY/step-up, `/security` queue, Chioma's portal, `/facilities` (root `README.md`).
 - **INN-77** — Patient-owned consent: a linked Patient User lists, grants, and revokes Consents for their `users.patientId`. Break-glass still needs no consent. Seed still pre-grants FMC Abuja for PAT-002391.
 - **INN-78** — Audit investigation filters: reviewers query by patient publicId, facility, decision outcome, and `createdAt` range using indexes (no `.collect()`).
-- **INN-79** — Clinician record-type allow-list: pharmacist medications+allergies; laboratory diagnoses; doctor/nurse keep the four Track C types.
+- **INN-79** — Clinician record-type allow-list: pharmacist medications+allergies; laboratory diagnoses and lab results; doctor/nurse keep the Track C types plus lab results (INN-80).
+- **INN-80** — One extra federated type `lab_results` on the record index and authorised summary. Existence-only until ALLOW. No imaging PACS.
 - **INN-72** — Failed login writes `UserLoginFailed` (wrong password, inactive account, or unknown email). The client message stays generic; unknown emails are not stored on the row.
 - **INN-71** — Risk scoring adds explainable location mismatch and 24-hour request-volume vs baseline. Device is not scored. Clinical after-hours is a reason with no extra points so Ibrahim treatment stays 8; harvest stays 94.
 
@@ -67,7 +68,7 @@ The MVP demo path is live end to end. Remaining work is review-found bugs after 
 - **PasswordResetToken**: userId, tokenHash, expiresAt, usedAt (INN-47)
 - **Patient**: publicId (`PAT-002391`), homeFacilityId, demographics (synthetic), identifiers for search
 - **RecordIndex**: patientId, facilityId, recordTypes[] — **existence only**, not full chart
-- **ClinicalSummary**: permitted fields after ALLOW (summary, allergies, medications, diagnoses)
+- **ClinicalSummary**: permitted fields after ALLOW (summary, allergies, medications, diagnoses, lab results); `conditions` never leave the exchange
 - **AccessRequest**: actor, session, sourceFacility, targetFacility, patient, purpose, recordTypes, time
 - **AccessDecision**: requestId, outcome (`ALLOW` | `VERIFY` | `BLOCK`), riskScore, reasons[]
 - **EmergencyAccess**: requestId, justification, expiresAt, grantedBy
@@ -79,7 +80,7 @@ The MVP demo path is live end to end. Remaining work is review-found bugs after 
 
 - **FullName**: `{ firstName, middleName?, lastName }`
 - **Purpose**: `treatment` | `emergency` | `referral` | `follow-up` | `administrative`
-- **RecordType**: `medical_summary` | `allergies` | `medications` | `diagnoses`
+- **RecordType**: `medical_summary` | `allergies` | `medications` | `diagnoses` | `lab_results`
 - **RiskBreakdown**: `{ score: 0-100, outcome, reasons: string[], factors: { role, purpose, sameHospital, recordCount, consent, locationMismatch, afterHours, recentRequestCount } }` — ALLOW < 40, VERIFY 40–79, BLOCK ≥ 80
 - **DecisionOutcome**: `ALLOW` | `VERIFY` | `BLOCK`
 
