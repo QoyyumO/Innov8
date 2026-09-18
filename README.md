@@ -79,7 +79,7 @@ Seed is **internal** Convex mutations (`convex/seed.ts`). Run them from the CLI 
 
 Keep `npx convex dev` running so functions are pushed, then in another terminal.
 
-**Use the demo-scale seed only.** Historical §14 volumes (500 workers, 10,000 patients, 100,000 access events) overflow the Convex free-plan storage cap. Do not run those counts on this team.
+**Use the demo-scale seed only on this team.** Historical §14 volumes (500 workers, 10,000 patients, 100,000 access events) overflow the Convex free-plan storage cap. Do not run those counts on the shared free deployment. A paid-plan / throwaway-preview runbook is in [`convex/README-seeding.md`](convex/README-seeding.md) (INN-73).
 
 If an existing deployment already has the large seed, cancel leftover scheduled seed jobs in the Convex dashboard, then wipe before reseeding:
 

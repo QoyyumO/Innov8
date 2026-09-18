@@ -43,5 +43,6 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-59-auth-error-wrapped-messages](features/INN-59-auth-error-wrapped-messages/PLAN.md) | Recover wrapped session/permission messages on the client | Done on `main` ([#39](https://github.com/QoyyumO/Innov8/pull/39)) |
 | [INN-71-risk-device-location-behaviour](features/INN-71-risk-device-location-behaviour/PLAN.md) | Explainable location and 24h behaviour factors in risk scoring | In review ([#40](https://github.com/QoyyumO/Innov8/pull/40)) |
 | [INN-72-audit-failed-login-attempts](features/INN-72-audit-failed-login-attempts/PLAN.md) | Audit failed login attempts (`UserLoginFailed`) | In review ([#41](https://github.com/QoyyumO/Innov8/pull/41)) |
+| [INN-73-paid-plan-section-14-seed-runbook](features/INN-73-paid-plan-section-14-seed-runbook/PLAN.md) | Paid-plan runbook for full §14 seed volumes | This branch |
 
 How to run the app and seed: root [`README.md`](../README.md). Seed details: [`convex/README-seeding.md`](../convex/README-seeding.md). Domain map: [`Innov8_DDD.md`](../Innov8_DDD.md).
