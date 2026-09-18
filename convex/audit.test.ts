@@ -125,7 +125,15 @@ async function walkDemo(testBackend: TestBackend, token: string) {
 async function listEvents(
   testBackend: TestBackend,
   token: string | undefined,
-  filters: { action?: AuditAction; actorId?: string } = {},
+  filters: {
+    action?: AuditAction;
+    actorId?: string;
+    patientPublicId?: string;
+    facilityId?: string;
+    outcome?: "ALLOW" | "VERIFY" | "BLOCK";
+    createdFrom?: number;
+    createdTo?: number;
+  } = {},
   paginationOpts: { numItems: number; cursor: string | null } = FIRST_PAGE,
 ) {
   return await testBackend.query(api.audit.listAuditEvents, {
@@ -246,6 +254,62 @@ describe("listAuditEvents", () => {
     expect(ownLogins.page).toHaveLength(1);
     const noViews = await listEvents(testBackend, ibrahimToken, { action: "RecordViewed" });
     expect(noViews.page).toEqual([]);
+  });
+
+  test("reviewers can filter by patient, facility, decision, and date (INN-78)", async () => {
+    const testBackend = createTest();
+    await seedDemoWorld(testBackend);
+    const ibrahimToken = await loginDemoUser(testBackend, IBRAHIM_EMAIL);
+    await walkDemo(testBackend, ibrahimToken);
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const lagosId = await testBackend.run(async (ctx) => {
+      const lagos = await ctx.db
+        .query("facilities")
+        .withIndex("by_code", (query) => query.eq("code", "FMC-LOS"))
+        .unique();
+      return lagos?._id ?? null;
+    });
+    expect(lagosId).not.toBeNull();
+    if (lagosId === null) {
+      throw new Error("FMC Lagos missing from test seed");
+    }
+
+    const forChioma = await listEvents(testBackend, securityToken, {
+      patientPublicId: "PAT-002391",
+    });
+    expect(forChioma.page.length).toBeGreaterThan(0);
+    expect(forChioma.page.every((event) => event.action !== "UserLoggedIn")).toBe(true);
+    expect(forChioma.page.some((event) => event.action === "AccessRequested")).toBe(true);
+
+    const unknownPatient = await listEvents(testBackend, securityToken, {
+      patientPublicId: "PAT-000000",
+    });
+    expect(unknownPatient.page).toEqual([]);
+
+    const lagosEvents = await listEvents(testBackend, securityToken, {
+      facilityId: lagosId,
+    });
+    expect(lagosEvents.page.some((event) => event.action === "AccessRequested")).toBe(true);
+
+    const blocks = await listEvents(testBackend, securityToken, { outcome: "BLOCK" });
+    expect(blocks.page).toHaveLength(1);
+    expect(blocks.page[0]?.action).toBe("AccessBlocked");
+
+    const conflict = await listEvents(testBackend, securityToken, {
+      action: "AccessAllowed",
+      outcome: "BLOCK",
+    });
+    expect(conflict.page).toEqual([]);
+
+    const future = await listEvents(testBackend, securityToken, {
+      createdFrom: Date.now() + 86_400_000,
+    });
+    expect(future.page).toEqual([]);
+
+    const ownWithPatientFilter = await listEvents(testBackend, ibrahimToken, {
+      patientPublicId: "PAT-002391",
+    });
+    expect(ownWithPatientFilter.page.map((event) => event.action)).toContain("UserLoggedIn");
   });
 
   test("backdated (seeded) events sort by createdAt, not insertion order, and paginate", async () => {

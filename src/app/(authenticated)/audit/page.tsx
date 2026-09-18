@@ -35,9 +35,9 @@ export default function AuditTrailPage() {
         title="Audit trail"
         desc={
           isFacilityScoped
-            ? `Activity involving ${user?.hospital ?? "your facility"}: your staff's actions, and every request, decision, record view, break-glass event, and alert to or from your facility. Newest first; select a person to see only their activity. Entries cannot be edited or deleted.`
+            ? `Activity involving ${user?.hospital ?? "your facility"}: your staff's actions, and every request, decision, record view, break-glass event, and alert to or from your facility. Newest first; filter by person, patient ID, facility, decision, or Lagos date. Entries cannot be edited or deleted.`
             : canReviewAll
-              ? "Every sign-in, search, request, decision, record view, break-glass event, and alert across the exchange, newest first. Select a person to see only their activity. Entries cannot be edited or deleted."
+              ? "Every sign-in, search, request, decision, record view, break-glass event, and alert across the exchange, newest first. Filter by person, patient ID, facility, decision, or Lagos date. Entries cannot be edited or deleted."
               : "Everything you have done on the exchange, newest first: sign-ins, searches, requests, decisions, record views, and break-glass. Entries cannot be edited or deleted."
         }
       >

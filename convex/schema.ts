@@ -209,6 +209,14 @@ export default defineSchema({
     .index("by_actorId_action_createdAt", ["actorId", "action", "createdAt"])
     .index("by_createdAt", ["createdAt"])
     .index("by_patientId_createdAt", ["patientId", "createdAt"])
+    .index("by_patientId_action_createdAt", ["patientId", "action", "createdAt"])
+    .index("by_patientId_actorId_createdAt", ["patientId", "actorId", "createdAt"])
+    .index("by_patientId_actorId_action_createdAt", [
+      "patientId",
+      "actorId",
+      "action",
+      "createdAt",
+    ])
     .index("by_sessionId_action_entityId", ["sessionId", "action", "entityId"]),
 
   // INN-45: a patient's consent for one facility to request their records.

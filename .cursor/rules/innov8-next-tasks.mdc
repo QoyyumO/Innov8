@@ -61,6 +61,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-75](https://linear.app/innov8-health/issue/INN-75) decision-engine latency + §15 evaluation notes (target, not an SLO)
 - [INN-76](https://linear.app/innov8-health/issue/INN-76) judges dry-run: VERIFY, `/security` queue, Chioma portal, `/facilities`
 - [INN-77](https://linear.app/innov8-health/issue/INN-77) patient-owned consent grant and revoke
+- [INN-78](https://linear.app/innov8-health/issue/INN-78) audit investigation filters (patient, facility, decision, date)
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
