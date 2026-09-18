@@ -181,13 +181,15 @@ export function AccessRequestForm({ initialPublicId = "" }: AccessRequestFormPro
         <Button type="submit" disabled={isSubmitting || !sessionToken}>
           {isSubmitting ? "Evaluating…" : "Submit request"}
         </Button>
-        {result && (
-          <Alert
-            variant={OUTCOME_ALERT_VARIANTS[result.outcome]}
-            title={`${OUTCOME_LABELS[result.outcome]} — ${result.riskScore}/100`}
-            message="Full reasons are in the decision below."
-          />
-        )}
+        <div aria-live="polite">
+          {result && (
+            <Alert
+              variant={OUTCOME_ALERT_VARIANTS[result.outcome]}
+              title={`${OUTCOME_LABELS[result.outcome]} — ${result.riskScore}/100`}
+              message="Full reasons are in the decision below."
+            />
+          )}
+        </div>
       </form>
 
       {result && (
