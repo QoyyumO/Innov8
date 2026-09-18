@@ -59,6 +59,7 @@ Domain functions must use `requireSession` + `requireRole` and write audit rows 
 - [INN-73](https://linear.app/innov8-health/issue/INN-73) paid-plan runbook for full §14 seed volumes
 - [INN-74](https://linear.app/innov8-health/issue/INN-74) break-glass stays 15 minutes; README notes §8's 30-minute example
 - [INN-75](https://linear.app/innov8-health/issue/INN-75) decision-engine latency + §15 evaluation notes (target, not an SLO)
+- [INN-76](https://linear.app/innov8-health/issue/INN-76) judges dry-run: VERIFY, `/security` queue, Chioma portal, `/facilities`
 
 Plans: `docs/features/<TICKET>-<slug>/PLAN.md`. How to run and seed: root `README.md`.
 
