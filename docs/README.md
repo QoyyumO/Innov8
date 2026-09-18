@@ -31,8 +31,8 @@ Implementation plans for Linear Innov8 tickets (`INN-XX`). Each folder is `docs/
 | [INN-57-login-must-not-reseed-demo-users](features/INN-57-login-must-not-reseed-demo-users/PLAN.md) | Public login must not re-seed demo users | Done on `main` ([#25](https://github.com/QoyyumO/Innov8/pull/25)) |
 | [INN-62-newest-break-glass-grant](features/INN-62-newest-break-glass-grant/PLAN.md) | Dashboards read the newest break-glass grant, not the oldest | Done on `main` ([#28](https://github.com/QoyyumO/Innov8/pull/28)) |
 | [INN-66-harden-verify-password](features/INN-66-harden-verify-password/PLAN.md) | `verifyPassword`: no throw on a malformed hash, compare without short-circuiting | Done on `main` ([#29](https://github.com/QoyyumO/Innov8/pull/29)) |
-| [INN-64-expire-sessions](features/INN-64-expire-sessions/PLAN.md) | Sessions delete themselves at `expiresAt`; bounded cleanup (with INN-61) | In review ([#31](https://github.com/QoyyumO/Innov8/pull/31)) |
-| [INN-58-audit-account-security-mutations](https://github.com/QoyyumO/Innov8/pull/30) | Audit logout, password change, reset, and profile update | In review ([#30](https://github.com/QoyyumO/Innov8/pull/30)) |
+| [INN-64-expire-sessions](features/INN-64-expire-sessions/PLAN.md) | Sessions delete themselves at `expiresAt`; bounded cleanup (with INN-61) | Done on `main` ([#31](https://github.com/QoyyumO/Innov8/pull/31)) |
+| [INN-58-audit-account-security-mutations](https://github.com/QoyyumO/Innov8/pull/30) | Audit logout, password change, reset, and profile update | Done on `main` ([#30](https://github.com/QoyyumO/Innov8/pull/30)) |
 | [INN-60-throw-convexerror-for-validation](features/INN-60-throw-convexerror-for-validation/PLAN.md) | Throw `ConvexError` so validation messages survive in production | Done on `main` ([#32](https://github.com/QoyyumO/Innov8/pull/32)) |
 | [INN-65-remove-dead-requireunused-helpers](features/INN-65-remove-dead-requireunused-helpers/PLAN.md) | Remove unused `requireUnused*` uniqueness helpers | This branch |
 
