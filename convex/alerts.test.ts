@@ -426,6 +426,36 @@ describe("listSecurityAlerts", () => {
       riskScore: null,
     });
   });
+
+  test("status filter orders by createdAt, not insert time", async () => {
+    const testBackend = createTest();
+    const securityToken = await loginDemoUser(testBackend, SECURITY_EMAIL);
+    const laterEventTime = Date.now();
+    const earlierEventTime = laterEventTime - 60_000;
+
+    await testBackend.run(async (ctx) => {
+      await ctx.db.insert("securityAlerts", {
+        severity: "high",
+        status: "open",
+        title: "Later event, inserted first",
+        message: "createdAt is newer; _creationTime is older",
+        createdAt: laterEventTime,
+      });
+      await ctx.db.insert("securityAlerts", {
+        severity: "high",
+        status: "open",
+        title: "Earlier event, inserted second",
+        message: "createdAt is older; _creationTime is newer",
+        createdAt: earlierEventTime,
+      });
+    });
+
+    const filtered = await listAlerts(testBackend, securityToken, "open");
+    const unfiltered = await listAlerts(testBackend, securityToken);
+    const titles = ["Later event, inserted first", "Earlier event, inserted second"];
+    expect(filtered.page.map((alert) => alert.title)).toEqual(titles);
+    expect(unfiltered.page.map((alert) => alert.title)).toEqual(titles);
+  });
 });
 
 describe("acknowledgeAlert and closeAlert", () => {

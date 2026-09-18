@@ -66,7 +66,7 @@ Justification required. Indexes `by_actorId`, `by_patientId`, `by_expiresAt`. Sc
 
 ### Part I — INN-28 securityAlerts
 
-Optional links to decision / emergency access. Indexes `by_status`, `by_severity`, `by_createdAt`.
+Optional links to decision / emergency access. Indexes `by_status_createdAt`, `by_createdAt` (INN-63 dropped unused `by_status` / `by_severity`).
 
 ### Part J — INN-29 auditEvents
 

@@ -47,7 +47,7 @@ Clinicians only (auth errors → `null`).
 
 Security officers and admins only (auth errors → `null`).
 
-- Open alerts: `by_status` = open, capped, counted by severity.
+- Open alerts: `by_status_createdAt` = open, capped, counted by severity.
 - Blocked today: `by_outcome_decidedAt` range.
 - Audit events today: `by_createdAt` range, capped.
 - Active grants: `by_expiresAt` > now, unrevoked, with the holder's name.
